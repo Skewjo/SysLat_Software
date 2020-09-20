@@ -11,6 +11,10 @@
 /////////////////////////////////////////////////////////////////////////////
 #include "RTSSSharedMemory.h"
 #include "RTSSProfileInterface.h"
+#include "SerialCommHelper.h"
+#include <string>
+#include <time.h>
+
 /////////////////////////////////////////////////////////////////////////////
 #define MAX_CPU									8
 #define MAX_HISTORY								512
@@ -38,6 +42,11 @@ class CRTSSSharedMemorySampleDlg : public CDialog
 public:
 	CRTSSSharedMemorySampleDlg(CWnd* pParent = NULL);	// standard constructor
 
+
+	//////////////////
+
+	/////////////////////
+
 // Dialog Data
 	//{{AFX_DATA(CRTSSSharedMemorySampleDlg)
 	enum { IDD = IDD_RTSSSHAREDMEMORYSAMPLE_DIALOG };
@@ -53,37 +62,65 @@ public:
 // Implementation
 protected:
 	void Refresh();
-	void Refresh(CString externalString);
+	//static void Refresh(CString externalString);
 
 	DWORD						EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags);
 
 	DWORD						GetClientsNum();
 	DWORD						GetSharedMemoryVersion();
-	BOOL						UpdateOSD(LPCSTR lpText);
+	static  BOOL						UpdateOSD(LPCSTR lpText);
 	void						ReleaseOSD();
 	void						IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement);
 	void						SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty);
 	
+	
+
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	//Skewjo's stuff
-	bool						WriteComPort(CString PortSpecifier, CString data);
-	int							ReadByte(CString PortSpecifier);
+	time_t elapsedTimeStart, elapsedTimeEnd;
+	
+	static bool					debugMode;
+	
+	//bool						WriteComPort(CString PortSpecifier, CString data);
+	static int					ReadByte(CString PortSpecifier);
 
-	//I've got to find a way to make this COM port variable or something...
-	//CString						PortSpecifier = CString(_T("COM3"));
-	CString						PortSpecifier = CString(_T("COM4"));
-	int							serialReadData = 0;
+	static unsigned int __stdcall		CreateDrawingThread(void* data);
 
-	//timer variables
-	LARGE_INTEGER				begin, end, frequency;
+	static CString				PortOption;
+	static CString				PortSpecifier;
+	static int					serialReadData;
+
+	static LARGE_INTEGER		begin, end, frequency;
 	clock_t						regTime;
 	double						duration;
+	
+	static CString				m_tLoopCounter;
+	static int					systemLatencyTotal;
+	static double				systemLatencyAverage;
+	static int					loopCounterEVR;
+	static int					systemLatencyTotalEVR; //EVR stands for expected value range
+	static double				systemLatencyAverageEVR;
+	
 
-	//Should be able to read total readings from the Arduino
-	const static int totalReadings = 10;
-	long arduinoClockBegin[totalReadings];
-	long arduinoClockEnd[totalReadings];
+	static CString				m_arduinoResults;
+	
+	static CString				m_tInnerLoopTimer;
+	static CString				m_tOuterLoopTimer;
+	static CString				m_tDrawWhite;
+	
+	static CString				m_arduinoResultsComplete;
+	static CString				m_arduinoResultsRefresh;
+	static CString				m_tLoopCounterRefresh;
+	static CString				m_tInnerLoopTimerRefresh;
+	static CString				m_tOuterLoopTimerRefresh;
+	static CString				m_tDrawWhiteRefresh;
 
+	static void					DrawBlack();
+	static void					DrawWhite();
+	void						SetPortCom1();
+	void						SetPortCom2();
+	void						SetPortCom3();
+	void						SetPortCom4();
 	//End Skewjo's stuff
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -109,7 +146,7 @@ protected:
 	CFont						m_font;
 	CRichEditCtrl				m_richEditCtrl;
 
-	CString						m_strStatus;
+	static CString						m_strStatus;
 	CString						m_strInstallPath;
 
 	CRTSSProfileInterface		m_profileInterface;
@@ -126,6 +163,11 @@ protected:
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
 };
+
+//CString CRTSSSharedMemorySampleDlg::PortOption = "COM3";
+//CString CRTSSSharedMemorySampleDlg::PortSpecifier = CString(_T(PortOption));
+//int CRTSSSharedMemorySampleDlg::serialReadData = 0;
+
 /////////////////////////////////////////////////////////////////////////////
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.

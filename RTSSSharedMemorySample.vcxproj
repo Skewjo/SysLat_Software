@@ -149,10 +149,12 @@
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="SerialBuffer.cpp" />
     <ClCompile Include="GroupedString.cpp" />
     <ClCompile Include="RTSSProfileInterface.cpp" />
     <ClCompile Include="RTSSSharedMemorySample.cpp" />
     <ClCompile Include="RTSSSharedMemorySampleDlg.cpp" />
+    <ClCompile Include="SerialCommHelper.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
@@ -162,11 +164,14 @@
     <ResourceCompile Include="RTSSSharedMemorySample.rc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="DebugDump.h" />
+    <ClInclude Include="SerialBuffer.h" />
     <ClInclude Include="GroupedString.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RTSSProfileInterface.h" />
     <ClInclude Include="RTSSSharedMemorySample.h" />
     <ClInclude Include="RTSSSharedMemorySampleDlg.h" />
+    <ClInclude Include="SerialCommHelper.h" />
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
   <ItemGroup>

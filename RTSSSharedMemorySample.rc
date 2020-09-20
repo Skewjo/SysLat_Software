@@ -13,13 +13,11 @@
 #undef APSTUDIO_READONLY_SYMBOLS
 
 /////////////////////////////////////////////////////////////////////////////
-// Russian resources
+// Russian (Russia) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_RUS)
-#ifdef _WIN32
 LANGUAGE LANG_RUSSIAN, SUBLANG_DEFAULT
 #pragma code_page(1251)
-#endif //_WIN32
 
 #ifdef APSTUDIO_INVOKED
 /////////////////////////////////////////////////////////////////////////////
@@ -67,18 +65,17 @@ END
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
 IDR_MAINFRAME           ICON                    "res\\RTSSSharedMemorySample.ico"
-#endif    // Russian resources
+
+#endif    // Russian (Russia) resources
 /////////////////////////////////////////////////////////////////////////////
 
 
 /////////////////////////////////////////////////////////////////////////////
-// English (U.S.) resources
+// English (United States) resources
 
 #if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
-#ifdef _WIN32
 LANGUAGE LANG_ENGLISH, SUBLANG_ENGLISH_US
 #pragma code_page(1252)
-#endif //_WIN32
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -90,9 +87,9 @@ STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_CAPTION | WS_SYSMENU
 CAPTION "About RTSS shared memory sample"
 FONT 8, "MS Sans Serif", 0, 0, 0x0
 BEGIN
-    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,20,20
-    LTEXT           "RTSS shared memory sample v2.8",IDC_STATIC,40,10,110,8,SS_NOPREFIX
-    LTEXT           "Copyright (C) 2005-2017 by Alexey Nicolaychuk aka Unwinder",IDC_STATIC,42,25,196,8
+    ICON            IDR_MAINFRAME,IDC_STATIC,11,17,21,20
+    LTEXT           "SysLat RTSS Shared Memory Integration v0.1",IDC_STATIC,40,10,146,8,SS_NOPREFIX
+    LTEXT           "Copyright (C) 2017-2020 by John Eskew aka Skewjo",IDC_STATIC,40,26,191,8
     DEFPUSHBUTTON   "OK",IDOK,188,7,50,14,WS_GROUP
 END
 
@@ -100,6 +97,7 @@ IDD_RTSSSHAREDMEMORYSAMPLE_DIALOG DIALOGEX 0, 0, 350, 250
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
 CAPTION "RTSS shared memory sample"
+MENU IDR_MENU1
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN
     CTEXT           "Placeholder",IDC_PLACEHOLDER,0,0,349,249,SS_CENTERIMAGE | NOT WS_VISIBLE
@@ -112,8 +110,8 @@ END
 //
 
 VS_VERSION_INFO VERSIONINFO
- FILEVERSION 2,9,0,0
- PRODUCTVERSION 2,9,0,0
+ FILEVERSION 0,1,0,0
+ PRODUCTVERSION 0,1,0,0
  FILEFLAGSMASK 0x3fL
 #ifdef _DEBUG
  FILEFLAGS 0x1L
@@ -129,12 +127,12 @@ BEGIN
         BLOCK "040904b0"
         BEGIN
             VALUE "FileDescription", "RTSS shared memory sample"
-            VALUE "FileVersion", "2, 9, 0, 0"
+            VALUE "FileVersion", "0.1.0.0"
             VALUE "InternalName", "RTSSSharedMemorySample"
-            VALUE "LegalCopyright", "Copyright (C) 2005-2018 by Alexey Nicolaychuk aka Unwinder"
+            VALUE "LegalCopyright", "Copyright (C) 2017-2020 by John Eskew aka Skewjo"
             VALUE "OriginalFilename", "RTSSSharedMemorySample.EXE"
-            VALUE "ProductName", "RTSSSharedMemorySample Application"
-            VALUE "ProductVersion", "2, 9, 0, 0"
+            VALUE "ProductName", "SysLat_RTSS_Shared_Memory_Integration"
+            VALUE "ProductVersion", "0.1.0.0"
         END
     END
     BLOCK "VarFileInfo"
@@ -150,7 +148,7 @@ END
 //
 
 #ifdef APSTUDIO_INVOKED
-GUIDELINES DESIGNINFO 
+GUIDELINES DESIGNINFO
 BEGIN
     IDD_ABOUTBOX, DIALOG
     BEGIN
@@ -159,8 +157,54 @@ BEGIN
         TOPMARGIN, 7
         BOTTOMMARGIN, 47
     END
+
+    IDD_RTSSSHAREDMEMORYSAMPLE_DIALOG, DIALOG
+    BEGIN
+    END
 END
 #endif    // APSTUDIO_INVOKED
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// AFX_DIALOG_LAYOUT
+//
+
+IDD_ABOUTBOX AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+IDD_RTSSSHAREDMEMORYSAMPLE_DIALOG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
+
+/////////////////////////////////////////////////////////////////////////////
+//
+// Menu
+//
+
+IDR_MENU1 MENU
+BEGIN
+    POPUP "Settings"
+    BEGIN
+        POPUP "PORT"
+        BEGIN
+            MENUITEM "Serial Ports",                ID_PORT_SERIALPORTS, INACTIVE
+            MENUITEM "COM1",                        ID_PORT_COM1
+            MENUITEM "COM2",                        ID_PORT_COM2
+            MENUITEM "COM3",                        ID_PORT_COM3, CHECKED
+            MENUITEM "COM4",                        ID_PORT_COM4
+        END
+        POPUP "USB Read Type"
+        BEGIN
+            MENUITEM "Polling",                     ID_USBREADTYPE_POLLING
+            MENUITEM "Event Driven",                ID_USBREADTYPE_EVENTDRIVEN
+        END
+    END
+END
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -168,12 +212,12 @@ END
 // String Table
 //
 
-STRINGTABLE 
+STRINGTABLE
 BEGIN
     IDS_ABOUTBOX            "&About RTSS shared memory sample..."
 END
 
-#endif    // English (U.S.) resources
+#endif    // English (United States) resources
 /////////////////////////////////////////////////////////////////////////////
 
 

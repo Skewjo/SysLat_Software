@@ -19,7 +19,8 @@
 #ifndef _AFX_NO_AFXCMN_SUPPORT
 #include <afxcmn.h>			// MFC support for Windows Common Controls
 #endif // _AFX_NO_AFXCMN_SUPPORT
-
+#define ATLTRACE6 m_DebugFile.Dump
+#define USE_DEBUGDUMP extern CDebugDump m_DebugFile;
 
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
