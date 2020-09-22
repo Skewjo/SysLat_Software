@@ -68,7 +68,7 @@ protected:
 
 	DWORD						GetClientsNum();
 	DWORD						GetSharedMemoryVersion();
-	static  BOOL						UpdateOSD(LPCSTR lpText);
+	static  BOOL			    UpdateOSD(LPCSTR lpText);
 	void						ReleaseOSD();
 	void						IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement);
 	void						SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty);
@@ -77,43 +77,33 @@ protected:
 
 	//////////////////////////////////////////////////////////////////////////////////////////////
 	//Skewjo's stuff
-	time_t elapsedTimeStart, elapsedTimeEnd;
+	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
 	
-	static bool					debugMode;
+	static bool					m_debugMode;
 	
-	//bool						WriteComPort(CString PortSpecifier, CString data);
-	static int					ReadByte(CString PortSpecifier);
+	static CString				m_PortSpecifier;
+
+	static int					m_systemLatencyTotal;
+	static double				m_systemLatencyAverage;
+	static int					m_loopCounterEVR;
+	static int					m_systemLatencyTotalEVR; //EVR stands for expected value range
+	static double				m_systemLatencyAverageEVR;
+	
+
+	static CString				m_arduinoResultsComplete;
+	static unsigned int			m_loopSize;
+	static unsigned int			m_LoopCounterRefresh;
+
+	static CString				m_strError;
+
+	static HANDLE				m_refreshMutex;
 
 	static unsigned int __stdcall		CreateDrawingThread(void* data);
 
-	static CString				PortOption;
-	static CString				PortSpecifier;
-	static int					serialReadData;
-
-	static LARGE_INTEGER		begin, end, frequency;
-	clock_t						regTime;
-	double						duration;
-	
-	static CString				m_tLoopCounter;
-	static int					systemLatencyTotal;
-	static double				systemLatencyAverage;
-	static int					loopCounterEVR;
-	static int					systemLatencyTotalEVR; //EVR stands for expected value range
-	static double				systemLatencyAverageEVR;
-	
-
-	static CString				m_arduinoResults;
-	
-	static CString				m_tInnerLoopTimer;
-	static CString				m_tOuterLoopTimer;
-	static CString				m_tDrawWhite;
-	
-	static CString				m_arduinoResultsComplete;
-	static CString				m_arduinoResultsRefresh;
-	static CString				m_tLoopCounterRefresh;
-	static CString				m_tInnerLoopTimerRefresh;
-	static CString				m_tOuterLoopTimerRefresh;
-	static CString				m_tDrawWhiteRefresh;
+	static HANDLE				OpenComPort(const CString& PortSpecifier);
+	static void					CloseComPort(HANDLE hPort);
+	static bool					IsComPortOpened(HANDLE hPort);
+	static int					ReadByte(HANDLE port);
 
 	static void					DrawBlack();
 	static void					DrawWhite();
@@ -121,6 +111,15 @@ protected:
 	void						SetPortCom2();
 	void						SetPortCom3();
 	void						SetPortCom4();
+	CMenu*						ResetPortsMenuItems();
+	void						GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported);
+	static void					CheckRefreshMutex();
+	static void					AppendError(const CString& error);
+	static BOOL					AcquireRefreshMutex();
+	static void					ReleaseRefreshMutex();
+	static void					CloseRefreshMutex();
+
+	static void SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults);
 	//End Skewjo's stuff
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -146,7 +145,7 @@ protected:
 	CFont						m_font;
 	CRichEditCtrl				m_richEditCtrl;
 
-	static CString						m_strStatus;
+	static CString				m_strStatus;
 	CString						m_strInstallPath;
 
 	CRTSSProfileInterface		m_profileInterface;
