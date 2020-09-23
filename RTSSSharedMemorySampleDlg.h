@@ -112,7 +112,7 @@ protected:
 	void						SetPortCom3();
 	void						SetPortCom4();
 	CMenu*						ResetPortsMenuItems();
-	void						GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported);
+	//void						GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported);
 	static void					CheckRefreshMutex();
 	static void					AppendError(const CString& error);
 	static BOOL					AcquireRefreshMutex();

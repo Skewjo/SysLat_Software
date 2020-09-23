@@ -196,7 +196,6 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 
 
 	//init timer
-
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);
 	
 	// init timer for Skewjo...
@@ -597,7 +596,7 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 	BOOL bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
 
 	CGroupedString strOSDBuilder(dwMaxTextSize - 1);
-	GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
+	//GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 
 	BOOL bTruncated = FALSE;
 	CString strOSD = strOSDBuilder.Get(bTruncated);
@@ -630,18 +629,18 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 	time(&m_elapsedTimeEnd);
 
 	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
-	int minutes = (int)dif / 60;
-	int seconds = (int)dif % 60;
+	int minutes = static_cast<int>(dif) / 60;
+	int seconds = static_cast<int>(dif) % 60;
 
 	double measurementsPerSecond = m_LoopCounterRefresh / dif;
 
-	m_strStatus.AppendFormat("\n\nElapsed Time: %02d:%02d", minutes, seconds);
-	m_strStatus.AppendFormat("\n\nSystem Latency: %s", m_arduinoResultsComplete);
-	m_strStatus.AppendFormat("\n\nLoop Counter : %d", m_LoopCounterRefresh);
-	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.4f", measurementsPerSecond);
-	m_strStatus.AppendFormat("\n\nSystem Latency Average: %.4f", m_systemLatencyAverage);
-	//m_strStatus.AppendFormat("\n\nLoop Counter EVR: %d (expected value range, 3-100)", m_loopCounterEVR);
-	m_strStatus.AppendFormat("\n\nSystem Latency Average(EVR): %.4f", m_systemLatencyAverageEVR);
+	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
+	m_strStatus.AppendFormat("\nSystem Latency: %s", m_arduinoResultsComplete);
+	m_strStatus.AppendFormat("\nLoop Counter : %d", m_LoopCounterRefresh);
+	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.2f", measurementsPerSecond);
+	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_systemLatencyAverage);
+	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_loopCounterEVR);
+	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_systemLatencyAverageEVR);
 
 	if (!m_strError.IsEmpty())
 	{
@@ -653,7 +652,7 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 
 	ReleaseRefreshMutex();		// end the sync access to fields
 }
-void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
+/*void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
 {
 	if (bFormatTagsSupported && bObjTagsSupported)
 	{
@@ -665,7 +664,8 @@ void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTag
 		//overlap with text slots displayed by other applications, so in this demo we explicitly disable this tag usage if more than
 		//one client is currently rendering something in OSD
 	}
-}
+}*/
+
 void CRTSSSharedMemorySampleDlg::CheckRefreshMutex()
 {
 	if (m_refreshMutex == NULL)
@@ -707,6 +707,7 @@ void CRTSSSharedMemorySampleDlg::CloseRefreshMutex()
 		m_refreshMutex = NULL;
 	}
 }
+
 void CRTSSSharedMemorySampleDlg::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
 {
 	if (m_profileInterface.IsInitialized())
@@ -775,6 +776,7 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 			}
 		}
 
+		//I think this should be happening in a different thread so that the serial reads can continue uninterrupted
 		SetArduinoResultsComplete(loopCounter, arduinoResults);
 	}
 
@@ -796,12 +798,12 @@ void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCoun
 	if (!m_arduinoResultsComplete.IsEmpty()) {
 		systemLatency = StrToInt(m_arduinoResultsComplete);
 		m_systemLatencyTotal += systemLatency;
-		m_systemLatencyAverage = m_systemLatencyTotal / loopCounter; //when I try to make one of these a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit...
+		m_systemLatencyAverage = static_cast<double>(m_systemLatencyTotal) / loopCounter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit...
 
 		if (systemLatency > 3 && systemLatency < 100) {
 			m_loopCounterEVR++;
 			m_systemLatencyTotalEVR += systemLatency;
-			m_systemLatencyAverageEVR = m_systemLatencyTotalEVR / m_loopCounterEVR;
+			m_systemLatencyAverageEVR = static_cast<double>(m_systemLatencyTotalEVR) / m_loopCounterEVR;
 		}
 	}
 
