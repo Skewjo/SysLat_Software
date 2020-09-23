@@ -932,6 +932,7 @@ int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
 
 	BYTE Byte;
 	DWORD dwBytesTransferred;
+	//ReadFile(hPort, &Byte, 1, &dwBytesTransferred, 0);
 	if (FALSE == ReadFile(hPort, &Byte, 1, &dwBytesTransferred, 0)) //read 1
 		retVal = 0x101;
 	retVal = Byte;
