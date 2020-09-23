@@ -11,7 +11,6 @@
 /////////////////////////////////////////////////////////////////////////////
 #include "RTSSSharedMemory.h"
 #include "RTSSProfileInterface.h"
-#include "SerialCommHelper.h"
 #include <string>
 #include <time.h>
 
