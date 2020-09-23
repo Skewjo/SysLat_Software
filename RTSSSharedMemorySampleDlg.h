@@ -80,6 +80,7 @@ protected:
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
 	
 	static bool					m_debugMode;
+	
 	static CString				m_PortSpecifier;
 
 	static int					m_systemLatencyTotal;
@@ -87,12 +88,14 @@ protected:
 	static int					m_loopCounterEVR;
 	static int					m_systemLatencyTotalEVR; //EVR stands for expected value range
 	static double				m_systemLatencyAverageEVR;
+	
 
 	static CString				m_arduinoResultsComplete;
 	static unsigned int			m_loopSize;
 	static unsigned int			m_LoopCounterRefresh;
 
 	static CString				m_strError;
+
 	static HANDLE				m_refreshMutex;
 
 	static unsigned int __stdcall		CreateDrawingThread(void* data);
