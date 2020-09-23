@@ -27,36 +27,18 @@ static char THIS_FILE[] = __FILE__;
 
 //Define static variables - these should probably be done as an inline...
 CString CRTSSSharedMemorySampleDlg::m_strStatus = "";
-CString	CRTSSSharedMemorySampleDlg::m_arduinoResults = "";
-CString CRTSSSharedMemorySampleDlg::m_tLoopCounter = "";
-CString	CRTSSSharedMemorySampleDlg::m_tInnerLoopTimer = "";
-CString	CRTSSSharedMemorySampleDlg::m_tOuterLoopTimer = "";
-CString	CRTSSSharedMemorySampleDlg::m_tDrawWhite = "";
-
-
 CString CRTSSSharedMemorySampleDlg::m_arduinoResultsComplete = "";
-CString CRTSSSharedMemorySampleDlg::m_arduinoResultsRefresh = "";
-CString	CRTSSSharedMemorySampleDlg::m_tLoopCounterRefresh = "";
-CString CRTSSSharedMemorySampleDlg::m_tInnerLoopTimerRefresh = "";
-CString CRTSSSharedMemorySampleDlg::m_tOuterLoopTimerRefresh = "";
-CString CRTSSSharedMemorySampleDlg::m_tDrawWhiteRefresh = "";
-
-
-bool CRTSSSharedMemorySampleDlg::debugMode = true;
-CString CRTSSSharedMemorySampleDlg::PortOption = "COM3";
-CString CRTSSSharedMemorySampleDlg::PortSpecifier = CString(_T(PortOption));
-int CRTSSSharedMemorySampleDlg::serialReadData = 0;
-LARGE_INTEGER CRTSSSharedMemorySampleDlg::begin = { 0 };
-LARGE_INTEGER CRTSSSharedMemorySampleDlg::end = { 0 };
-LARGE_INTEGER CRTSSSharedMemorySampleDlg::frequency = { 0 };
-
-int CRTSSSharedMemorySampleDlg::systemLatencyTotal = 0;
-double CRTSSSharedMemorySampleDlg::systemLatencyAverage = 0;
-int CRTSSSharedMemorySampleDlg::loopCounterEVR = 0;
-int CRTSSSharedMemorySampleDlg::systemLatencyTotalEVR = 0;
-double CRTSSSharedMemorySampleDlg::systemLatencyAverageEVR = 0;
-
-
+unsigned int CRTSSSharedMemorySampleDlg::m_LoopCounterRefresh = 0;
+unsigned int CRTSSSharedMemorySampleDlg::m_loopSize = 0xFFFFFFFF;
+bool CRTSSSharedMemorySampleDlg::m_debugMode = true;
+CString CRTSSSharedMemorySampleDlg::m_PortSpecifier = "COM3";
+int CRTSSSharedMemorySampleDlg::m_systemLatencyTotal = 0;
+double CRTSSSharedMemorySampleDlg::m_systemLatencyAverage = 0;
+int CRTSSSharedMemorySampleDlg::m_loopCounterEVR = 0;
+int CRTSSSharedMemorySampleDlg::m_systemLatencyTotalEVR = 0;
+double CRTSSSharedMemorySampleDlg::m_systemLatencyAverageEVR = 0;
+HANDLE CRTSSSharedMemorySampleDlg::m_refreshMutex = NULL;
+CString CRTSSSharedMemorySampleDlg::m_strError = "";
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -214,18 +196,20 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 
 
 	//init timer
-
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);
 	
-	//init timer for Skewjo...
-	time(&elapsedTimeStart);
+	// init timer for Skewjo...
+	time(&m_elapsedTimeStart);
+
+	// init mutex for refresh operation
+	m_refreshMutex = CreateMutex(NULL, FALSE, NULL);
 
 	Refresh();
 
 	unsigned int myCounter = 0;
 	//HANDLE myhandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, 0, 0, 0);
 	HANDLE myhandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
-	SetThreadPriority(myhandle, 31);// highest possible thread priority? - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
+	SetThreadPriority(myhandle, THREAD_PRIORITY_ABOVE_NORMAL);// highest possible thread priority? - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
 	//AfxBeginThread()
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -291,6 +275,8 @@ void CRTSSSharedMemorySampleDlg::OnDestroy()
 	while (PeekMessage(&msg, m_hWnd, WM_TIMER, WM_TIMER, PM_REMOVE));
 
 	ReleaseOSD();
+
+	CloseRefreshMutex();
 
 	CDialog::OnDestroy();
 }
@@ -594,163 +580,8 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 			m_profileInterface.Init(m_strInstallPath);
 	}
 
-	//init shared memory version
-
-	DWORD dwSharedMemoryVersion = GetSharedMemoryVersion();
-
-	//init max OSD text size, we'll use extended text slot for v2.7 and higher shared memory, 
-	//it allows displaying 4096 symbols /instead of 256 for regular text slot
-
-	DWORD dwMaxTextSize = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
-
-	CGroupedString groupedString(dwMaxTextSize - 1);
-	// RivaTuner based products use similar CGroupedString object for convenient OSD text formatting and length control
-	// You may use it to format your OSD similar to RivaTuner's one or just use your own routines to format OSD text
-
-	BOOL bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);
-	//text format tags are supported for shared memory v2.11 and higher
-	BOOL bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);
-	//embedded object tags are supporoted for shared memory v2.12 and higher
-
-	CString strOSD;
-
-	if (bFormatTagsSupported && m_bFormatTags)
-	{
-		if (GetClientsNum() == 1)
-			strOSD += "<P=0,10>";
-		//move to position 0,10 (in zoomed pixel units)
-
-		//Note: take a note that position is specified in absolute coordinates so use this tag with caution because your text may
-		//overlap with text slots displayed by other applications, so in this demo we explicitly disable this tag usage if more than
-		//one client is currently rendering something in OSD
-
-		strOSD = "";
-
-	}
-	else
-		strOSD = "";
-
-	BOOL bTruncated = FALSE;
-
-	//Make my own fucking clock...
-	time(&elapsedTimeEnd);
-	double dif = difftime(elapsedTimeEnd, elapsedTimeStart);
-	int minutes = (int)dif / 60;
-	int seconds = (int)dif % 60;
-	char aMinutes[2];
-	char aSeconds[2];
-	std::string elapsedMinutes = itoa(minutes, aMinutes, 10);
-	std::string elapsedSeconds = itoa(seconds, aSeconds, 10);
-
 	m_strStatus = "";
 
-	m_strStatus += "Elapsed Time: ";
-	if (minutes < 10) m_strStatus += "0";
-	m_strStatus += elapsedMinutes.c_str();
-	m_strStatus += ":";
-	if (seconds < 10) m_strStatus += "0";
-	m_strStatus += elapsedSeconds.c_str();
-	m_strStatus += "\n\nSystem Latency: ";
-	m_strStatus += m_arduinoResultsComplete;
-	m_strStatus += "\nLoop Counter: ";
-	m_strStatus += m_tLoopCounterRefresh;
-	
-	m_strStatus += "\nMeasurements Per Second: ";
-	double measurementsPerSecond = StrToInt(m_tLoopCounterRefresh) / dif;
-	char buffer3[4];
-	gcvt(measurementsPerSecond, 4, buffer3);
-	m_strStatus.Append(buffer3);
-
-	m_strStatus += "\nSystem Latency Average: ";
-	char buffer[4];
-	gcvt(systemLatencyAverage, 4, buffer);
-	m_strStatus.Append(buffer);
-
-	m_strStatus.Append("\n\nExpected value range 3-100\nLoop Counter(EVR): ");
-	//m_strStatus += loopCounterEVR;
-	m_strStatus.Append("\nSystem Latency Average(EVR): ");
-	char buffer2[4];
-	gcvt(systemLatencyAverageEVR, 4, buffer2);
-	m_strStatus.Append(buffer2);
-	//m_strStatus.Append("\0");
-
-	
-	
-	//m_strStatus += systemLatencyAverage;
-	//m_strStatus += m_tInnerLoopTimerRefresh;
-	//m_strStatus += m_tOuterLoopTimerRefresh;
-	//m_strStatus += m_tDrawWhiteRefresh;
-
-
-
-	if (!strOSD.IsEmpty())
-	//if (!m_strStatus.IsEmpty())
-	{
-		BOOL bResult = UpdateOSD(strOSD);
-
-		m_bConnected = bResult;
-
-		if (bResult)
-		{
-			if (bTruncated)
-				m_strStatus += "\n\nWarning!\nThe text is too long to be displayed in OSD, some info has been truncated!";
-		}
-		else
-		{
-
-			if (m_strInstallPath.IsEmpty())
-				m_strStatus = "Failed to connect to RTSS shared memory!\n\nHints:\n-Install RivaTuner Statistics Server";
-			else
-				m_strStatus = "Failed to connect to RTSS shared memory!\n\nHints:\n-Press <Space> to start RivaTuner Statistics Server";
-		}
-
-
-		m_richEditCtrl.SetWindowText(m_strStatus);
-	}
-	//This else was added by me, but feels wrong...
-	else {
-		m_richEditCtrl.SetWindowText(m_strStatus);
-	}
-}
-//the following is an overload of the Refresh method I modified and used before I discovered the "UpdateOSD" method
-/*
-void CRTSSSharedMemorySampleDlg::Refresh(CString externalString)
-{
-	//init RivaTuner Statistics Server installation path
-
-	if (m_strInstallPath.IsEmpty())
-	{
-		HKEY hKey;
-
-		if (ERROR_SUCCESS == RegOpenKey(HKEY_LOCAL_MACHINE, "Software\\Unwinder\\RTSS", &hKey))
-		{
-			char buf[MAX_PATH];
-
-			DWORD dwSize = MAX_PATH;
-			DWORD dwType;
-
-			if (ERROR_SUCCESS == RegQueryValueEx(hKey, "InstallPath", 0, &dwType, (LPBYTE)buf, &dwSize))
-			{
-				if (dwType == REG_SZ)
-					m_strInstallPath = buf;
-			}
-
-			RegCloseKey(hKey);
-		}
-	}
-
-	//validate RivaTuner Statistics Server installation path
-
-	if (_taccess(m_strInstallPath, 0))
-		m_strInstallPath = "";
-
-	//init profile interface 
-
-	if (!m_strInstallPath.IsEmpty())
-	{
-		if (!m_profileInterface.IsInitialized())
-			m_profileInterface.Init(m_strInstallPath);
-	}
 
 	//init shared memory version
 
@@ -761,36 +592,14 @@ void CRTSSSharedMemorySampleDlg::Refresh(CString externalString)
 
 	DWORD dwMaxTextSize = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
 
-	CGroupedString groupedString(dwMaxTextSize - 1);
-	// RivaTuner based products use similar CGroupedString object for convenient OSD text formatting and length control
-	// You may use it to format your OSD similar to RivaTuner's one or just use your own routines to format OSD text
+	BOOL bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
+	BOOL bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
 
-	BOOL bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);
-	//text format tags are supported for shared memory v2.11 and higher
-	BOOL bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);
-	//embedded object tags are supporoted for shared memory v2.12 and higher
-
-	CString strOSD;
-
-	if (bFormatTagsSupported && m_bFormatTags)
-	{
-		if (GetClientsNum() == 1)
-			strOSD += "<P=0,10>";
-		//move to position 0,10 (in zoomed pixel units)
-
-		//Note: take a note that position is specified in absolute coordinates so use this tag with caution because your text may
-		//overlap with text slots displayed by other applications, so in this demo we explicitly disable this tag usage if more than
-		//one client is currently rendering something in OSD
-
-		strOSD = externalString;
-
-	}
-	else
-		strOSD = "";
+	CGroupedString strOSDBuilder(dwMaxTextSize - 1);
+	//GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 
 	BOOL bTruncated = FALSE;
-
-
+	CString strOSD = strOSDBuilder.Get(bTruncated);
 	if (!strOSD.IsEmpty())
 	{
 		BOOL bResult = UpdateOSD(strOSD);
@@ -800,22 +609,105 @@ void CRTSSSharedMemorySampleDlg::Refresh(CString externalString)
 		if (bResult)
 		{
 			if (bTruncated)
-				m_strStatus += "\n\nWarning!\nThe text is too long to be displayed in OSD, some info has been truncated!";
+				AppendError("Warning: The text is too long to be displayed in OSD, some info has been truncated!");
 		}
 		else
 		{
 
 			if (m_strInstallPath.IsEmpty())
-				m_strStatus = "Failed to connect to RTSS shared memory!\n\nHints:\n-Install RivaTuner Statistics Server";
+				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Install RivaTuner Statistics Server");
 			else
-				m_strStatus = "Failed to connect to RTSS shared memory!\n\nHints:\n-Press <Space> to start RivaTuner Statistics Server";
+				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Press <Space> to start RivaTuner Statistics Server");
 		}
+	}
 
+	BOOL success = AcquireRefreshMutex();		// begin the sync access to fields
+	if (!success)
+		return;
 
-		m_richEditCtrl.SetWindowText(m_strStatus);
+	//Make my own fucking clock...
+	time(&m_elapsedTimeEnd);
+
+	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
+	int minutes = static_cast<int>(dif) / 60;
+	int seconds = static_cast<int>(dif) % 60;
+
+	double measurementsPerSecond = m_LoopCounterRefresh / dif;
+
+	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
+	m_strStatus.AppendFormat("\nSystem Latency: %s", m_arduinoResultsComplete);
+	m_strStatus.AppendFormat("\nLoop Counter : %d", m_LoopCounterRefresh);
+	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.2f", measurementsPerSecond);
+	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_systemLatencyAverage);
+	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_loopCounterEVR);
+	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_systemLatencyAverageEVR);
+
+	if (!m_strError.IsEmpty())
+	{
+		m_strStatus.Append(m_strError);
+		m_strError = "";
+	}
+
+	m_richEditCtrl.SetWindowText(m_strStatus);
+
+	ReleaseRefreshMutex();		// end the sync access to fields
+}
+/*void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
+{
+	if (bFormatTagsSupported && bObjTagsSupported)
+	{
+		//if (GetClientsNum() == 1)
+		//	osd.Add("<P=0,10>", "Skewjo's stuff", "|");
+		//move to position 0,10 (in zoomed pixel units)
+
+		//Note: take a note that position is specified in absolute coordinates so use this tag with caution because your text may
+		//overlap with text slots displayed by other applications, so in this demo we explicitly disable this tag usage if more than
+		//one client is currently rendering something in OSD
+	}
+}*/
+
+void CRTSSSharedMemorySampleDlg::CheckRefreshMutex()
+{
+	if (m_refreshMutex == NULL)
+	{
+		AppendError("Error: Failed to create mutex");
 	}
 }
-*/
+void CRTSSSharedMemorySampleDlg::AppendError(const CString& error)
+{
+	AcquireRefreshMutex();
+
+	if (!m_strError.IsEmpty())
+		m_strError.Append("\n");
+	m_strError.Append(error);
+
+	ReleaseRefreshMutex();
+}
+BOOL CRTSSSharedMemorySampleDlg::AcquireRefreshMutex()
+{
+	if (m_refreshMutex != NULL)
+	{
+		return WAIT_ABANDONED != WaitForSingleObject(m_refreshMutex, INFINITE);
+	}
+
+	return TRUE;
+}
+void CRTSSSharedMemorySampleDlg::ReleaseRefreshMutex()
+{
+	if (m_refreshMutex != NULL)
+	{
+		ReleaseMutex(m_refreshMutex);
+	}
+}
+void CRTSSSharedMemorySampleDlg::CloseRefreshMutex()
+{
+	if (m_refreshMutex != NULL)
+	{
+		CloseHandle(m_refreshMutex);
+		m_refreshMutex = NULL;
+	}
+}
+
 void CRTSSSharedMemorySampleDlg::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
 {
 	if (m_profileInterface.IsInitialized())
@@ -844,163 +736,96 @@ void CRTSSSharedMemorySampleDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpP
 		m_profileInterface.UpdateProfiles();
 	}
 }
+unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data) 
+{
+	HANDLE hPort = OpenComPort(m_PortSpecifier);
 
-
-unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data) {
-	unsigned int& loopIncrementer = *((unsigned int*)data); //??
-	
-	std::stringstream sst;
-
-	LARGE_INTEGER begin1 = { 0 };
-	LARGE_INTEGER end1 = { 0 };
-	double PCFreq;
-	
-	int loopCounter = 0;
-	loopCounterEVR = 0;
-
-	double totalReadTime = 0;
-	double avgReadTime = 0;
-	int totalReadLoops = 0;
-	float avgReadLoops = 0;
-
-
-	if (debugMode) {
-		QueryPerformanceFrequency(&frequency);
-		PCFreq = double(frequency.QuadPart) / 1000.0;
+	if (!IsComPortOpened(hPort))
+	{
+		AppendError("Failed to open the COM port");
+		return 0;
 	}
-	
+
+	int serialReadData = 0;
+
+	CString	arduinoResults;
+
 	//Need to DrawBlack box once before loop starts
 	DrawBlack();
 
-	while (loopIncrementer < 0xFFFFFFFF) {
-		loopCounter++;
-		
-		m_tLoopCounter = "";
-		m_arduinoResults = "";
-		//m_tInnerLoopTimer = "";
-		//m_tOuterLoopTimer = "";
-		//m_tDrawWhite = "";
-		if (debugMode) {
-			sst << loopCounter;
-			m_tLoopCounter += (sst.str().c_str());
-			sst.str(std::string()); //most efficient way to empty the stingstream?
-			QueryPerformanceCounter(&begin);
-		}
-		m_tLoopCounterRefresh = m_tLoopCounter;
-
+	for(unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
+	{
 		while (serialReadData != 65) {
-			serialReadData = ReadByte(PortSpecifier);
+			serialReadData = ReadByte(hPort);
 		}
 		DrawWhite();
 		Sleep(100); //Can't remember why I had this sleep here, but it was necessary 2 years ago...
 
 		while (serialReadData != 66) {
-			serialReadData = ReadByte(PortSpecifier);
+			serialReadData = ReadByte(hPort);
 		}
 		DrawBlack();
 		Sleep(100); // Ok, these sleeps definitely coincide with synching the microcontroller and the PC.  Even just 10 ms each seems to help for some stupid reason. 
 
+		arduinoResults = "";
 		
 		while (serialReadData != 67) {
-			serialReadData = ReadByte(PortSpecifier);
+			serialReadData = ReadByte(hPort);
 			if (serialReadData != 67 && serialReadData != 65 && serialReadData != 66) {
-				m_arduinoResults += (char)serialReadData;
+				arduinoResults += (char)serialReadData;
 			}
 		}
-		m_arduinoResultsComplete = m_arduinoResults;
 
-		
-		int systemLatency = 0;
-		if (!m_arduinoResultsComplete.IsEmpty()) {
-			systemLatency = StrToInt(m_arduinoResultsComplete);
-			systemLatencyTotal += systemLatency;
-			systemLatencyAverage = systemLatencyTotal / loopCounter; //when I try to make one of these a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit...
-
-			if (systemLatency > 3 && systemLatency < 100) {
-				loopCounterEVR++;
-				systemLatencyTotalEVR += systemLatency;
-				systemLatencyAverageEVR = systemLatencyTotalEVR / loopCounterEVR; 
-			}
-		}
-		
-
-		/*if (debugMode) {
-	QueryPerformanceCounter(&end);
-	//ugh... do I have to use a stringstream for this?
-	m_tOuterLoopTimer += "Total old read loop time: \t";
-	sst << double(end.QuadPart - begin.QuadPart) / PCFreq << " ms" << std::endl;
-	m_tOuterLoopTimer += (sst.str().c_str());
-	sst.str(std::string()); //most efficient way to empty the stingstream?
-}*/
-		++loopIncrementer;
-		
+		//I think this should be happening in a different thread so that the serial reads can continue uninterrupted
+		SetArduinoResultsComplete(loopCounter, arduinoResults);
 	}
+
+	CloseComPort(hPort);
 
 	return 0;
 }
-
-/*
-bool CRTSSSharedMemorySampleDlg::WriteComPort(CString PortSpecifier, CString data)
+void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults)
 {
-	//DCB dcb;
-	DCB dcb = { 0 };
-	dcb.DCBlength = sizeof(DCB);
+	BOOL success = AcquireRefreshMutex();		// begin the sync access to fields
+	if (!success)
+		return;
 
-	DWORD byteswritten;
-	HANDLE hPort = CreateFile(
-		PortSpecifier,
-		GENERIC_WRITE,
-		0,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL
-	);
-	//if (!GetCommState(hPort, &dcb))
-	//	return false;
-	if (!::GetCommState(hPort, &dcb))
-	{
-		TRACE("CSerialCommHelper : Failed to Get Comm State Reason:% d",GetLastError());
-			return E_FAIL;
+	m_LoopCounterRefresh = loopCounter;
+
+	m_arduinoResultsComplete = arduinoResults;
+
+	int systemLatency = 0;
+	if (!m_arduinoResultsComplete.IsEmpty()) {
+		systemLatency = StrToInt(m_arduinoResultsComplete);
+		m_systemLatencyTotal += systemLatency;
+		m_systemLatencyAverage = static_cast<double>(m_systemLatencyTotal) / loopCounter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit...
+
+		if (systemLatency > 3 && systemLatency < 100) {
+			m_loopCounterEVR++;
+			m_systemLatencyTotalEVR += systemLatency;
+			m_systemLatencyAverageEVR = static_cast<double>(m_systemLatencyTotalEVR) / m_loopCounterEVR;
+		}
 	}
 
-	dcb.BaudRate = CBR_9600; //9600 Baud
-	dcb.ByteSize = 8; //8 data bits
-	dcb.Parity = NOPARITY; //no parity
-	dcb.StopBits = ONESTOPBIT; //1 stop
-	
-	//if (!SetCommState(hPort, &dcb))
-	//	return false;
-	if (!::SetCommState(hPort, &dcb))
-	{
-		ASSERT(0);
-		TRACE("CSerialCommHelper : Failed to Set Comm State Reason:% d",GetLastError());
-			return E_FAIL;
-	}
-
-	bool retVal = WriteFile(hPort, data, 1, &byteswritten, NULL);
-	CloseHandle(hPort); //close the handle
-
-	return retVal;
+	ReleaseRefreshMutex();		// end the sync access to fields
 }
-*/
+HANDLE CRTSSSharedMemorySampleDlg::OpenComPort(const CString& PortSpecifier)
+{
+	return CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+}
+void CRTSSSharedMemorySampleDlg::CloseComPort(HANDLE hPort)
+{
+	// PurgeComm(hPort, PURGE_RXCLEAR);	// it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
 
-int CRTSSSharedMemorySampleDlg::ReadByte(CString PortSpecifier)
+	CloseHandle(hPort);
+}
+bool CRTSSSharedMemorySampleDlg::IsComPortOpened(HANDLE hPort)
+{
+	return hPort != INVALID_HANDLE_VALUE;
+}
+int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
 {
 	DCB dcb;
-	int retVal;
-	BYTE Byte;
-	DWORD dwBytesTransferred;
-	DWORD dwCommModemStatus;
-	HANDLE hPort = CreateFile(
-		PortSpecifier,
-		GENERIC_READ,
-		0,
-		NULL,
-		OPEN_EXISTING,
-		0,
-		NULL
-	);
 	if (!GetCommState(hPort, &dcb))
 		return 0x100;
 	dcb.BaudRate = CBR_9600; //9600 Baud
@@ -1011,68 +836,73 @@ int CRTSSSharedMemorySampleDlg::ReadByte(CString PortSpecifier)
 		return 0x100;
 	//need to check out EV_TXTEMPTY flag
 	SetCommMask(hPort, EV_RXCHAR | EV_ERR); //receive character event
+
+	int retVal;
+
+	DWORD dwCommModemStatus;
 	WaitCommEvent(hPort, &dwCommModemStatus, 0); //wait for character
+
 	if (dwCommModemStatus & EV_RXCHAR)
+	{
+		BYTE Byte;
+		DWORD dwBytesTransferred;
 		ReadFile(hPort, &Byte, 1, &dwBytesTransferred, 0); //read 1
+		retVal = Byte;
+	}
 	else if (dwCommModemStatus & EV_ERR)
+	{
 		retVal = 0x101;
-	retVal = Byte;
-	PurgeComm(hPort, PURGE_RXCLEAR);
-	CloseHandle(hPort);
+	}
+
+	PurgeComm(hPort, PURGE_RXCLEAR);	// it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
 	return retVal;
 }
-
-
-
-void CRTSSSharedMemorySampleDlg::DrawBlack() {
-	CString formatString;
-	formatString = "<P=0,0><L0><C=80000000><B=0,0>\b<C><C=000000><I=-2,0,384,384,128,128><C>";
-	UpdateOSD(formatString);
+void CRTSSSharedMemorySampleDlg::DrawBlack() 
+{
+	UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><C=000000><I=-2,0,384,384,128,128><C>");
 }
-void CRTSSSharedMemorySampleDlg::DrawWhite() {
-	CString formatString;
-	formatString = "<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><C=FFFFFF><I=-2,0,384,384,128,128><C>";
-	UpdateOSD(formatString);
+void CRTSSSharedMemorySampleDlg::DrawWhite() 
+{
+	UpdateOSD("<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><C=FFFFFF><I=-2,0,384,384,128,128><C>");
 }
-//There's a lot of repeated code in these 4 functions...
-void CRTSSSharedMemorySampleDlg::SetPortCom1() {
-	CMenu* settingsMenu = GetMenu();
+void CRTSSSharedMemorySampleDlg::SetPortCom1() 
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
 
 	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
 
-	PortOption = "COM1";
-	PortSpecifier = CString(_T(PortOption));
+	m_PortSpecifier = "COM1";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom2() {
-	CMenu* settingsMenu = GetMenu();
-	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
+void CRTSSSharedMemorySampleDlg::SetPortCom2() 
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
 	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_CHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
 
-	PortOption = "COM2";
-	PortSpecifier = CString(_T(PortOption));
+	m_PortSpecifier = "COM2";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom3() {
-	CMenu* settingsMenu = GetMenu();
-	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
+void CRTSSSharedMemorySampleDlg::SetPortCom3() 
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
 	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_CHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
 
-	PortOption = "COM3";
-	PortSpecifier = CString(_T(PortOption));
+	m_PortSpecifier = "COM3";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom4() {
-	CMenu* settingsMenu = GetMenu();
-	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
+void CRTSSSharedMemorySampleDlg::SetPortCom4() 
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
 	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
 
-	PortOption = "COM4";
-	PortSpecifier = CString(_T(PortOption));
+	m_PortSpecifier = "COM4";
+}
+CMenu* CRTSSSharedMemorySampleDlg::ResetPortsMenuItems()
+{
+	CMenu* settingsMenu = GetMenu();
+	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
+	return settingsMenu;
 }

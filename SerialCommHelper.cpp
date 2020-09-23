@@ -145,15 +145,21 @@ HRESULT CSerialCommHelper::Init(std::string szPortName, DWORD dwBaudRate, BYTE b
 			dcb.Parity, dcb.ByteSize, dcb.StopBits);
 
 
+		
 
 		//now set the timeouts ( we control the timeout overselves using WaitForXXX()
-		COMMTIMEOUTS timeouts;
+		//COMMTIMEOUTS timeouts;
 
+
+		//Suggestion from Maks:
+		COMMTIMEOUTS timeouts = { 0 };
 		timeouts.ReadIntervalTimeout = MAXDWORD;
+		/* No longer necessary with Maks' suggestions.
 		timeouts.ReadTotalTimeoutMultiplier = 0;
 		timeouts.ReadTotalTimeoutConstant = 0;
 		timeouts.WriteTotalTimeoutMultiplier = 0;
 		timeouts.WriteTotalTimeoutConstant = 0;
+		*/
 
 		if (!SetCommTimeouts(m_hCommPort, &timeouts))
 		{
