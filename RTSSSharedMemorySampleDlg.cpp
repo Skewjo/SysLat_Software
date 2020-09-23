@@ -738,10 +738,7 @@ void CRTSSSharedMemorySampleDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpP
 }
 unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data) 
 {
-	int TIMEOUT = 5;
-
 	HANDLE hPort = OpenComPort(m_PortSpecifier);
-	CString	m_localPortSpecifier = m_PortSpecifier;
 
 	if (!IsComPortOpened(hPort))
 	{
@@ -756,37 +753,23 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 	//Need to DrawBlack box once before loop starts
 	DrawBlack();
 
-	for (unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
+	for(unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
 	{
-		//This is not yet working properly if you attempt to use a port that's not active, unless you switch to a working port very quickly.
-		if (m_localPortSpecifier != m_PortSpecifier) {
-			CloseComPort(hPort);
-			hPort = OpenComPort(m_PortSpecifier);
-			m_localPortSpecifier = m_PortSpecifier;
-			if (!IsComPortOpened(hPort))
-			{
-				AppendError("Failed to open the COM port");
-				//return 0;
-			}
-		}
-
-
-		time_t start = time(NULL);
-		while (serialReadData != 65 && time(NULL) - start < TIMEOUT) {
+		while (serialReadData != 65) {
 			serialReadData = ReadByte(hPort);
 		}
 		DrawWhite();
-		//Sleep(100); //Can't remember why I had this sleep here, but it was necessary 2 years ago...
+		Sleep(100); //Can't remember why I had this sleep here, but it was necessary 2 years ago...
 
-		while (serialReadData != 66 && time(NULL) - start < TIMEOUT) {
+		while (serialReadData != 66) {
 			serialReadData = ReadByte(hPort);
 		}
 		DrawBlack();
-		//Sleep(100); // Ok, these sleeps definitely coincide with synching the microcontroller and the PC.  Even just 10 ms each seems to help for some stupid reason. 
+		Sleep(100); // Ok, these sleeps definitely coincide with synching the microcontroller and the PC.  Even just 10 ms each seems to help for some stupid reason. 
 
 		arduinoResults = "";
 		
-		while (serialReadData != 67 && time(NULL) - start < TIMEOUT) {
+		while (serialReadData != 67) {
 			serialReadData = ReadByte(hPort);
 			if (serialReadData != 67 && serialReadData != 65 && serialReadData != 66) {
 				arduinoResults += (char)serialReadData;
@@ -795,15 +778,12 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 
 		//I think this should be happening in a different thread so that the serial reads can continue uninterrupted
 		SetArduinoResultsComplete(loopCounter, arduinoResults);
-
-		
 	}
 
 	CloseComPort(hPort);
 
 	return 0;
 }
-
 void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults)
 {
 	BOOL success = AcquireRefreshMutex();		// begin the sync access to fields
@@ -827,21 +807,16 @@ void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCoun
 		}
 	}
 
-
-	//moving average
-
-	int a_movingAverage[10];
-
 	ReleaseRefreshMutex();		// end the sync access to fields
 }
-
-/*
 HANDLE CRTSSSharedMemorySampleDlg::OpenComPort(const CString& PortSpecifier)
 {
 	return CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 }
 void CRTSSSharedMemorySampleDlg::CloseComPort(HANDLE hPort)
 {
+	// PurgeComm(hPort, PURGE_RXCLEAR);	// it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
+
 	CloseHandle(hPort);
 }
 bool CRTSSSharedMemorySampleDlg::IsComPortOpened(HANDLE hPort)
@@ -882,67 +857,6 @@ int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
 	PurgeComm(hPort, PURGE_RXCLEAR);	// it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
 	return retVal;
 }
-
-*/
-
-
-HANDLE CRTSSSharedMemorySampleDlg::OpenComPort(const CString& PortSpecifier)
-{
-	HANDLE hPort = CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
-	if (hPort == INVALID_HANDLE_VALUE)
-		return INVALID_HANDLE_VALUE;
-	PurgeComm(hPort, PURGE_RXCLEAR);
-	DCB dcb = { 0 };
-	if (!GetCommState(hPort, &dcb))
-	{
-		CloseHandle(hPort);
-		return INVALID_HANDLE_VALUE;
-	}
-	dcb.BaudRate = CBR_9600; //9600 Baud
-	dcb.ByteSize = 8; //8 data bits
-	dcb.Parity = NOPARITY; //no parity
-	dcb.StopBits = ONESTOPBIT; //1 stop
-	if (!SetCommState(hPort, &dcb))
-	{
-		CloseHandle(hPort);
-		return INVALID_HANDLE_VALUE;
-	}
-
-	//need to check out EV_TXTEMPTY flag
-	SetCommMask(hPort, EV_RXCHAR | EV_ERR); //receive character event
-
-	// Read this carefully because timeouts are important
-	// https://docs.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-commtimeouts
-	COMMTIMEOUTS timeouts = { 0 };
-
-	return hPort;
-}
-void CRTSSSharedMemorySampleDlg::CloseComPort(HANDLE hPort)
-{
-	PurgeComm(hPort, PURGE_RXCLEAR);    // it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
-	CloseHandle(hPort);
-}
-bool CRTSSSharedMemorySampleDlg::IsComPortOpened(HANDLE hPort)
-{
-	return hPort != INVALID_HANDLE_VALUE;
-}
-int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
-{
-	int retVal;
-
-	BYTE Byte;
-	DWORD dwBytesTransferred;
-	if (FALSE == ReadFile(hPort, &Byte, 1, &dwBytesTransferred, 0)) //read 1
-		retVal = 0x101;
-	retVal = Byte;
-
-	return retVal;
-}
-
-
-
-
-
 void CRTSSSharedMemorySampleDlg::DrawBlack() 
 {
 	UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><C=000000><I=-2,0,384,384,128,128><C>");
