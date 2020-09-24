@@ -60,11 +60,13 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\RTSSSharedMemorySample.ico">
-      <Filter>Resource Files</Filter>
-    </None>
     <None Include="res\RTSSSharedMemorySample.rc2">
       <Filter>Resource Files</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="res\GRArialBlack.ico">
+      <Filter>Resource Files</Filter>
+    </Image>
   </ItemGroup>
 </Project>

@@ -56,6 +56,16 @@ END
 
 #endif    // APSTUDIO_INVOKED
 
+#endif    // Russian (Russia) resources
+/////////////////////////////////////////////////////////////////////////////
+
+
+/////////////////////////////////////////////////////////////////////////////
+// English resources
+
+#if !defined(AFX_RESOURCE_DLL) || defined(AFX_TARG_ENU)
+LANGUAGE LANG_ENGLISH, SUBLANG_NEUTRAL
+#pragma code_page(1252)
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -64,9 +74,9 @@ END
 
 // Icon with lowest ID value placed first to ensure application icon
 // remains consistent on all systems.
-IDR_MAINFRAME           ICON                    "res\\RTSSSharedMemorySample.ico"
+IDR_MAINFRAME           ICON                    "res\\GRArialBlack.ico"
 
-#endif    // Russian (Russia) resources
+#endif    // English resources
 /////////////////////////////////////////////////////////////////////////////
 
 
@@ -96,7 +106,7 @@ END
 IDD_RTSSSHAREDMEMORYSAMPLE_DIALOG DIALOGEX 0, 0, 350, 250
 STYLE DS_SETFONT | DS_MODALFRAME | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_APPWINDOW
-CAPTION "RTSS shared memory sample"
+CAPTION "System Latency Monitor"
 MENU IDR_MENU1
 FONT 8, "MS Sans Serif", 0, 0, 0x1
 BEGIN

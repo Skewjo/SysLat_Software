@@ -49,14 +49,14 @@ class CAboutDlg : public CDialog
 public:
 	CAboutDlg();
 
-// Dialog Data
-	//{{AFX_DATA(CAboutDlg)
+	// Dialog Data
+		//{{AFX_DATA(CAboutDlg)
 	enum { IDD = IDD_ABOUTBOX };
 	//}}AFX_DATA
 
 	// ClassWizard generated virtual function overrides
 	//{{AFX_VIRTUAL(CAboutDlg)
-	protected:
+protected:
 	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
 	//}}AFX_VIRTUAL
 
@@ -93,19 +93,19 @@ CRTSSSharedMemorySampleDlg::CRTSSSharedMemorySampleDlg(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 
-	m_hIcon						= AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_dwNumberOfProcessors		= 0;
-	m_pNtQuerySystemInformation	= NULL;
-	m_strStatus					= "";
-	m_strInstallPath			= "";
+	m_dwNumberOfProcessors = 0;
+	m_pNtQuerySystemInformation = NULL;
+	m_strStatus = "";
+	m_strInstallPath = "";
 
-	m_bMultiLineOutput			= TRUE;
-	m_bFormatTags				= TRUE;
-	m_bFillGraphs				= FALSE;
-	m_bConnected				= FALSE;
+	m_bMultiLineOutput = TRUE;
+	m_bFormatTags = TRUE;
+	m_bFillGraphs = FALSE;
+	m_bConnected = FALSE;
 
-	m_dwHistoryPos				= 0;
+	m_dwHistoryPos = 0;
 }
 void CRTSSSharedMemorySampleDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -161,10 +161,10 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 
 	if (pPlaceholder)
 	{
-		CRect rect; 
+		CRect rect;
 		pPlaceholder->GetClientRect(&rect);
 
-		if (!m_richEditCtrl.Create(WS_VISIBLE|ES_READONLY|ES_MULTILINE|ES_AUTOHSCROLL|WS_HSCROLL|ES_AUTOVSCROLL|WS_VSCROLL, rect, this, 0))
+		if (!m_richEditCtrl.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, this, 0))
 			return FALSE;
 
 		m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
@@ -174,30 +174,30 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 	//init CPU usage calculation related variables	
 
 	SYSTEM_INFO info;
-	GetSystemInfo(&info); 
+	GetSystemInfo(&info);
 
-	m_dwNumberOfProcessors		= info.dwNumberOfProcessors;
+	m_dwNumberOfProcessors = info.dwNumberOfProcessors;
 	m_pNtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddress(GetModuleHandle("NTDLL"), "NtQuerySystemInformation");
 
-	for (DWORD dwCpu=0; dwCpu<MAX_CPU; dwCpu++)
+	for (DWORD dwCpu = 0; dwCpu < MAX_CPU; dwCpu++)
 	{
-		m_idleTime[dwCpu].QuadPart			= 0;
-		m_fltCpuUsage[dwCpu]				= FLT_MAX;
-		m_dwTickCount[dwCpu]				= 0;
+		m_idleTime[dwCpu].QuadPart = 0;
+		m_fltCpuUsage[dwCpu] = FLT_MAX;
+		m_dwTickCount[dwCpu] = 0;
 
-		for (DWORD dwPos=0; dwPos<MAX_HISTORY; dwPos++)
+		for (DWORD dwPos = 0; dwPos < MAX_HISTORY; dwPos++)
 			m_fltCpuUsageHistory[dwCpu][dwPos] = FLT_MAX;
 	}
 
 	//init RAM usage history
 
-	for (DWORD dwPos=0; dwPos<MAX_HISTORY; dwPos++)
+	for (DWORD dwPos = 0; dwPos < MAX_HISTORY; dwPos++)
 		m_fltRamUsageHistory[dwPos] = FLT_MAX;
 
 
 	//init timer
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);
-	
+
 	// init timer for Skewjo...
 	time(&m_elapsedTimeStart);
 
@@ -232,13 +232,13 @@ void CRTSSSharedMemorySampleDlg::OnSysCommand(UINT nID, LPARAM lParam)
 //  to draw the icon.  For MFC applications using the document/view model,
 //  this is automatically done for you by the framework.
 /////////////////////////////////////////////////////////////////////////////
-void CRTSSSharedMemorySampleDlg::OnPaint() 
+void CRTSSSharedMemorySampleDlg::OnPaint()
 {
 	if (IsIconic())
 	{
 		CPaintDC dc(this); // device context for painting
 
-		SendMessage(WM_ICONERASEBKGND, (WPARAM) dc.GetSafeHdc(), 0);
+		SendMessage(WM_ICONERASEBKGND, (WPARAM)dc.GetSafeHdc(), 0);
 
 		// Center icon in client rectangle
 		int cxIcon = GetSystemMetrics(SM_CXICON);
@@ -257,21 +257,21 @@ void CRTSSSharedMemorySampleDlg::OnPaint()
 }
 HCURSOR CRTSSSharedMemorySampleDlg::OnQueryDragIcon()
 {
-	return (HCURSOR) m_hIcon;
+	return (HCURSOR)m_hIcon;
 }
-void CRTSSSharedMemorySampleDlg::OnTimer(UINT nIDEvent) 
+void CRTSSSharedMemorySampleDlg::OnTimer(UINT nIDEvent)
 {
 	Refresh();
 	CDialog::OnTimer(nIDEvent);
 }
-void CRTSSSharedMemorySampleDlg::OnDestroy() 
+void CRTSSSharedMemorySampleDlg::OnDestroy()
 {
 	if (m_nTimerID)
 		KillTimer(m_nTimerID);
 
 	m_nTimerID = NULL;
 
-	MSG msg; 
+	MSG msg;
 	while (PeekMessage(&msg, m_hWnd, WM_TIMER, WM_TIMER, PM_REMOVE));
 
 	ReleaseOSD();
@@ -282,18 +282,18 @@ void CRTSSSharedMemorySampleDlg::OnDestroy()
 }
 DWORD CRTSSSharedMemorySampleDlg::GetSharedMemoryVersion()
 {
-	DWORD dwResult	= 0;
+	DWORD dwResult = 0;
 
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
 	if (hMapFile)
 	{
-		LPVOID pMapAddr				= MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-		LPRTSS_SHARED_MEMORY pMem	= (LPRTSS_SHARED_MEMORY)pMapAddr;
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
 
 		if (pMem)
 		{
-			if ((pMem->dwSignature == 'RTSS') && 
+			if ((pMem->dwSignature == 'RTSS') &&
 				(pMem->dwVersion >= 0x00020000))
 				dwResult = pMem->dwVersion;
 
@@ -307,25 +307,25 @@ DWORD CRTSSSharedMemorySampleDlg::GetSharedMemoryVersion()
 }
 DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
 {
-	DWORD dwResult	= 0;
+	DWORD dwResult = 0;
 
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
 	if (hMapFile)
 	{
-		LPVOID pMapAddr				= MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-		LPRTSS_SHARED_MEMORY pMem	= (LPRTSS_SHARED_MEMORY)pMapAddr;
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
 
 		if (pMem)
 		{
-			if ((pMem->dwSignature == 'RTSS') && 
+			if ((pMem->dwSignature == 'RTSS') &&
 				(pMem->dwVersion >= 0x00020000))
 			{
-				for (DWORD dwPass=0; dwPass<2; dwPass++)
+				for (DWORD dwPass = 0; dwPass < 2; dwPass++)
 					//1st pass : find previously captured OSD slot
 					//2nd pass : otherwise find the first unused OSD slot and capture it
 				{
-					for (DWORD dwEntry=1; dwEntry<pMem->dwOSDArrSize; dwEntry++)
+					for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 						//allow primary OSD clients (i.e. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party
 						//applications start scanning the slots from the second one
 					{
@@ -353,21 +353,21 @@ DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DW
 								}
 
 								LPRTSS_EMBEDDED_OBJECT_GRAPH lpGraph = (LPRTSS_EMBEDDED_OBJECT_GRAPH)(pEntry->buffer + dwOffset);
-									//get pointer to object in buffer
+								//get pointer to object in buffer
 
-								lpGraph->header.dwSignature	= RTSS_EMBEDDED_OBJECT_GRAPH_SIGNATURE;
-								lpGraph->header.dwSize		= sizeof(RTSS_EMBEDDED_OBJECT_GRAPH) + dwBufferSize * sizeof(FLOAT);
-								lpGraph->header.dwWidth		= dwWidth;
-								lpGraph->header.dwHeight	= dwHeight;
-								lpGraph->header.dwMargin	= dwMargin;
-								lpGraph->dwFlags			= dwFlags;
-								lpGraph->fltMin				= fltMin;
-								lpGraph->fltMax				= fltMax;
-								lpGraph->dwDataCount		= dwBufferSize;
+								lpGraph->header.dwSignature = RTSS_EMBEDDED_OBJECT_GRAPH_SIGNATURE;
+								lpGraph->header.dwSize = sizeof(RTSS_EMBEDDED_OBJECT_GRAPH) + dwBufferSize * sizeof(FLOAT);
+								lpGraph->header.dwWidth = dwWidth;
+								lpGraph->header.dwHeight = dwHeight;
+								lpGraph->header.dwMargin = dwMargin;
+								lpGraph->dwFlags = dwFlags;
+								lpGraph->fltMin = fltMin;
+								lpGraph->fltMax = fltMax;
+								lpGraph->dwDataCount = dwBufferSize;
 
 								if (lpBuffer && dwBufferSize)
 								{
-									for (DWORD dwPos=0; dwPos<dwBufferSize; dwPos++)
+									for (DWORD dwPos = 0; dwPos < dwBufferSize; dwPos++)
 									{
 										FLOAT fltData = lpBuffer[dwBufferPos];
 
@@ -397,26 +397,26 @@ DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DW
 
 	return dwResult;
 }
-BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText){
-	BOOL bResult	= FALSE;
+BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
+	BOOL bResult = FALSE;
 
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
 	if (hMapFile)
 	{
-		LPVOID pMapAddr				= MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-		LPRTSS_SHARED_MEMORY pMem	= (LPRTSS_SHARED_MEMORY)pMapAddr;
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
 
 		if (pMem)
 		{
-			if ((pMem->dwSignature == 'RTSS') && 
+			if ((pMem->dwSignature == 'RTSS') &&
 				(pMem->dwVersion >= 0x00020000))
 			{
-				for (DWORD dwPass=0; dwPass<2; dwPass++)
+				for (DWORD dwPass = 0; dwPass < 2; dwPass++)
 					//1st pass : find previously captured OSD slot
 					//2nd pass : otherwise find the first unused OSD slot and capture it
 				{
-					for (DWORD dwEntry=1; dwEntry<pMem->dwOSDArrSize; dwEntry++)
+					for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 						//allow primary OSD clients (i.e. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party
 						//applications start scanning the slots from the second one
 					{
@@ -434,22 +434,22 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText){
 								//use extended text slot for v2.7 and higher shared memory, it allows displaying 4096 symbols
 								//instead of 256 for regular text slot
 							{
-								if (pMem->dwVersion >= 0x0002000e)	
+								if (pMem->dwVersion >= 0x0002000e)
 									//OSD locking is supported on v2.14 and higher shared memory
 								{
 									DWORD dwBusy = _interlockedbittestandset(&pMem->dwBusy, 0);
-										//bit 0 of this variable will be set if OSD is locked by renderer and cannot be refreshed
-										//at the moment
+									//bit 0 of this variable will be set if OSD is locked by renderer and cannot be refreshed
+									//at the moment
 
 									if (!dwBusy)
 									{
-										strncpy_s(pEntry->szOSDEx, sizeof(pEntry->szOSDEx), lpText, sizeof(pEntry->szOSDEx) - 1);	
+										strncpy_s(pEntry->szOSDEx, sizeof(pEntry->szOSDEx), lpText, sizeof(pEntry->szOSDEx) - 1);
 
 										pMem->dwBusy = 0;
 									}
 								}
 								else
-									strncpy_s(pEntry->szOSDEx, sizeof(pEntry->szOSDEx), lpText, sizeof(pEntry->szOSDEx) - 1);	
+									strncpy_s(pEntry->szOSDEx, sizeof(pEntry->szOSDEx), lpText, sizeof(pEntry->szOSDEx) - 1);
 
 							}
 							else
@@ -488,10 +488,10 @@ void CRTSSSharedMemorySampleDlg::ReleaseOSD()
 
 		if (pMem)
 		{
-			if ((pMem->dwSignature == 'RTSS') && 
+			if ((pMem->dwSignature == 'RTSS') &&
 				(pMem->dwVersion >= 0x00020000))
 			{
-				for (DWORD dwEntry=1; dwEntry<pMem->dwOSDArrSize; dwEntry++)
+				for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 				{
 					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
 
@@ -509,8 +509,8 @@ void CRTSSSharedMemorySampleDlg::ReleaseOSD()
 		CloseHandle(hMapFile);
 	}
 }
-DWORD CRTSSSharedMemorySampleDlg::GetClientsNum(){
-	DWORD dwClients = 0;	
+DWORD CRTSSSharedMemorySampleDlg::GetClientsNum() {
+	DWORD dwClients = 0;
 
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
@@ -522,10 +522,10 @@ DWORD CRTSSSharedMemorySampleDlg::GetClientsNum(){
 
 		if (pMem)
 		{
-			if ((pMem->dwSignature == 'RTSS') && 
+			if ((pMem->dwSignature == 'RTSS') &&
 				(pMem->dwVersion >= 0x00020000))
 			{
-				for (DWORD dwEntry=0; dwEntry<pMem->dwOSDArrSize; dwEntry++)
+				for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 				{
 					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
 
@@ -659,7 +659,6 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 		//if (GetClientsNum() == 1)
 		//	osd.Add("<P=0,10>", "Skewjo's stuff", "|");
 		//move to position 0,10 (in zoomed pixel units)
-
 		//Note: take a note that position is specified in absolute coordinates so use this tag with caution because your text may
 		//overlap with text slots displayed by other applications, so in this demo we explicitly disable this tag usage if more than
 		//one client is currently rendering something in OSD
@@ -736,9 +735,12 @@ void CRTSSSharedMemorySampleDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpP
 		m_profileInterface.UpdateProfiles();
 	}
 }
-unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data) 
+unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data)
 {
+	int TIMEOUT = 5;
+
 	HANDLE hPort = OpenComPort(m_PortSpecifier);
+	CString	m_localPortSpecifier = m_PortSpecifier;
 
 	if (!IsComPortOpened(hPort))
 	{
@@ -750,26 +752,39 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 
 	CString	arduinoResults;
 
-	//Need to DrawBlack box once before loop starts
 	DrawBlack();
 
-	for(unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
+	for (unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
 	{
-		while (serialReadData != 65) {
+		//This is not yet working properly if you attempt to use a port that's not active, unless you switch to a working port very quickly.
+		if (m_localPortSpecifier != m_PortSpecifier) {
+			CloseComPort(hPort);
+			hPort = OpenComPort(m_PortSpecifier);
+			m_localPortSpecifier = m_PortSpecifier;
+			if (!IsComPortOpened(hPort))
+			{
+				AppendError("Failed to open the COM port");
+				//return 0;
+			}
+		}
+
+
+		time_t start = time(NULL);
+		while (serialReadData != 65 && time(NULL) - start < TIMEOUT) {
 			serialReadData = ReadByte(hPort);
 		}
 		DrawWhite();
-		Sleep(100); //Can't remember why I had this sleep here, but it was necessary 2 years ago...
+		//Sleep(100); //Can't remember why I had this sleep here, but it was necessary 2 years ago...
 
-		while (serialReadData != 66) {
+		while (serialReadData != 66 && time(NULL) - start < TIMEOUT) {
 			serialReadData = ReadByte(hPort);
 		}
 		DrawBlack();
-		Sleep(100); // Ok, these sleeps definitely coincide with synching the microcontroller and the PC.  Even just 10 ms each seems to help for some stupid reason. 
+		//Sleep(100); // Ok, these sleeps definitely coincide with synching the microcontroller and the PC.  Even just 10 ms each seems to help for some stupid reason. 
 
 		arduinoResults = "";
-		
-		while (serialReadData != 67) {
+
+		while (serialReadData != 67 && time(NULL) - start < TIMEOUT) {
 			serialReadData = ReadByte(hPort);
 			if (serialReadData != 67 && serialReadData != 65 && serialReadData != 66) {
 				arduinoResults += (char)serialReadData;
@@ -778,6 +793,8 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 
 		//I think this should be happening in a different thread so that the serial reads can continue uninterrupted
 		SetArduinoResultsComplete(loopCounter, arduinoResults);
+
+
 	}
 
 	CloseComPort(hPort);
@@ -807,16 +824,47 @@ void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCoun
 		}
 	}
 
+
+	//moving average
+
+	int a_movingAverage[10];
+
 	ReleaseRefreshMutex();		// end the sync access to fields
 }
+
 HANDLE CRTSSSharedMemorySampleDlg::OpenComPort(const CString& PortSpecifier)
 {
-	return CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+	HANDLE hPort = CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
+	if (hPort == INVALID_HANDLE_VALUE)
+		return INVALID_HANDLE_VALUE;
+	PurgeComm(hPort, PURGE_RXCLEAR);
+	DCB dcb = { 0 };
+	if (!GetCommState(hPort, &dcb))
+	{
+		CloseHandle(hPort);
+		return INVALID_HANDLE_VALUE;
+	}
+	dcb.BaudRate = CBR_9600; //9600 Baud
+	dcb.ByteSize = 8; //8 data bits
+	dcb.Parity = NOPARITY; //no parity
+	dcb.StopBits = ONESTOPBIT; //1 stop
+	if (!SetCommState(hPort, &dcb))
+	{
+		CloseHandle(hPort);
+		return INVALID_HANDLE_VALUE;
+	}
+
+	SetCommMask(hPort, EV_RXCHAR | EV_ERR); //receive character event
+
+	// Read this carefully because timeouts are important
+	// https://docs.microsoft.com/en-us/windows/win32/api/winbase/ns-winbase-commtimeouts
+	COMMTIMEOUTS timeouts = { 0 };
+
+	return hPort;
 }
 void CRTSSSharedMemorySampleDlg::CloseComPort(HANDLE hPort)
 {
-	// PurgeComm(hPort, PURGE_RXCLEAR);	// it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
-
+	PurgeComm(hPort, PURGE_RXCLEAR);    // it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
 	CloseHandle(hPort);
 }
 bool CRTSSSharedMemorySampleDlg::IsComPortOpened(HANDLE hPort)
@@ -825,47 +873,26 @@ bool CRTSSSharedMemorySampleDlg::IsComPortOpened(HANDLE hPort)
 }
 int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
 {
-	DCB dcb;
-	if (!GetCommState(hPort, &dcb))
-		return 0x100;
-	dcb.BaudRate = CBR_9600; //9600 Baud
-	dcb.ByteSize = 8; //8 data bits
-	dcb.Parity = NOPARITY; //no parity
-	dcb.StopBits = ONESTOPBIT; //1 stop
-	if (!SetCommState(hPort, &dcb))
-		return 0x100;
-	//need to check out EV_TXTEMPTY flag
-	SetCommMask(hPort, EV_RXCHAR | EV_ERR); //receive character event
-
 	int retVal;
 
-	DWORD dwCommModemStatus;
-	WaitCommEvent(hPort, &dwCommModemStatus, 0); //wait for character
-
-	if (dwCommModemStatus & EV_RXCHAR)
-	{
-		BYTE Byte;
-		DWORD dwBytesTransferred;
-		ReadFile(hPort, &Byte, 1, &dwBytesTransferred, 0); //read 1
-		retVal = Byte;
-	}
-	else if (dwCommModemStatus & EV_ERR)
-	{
+	BYTE Byte;
+	DWORD dwBytesTransferred;
+	if (FALSE == ReadFile(hPort, &Byte, 1, &dwBytesTransferred, 0)) //read 1
 		retVal = 0x101;
-	}
+	retVal = Byte;
 
-	PurgeComm(hPort, PURGE_RXCLEAR);	// it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
 	return retVal;
 }
-void CRTSSSharedMemorySampleDlg::DrawBlack() 
+
+void CRTSSSharedMemorySampleDlg::DrawBlack()
 {
 	UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><C=000000><I=-2,0,384,384,128,128><C>");
 }
-void CRTSSSharedMemorySampleDlg::DrawWhite() 
+void CRTSSSharedMemorySampleDlg::DrawWhite()
 {
 	UpdateOSD("<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><C=FFFFFF><I=-2,0,384,384,128,128><C>");
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom1() 
+void CRTSSSharedMemorySampleDlg::SetPortCom1()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -873,7 +900,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom1()
 
 	m_PortSpecifier = "COM1";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom2() 
+void CRTSSSharedMemorySampleDlg::SetPortCom2()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -881,7 +908,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom2()
 
 	m_PortSpecifier = "COM2";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom3() 
+void CRTSSSharedMemorySampleDlg::SetPortCom3()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -889,7 +916,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom3()
 
 	m_PortSpecifier = "COM3";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom4() 
+void CRTSSSharedMemorySampleDlg::SetPortCom4()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 

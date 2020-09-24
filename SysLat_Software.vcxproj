@@ -74,7 +74,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>stdafx.h</PrecompiledHeaderFile>
-      <PrecompiledHeaderOutputFile>.\Release/RTSSSharedMemorySample.pch</PrecompiledHeaderOutputFile>
+      <PrecompiledHeaderOutputFile>.\Release/SysLat_Software.pch</PrecompiledHeaderOutputFile>
       <AssemblerListingLocation>.\Release/</AssemblerListingLocation>
       <ObjectFileName>.\Release/</ObjectFileName>
       <ProgramDataBaseFileName>.\Release/</ProgramDataBaseFileName>
@@ -87,10 +87,10 @@
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
-      <OutputFile>.\Release/RTSSSharedMemorySample.exe</OutputFile>
+      <OutputFile>.\Release/SysLat_Software.exe</OutputFile>
       <SuppressStartupBanner>true</SuppressStartupBanner>
       <UACExecutionLevel>RequireAdministrator</UACExecutionLevel>
-      <ProgramDatabaseFile>.\Release/RTSSSharedMemorySample.pdb</ProgramDatabaseFile>
+      <ProgramDatabaseFile>.\Release/SysLat_Software.pdb</ProgramDatabaseFile>
       <SubSystem>Windows</SubSystem>
       <RandomizedBaseAddress>false</RandomizedBaseAddress>
       <DataExecutionPrevention />
@@ -98,7 +98,7 @@
     </Link>
     <Bscmake>
       <SuppressStartupBanner>true</SuppressStartupBanner>
-      <OutputFile>.\Release/RTSSSharedMemorySample.bsc</OutputFile>
+      <OutputFile>.\Release/SysLat_Software.bsc</OutputFile>
     </Bscmake>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -162,7 +162,6 @@
     <ResourceCompile Include="RTSSSharedMemorySample.rc" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="DebugDump.h" />
     <ClInclude Include="GroupedString.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RTSSProfileInterface.h" />
@@ -171,8 +170,7 @@
     <ClInclude Include="StdAfx.h" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="res\RTSSSharedMemorySample.ico" />
-    <None Include="res\RTSSSharedMemorySample.rc2" />
+    <Image Include="res\GRArialBlack.ico" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
