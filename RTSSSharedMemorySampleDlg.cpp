@@ -13,7 +13,17 @@
 #include <io.h>
 #include <sstream>
 
-//test change
+//TODO:
+// 
+// Launch RTSS automatically in the background if it's not running
+// Set "Refresh Period" to 0 milliseconds
+// Change default corner to bottom left
+// Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
+// Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
+// Add hotkey to retsart readings (F11?)
+// Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
+// Change class/namespace of RTSSSharedMemorySample to SysLat
+// Add graph functionality
 
 ///
 #include <Windows.h>
@@ -736,6 +746,8 @@ void CRTSSSharedMemorySampleDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpP
 		m_profileInterface.UpdateProfiles();
 	}
 }
+
+
 unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data)
 {
 	int TIMEOUT = 5;
@@ -757,6 +769,11 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 
 	for (unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
 	{
+		//std::ostringstream ostream1;
+		//ostream1 << sizeof(loopCounter);
+		
+		//OutputDebugStringA(ostream1.str().c_str());
+
 		//This is not yet working properly if you attempt to use a port that's not active, unless you switch to a working port very quickly.
 		if (m_localPortSpecifier != m_PortSpecifier) {
 			CloseComPort(hPort);
