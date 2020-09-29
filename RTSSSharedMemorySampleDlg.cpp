@@ -27,7 +27,7 @@
 // Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
 // Change class/namespace of RTSSSharedMemorySample to SysLat
 // Add graph functionality
-// Add minimize button
+// DONE - Add minimize button
 // Make System Latency appear in OSD
 // Save results to a table
 // Determine active window vs window that RTSS is operating in?
