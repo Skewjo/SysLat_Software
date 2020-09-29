@@ -16,16 +16,26 @@
 //TODO:
 // 
 // Launch RTSS automatically in the background if it's not running
-// Set "Refresh Period" to 0 milliseconds
-// Change default corner to bottom left
-// Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
-// Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
-// Add hotkey to retsart readings (F11?)
+// WON'T WORK(profiles are for individual programs) Profile Setting -  Create new "SysLat" profile in RTSS so as to not break other people's profiles 
+// NOT AVAILABLE - Profile Setting - Set "Refresh Period" to 0 milliseconds  - doesn't appear to be an option available via shared memory
+// NOT AVAILABLE - Profile Setting - Change default corner to bottom right
+// NOT AVAILABLE(opacity) - Profile Setting - Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
+// NOT AVIALABLE(Opacity) - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
+//		Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
+// DONE(but code is in bad location) - Profile Setting - Set box size to what I want it to be?
+// Add hotkey to restart readings (F11?)
 // Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
 // Change class/namespace of RTSSSharedMemorySample to SysLat
 // Add graph functionality
-
+// Add minimize button
+// Make System Latency appear in OSD
+// Save results to a table
+// Determine active window vs window that RTSS is operating in?
+// Fix COM port change settings
+// Seperate some initialization that happens in "Refresh" function into a different "Refresh" function??
 ///
+/// 
+/// 
 #include <Windows.h>
 #include <process.h>
 /// 
@@ -104,19 +114,19 @@ CRTSSSharedMemorySampleDlg::CRTSSSharedMemorySampleDlg(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 
-	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_hIcon						= AfxGetApp()->LoadIcon(IDR_MAINFRAME);
 
-	m_dwNumberOfProcessors = 0;
+	m_dwNumberOfProcessors		= 0;
 	m_pNtQuerySystemInformation = NULL;
-	m_strStatus = "";
-	m_strInstallPath = "";
+	m_strStatus					= "";
+	m_strInstallPath			= "";
 
-	m_bMultiLineOutput = TRUE;
-	m_bFormatTags = TRUE;
-	m_bFillGraphs = FALSE;
-	m_bConnected = FALSE;
+	m_bMultiLineOutput			= TRUE;
+	m_bFormatTags				= TRUE;
+	m_bFillGraphs				= FALSE;
+	m_bConnected				= FALSE;
 
-	m_dwHistoryPos = 0;
+	m_dwHistoryPos				= 0;
 }
 void CRTSSSharedMemorySampleDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -209,10 +219,13 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 	//init timer
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);
 
-	// init timer for Skewjo...
+	//init timer for Skewjo...
 	time(&m_elapsedTimeStart);
 
-	// init mutex for refresh operation
+
+
+
+	//init mutex for refresh operation
 	m_refreshMutex = CreateMutex(NULL, FALSE, NULL);
 
 	Refresh();
@@ -220,7 +233,7 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 	unsigned int myCounter = 0;
 	//HANDLE myhandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, 0, 0, 0);
 	HANDLE myhandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
-	SetThreadPriority(myhandle, THREAD_PRIORITY_ABOVE_NORMAL);// highest possible thread priority? - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
+	SetThreadPriority(myhandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
 	//AfxBeginThread()
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -411,10 +424,12 @@ DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DW
 BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
 	BOOL bResult = FALSE;
 
+	//Doesn't it seem inefficient to open a handle to the shared memory every time?  Can I not just leave it open?
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
 	if (hMapFile)
 	{
+		
 		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
 		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
 
@@ -427,9 +442,9 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
 					//1st pass : find previously captured OSD slot
 					//2nd pass : otherwise find the first unused OSD slot and capture it
 				{
-					for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
-						//allow primary OSD clients (i.e. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party
-						//applications start scanning the slots from the second one
+					for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
+						//allow primary OSD clients (e.g. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party 
+						//applications start scanning the slots from the second one - CHANGED THIS TO 0 SO I CAN BE PRIMARY BECAUSE I NEED THE CORNERS
 					{
 						RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
 
@@ -439,6 +454,7 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
 								strcpy_s(pEntry->szOSDOwner, sizeof(pEntry->szOSDOwner), "RTSSSharedMemorySample");
 						}
 
+						//remember that strcmp returns 0 if the strings match... so the following if statement basically says if the strings match 
 						if (!strcmp(pEntry->szOSDOwner, "RTSSSharedMemorySample"))
 						{
 							if (pMem->dwVersion >= 0x00020007)
@@ -591,6 +607,14 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 			m_profileInterface.Init(m_strInstallPath);
 	}
 
+	//init some settings to global(?) profile - probably- scratch that, DEFINITELY need to move these
+	//SetProfileProperty("", "BaseColor", 0xFFFFFF);
+	//SetProfileProperty("", "BgndColor", 0x000000); //this value isn't actually modifiable in RTSS lol
+	//SetProfileProperty("", "FillColor", 0x000000);
+	//SetProfileProperty("", "ZoomRatio", 2);
+	//SetProfileProperty("", "RefreshPeriod", 0); //found this property by looking at the plaintext of the RTSSHooks.dll.  Doesn't appear to change the value.  Also attempted to use the "Inc" function as well, but it also failed.
+	//SetProfileProperty("", "RefreshPeriodMin", 0); //found this property by looking at the plaintext of the RTSSHooks.dll ... It didn't appear to change the value in RTSS... I hope I didn't break something lol
+	
 	m_strStatus = "";
 
 

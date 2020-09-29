@@ -52,6 +52,8 @@ public:
 		//EnableBgnd							0..1	- On-Screen Display shadow
 		//EnableStat							....	- Show own statistics
 		//BaseColor, BgndColor					....	- On-Screen Display palette
+		//FillColor?
+		//RefreshPeriod?
 		//PositionX, PositionY					....	- On-Screen Display position
 		//ZoomRatio								1..8	- On-Screen Display zoom
 		//CoordinateSpace						0..1	- On-Screen Display coordinate space
