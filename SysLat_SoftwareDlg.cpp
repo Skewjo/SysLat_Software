@@ -1,11 +1,12 @@
-// RTSSSharedMemorySampleDlg.cpp : implementation file
+// SysLat_SoftwareDlg.cpp : implementation file
 //
 // created by Unwinder
+// modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
 #include "RTSSSharedMemory.h"
-#include "RTSSSharedMemorySample.h"
-#include "RTSSSharedMemorySampleDlg.h"
+#include "SysLat_Software.h"
+#include "SysLat_SoftwareDlg.h"
 #include "GroupedString.h"
 /////////////////////////////////////////////////////////////////////////////
 #include <shlwapi.h>
@@ -47,22 +48,21 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 //Define static variables - these should probably be done as an inline...
-CString CRTSSSharedMemorySampleDlg::m_strStatus = "";
-CString CRTSSSharedMemorySampleDlg::m_arduinoResultsComplete = "";
-unsigned int CRTSSSharedMemorySampleDlg::m_LoopCounterRefresh = 0;
-unsigned int CRTSSSharedMemorySampleDlg::m_loopSize = 0xFFFFFFFF;
-bool CRTSSSharedMemorySampleDlg::m_debugMode = true;
-CString CRTSSSharedMemorySampleDlg::m_PortSpecifier = "COM3";
-int CRTSSSharedMemorySampleDlg::m_systemLatencyTotal = 0;
-double CRTSSSharedMemorySampleDlg::m_systemLatencyAverage = 0;
-int CRTSSSharedMemorySampleDlg::m_loopCounterEVR = 0;
-int CRTSSSharedMemorySampleDlg::m_systemLatencyTotalEVR = 0;
-double CRTSSSharedMemorySampleDlg::m_systemLatencyAverageEVR = 0;
-HANDLE CRTSSSharedMemorySampleDlg::m_refreshMutex = NULL;
-CString CRTSSSharedMemorySampleDlg::m_strError = "";
+CString CSysLat_SoftwareDlg::m_strStatus = "";
+CString CSysLat_SoftwareDlg::m_arduinoResultsComplete = "";
+unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
+unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
+bool CSysLat_SoftwareDlg::m_debugMode = true;
+CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
+int CSysLat_SoftwareDlg::m_systemLatencyTotal = 0;
+double CSysLat_SoftwareDlg::m_systemLatencyAverage = 0;
+int CSysLat_SoftwareDlg::m_loopCounterEVR = 0;
+int CSysLat_SoftwareDlg::m_systemLatencyTotalEVR = 0;
+double CSysLat_SoftwareDlg::m_systemLatencyAverageEVR = 0;
+HANDLE CSysLat_SoftwareDlg::m_refreshMutex = NULL;
+CString CSysLat_SoftwareDlg::m_strError = "";
 
-//const char* CRTSSSharedMemorySampleDlg::m_caSysLatStats = "SysLatStats";
-//const char* CRTSSSharedMemorySampleDlg::m_caSysLat = "SysLat";
+
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -108,12 +108,12 @@ BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
-// CRTSSSharedMemorySampleDlg dialog
+// CSysLat_SoftwareDlg dialog
 /////////////////////////////////////////////////////////////////////////////
-CRTSSSharedMemorySampleDlg::CRTSSSharedMemorySampleDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CRTSSSharedMemorySampleDlg::IDD, pParent)
+CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
+	: CDialog(CSysLat_SoftwareDlg::IDD, pParent)
 {
-	//{{AFX_DATA_INIT(CRTSSSharedMemorySampleDlg)
+	//{{AFX_DATA_INIT(CSysLat_SoftwareDlg)
 	//}}AFX_DATA_INIT
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 
@@ -131,30 +131,30 @@ CRTSSSharedMemorySampleDlg::CRTSSSharedMemorySampleDlg(CWnd* pParent /*=NULL*/)
 
 	m_dwHistoryPos				= 0;
 }
-void CRTSSSharedMemorySampleDlg::DoDataExchange(CDataExchange* pDX)
+void CSysLat_SoftwareDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CRTSSSharedMemorySampleDlg)
+	//{{AFX_DATA_MAP(CSysLat_SoftwareDlg)
 	//}}AFX_DATA_MAP
 }
-BEGIN_MESSAGE_MAP(CRTSSSharedMemorySampleDlg, CDialog)
-	//{{AFX_MSG_MAP(CRTSSSharedMemorySampleDlg)
+BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialog)
+	//{{AFX_MSG_MAP(CSysLat_SoftwareDlg)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
 	ON_WM_QUERYDRAGICON()
 	ON_WM_TIMER()
 	ON_WM_DESTROY()
-	ON_COMMAND(ID_PORT_COM1, CRTSSSharedMemorySampleDlg::SetPortCom1)
-	ON_COMMAND(ID_PORT_COM2, CRTSSSharedMemorySampleDlg::SetPortCom2)
-	ON_COMMAND(ID_PORT_COM3, CRTSSSharedMemorySampleDlg::SetPortCom3)
-	ON_COMMAND(ID_PORT_COM4, CRTSSSharedMemorySampleDlg::SetPortCom4)
+	ON_COMMAND(ID_PORT_COM1, CSysLat_SoftwareDlg::SetPortCom1)
+	ON_COMMAND(ID_PORT_COM2, CSysLat_SoftwareDlg::SetPortCom2)
+	ON_COMMAND(ID_PORT_COM3, CSysLat_SoftwareDlg::SetPortCom3)
+	ON_COMMAND(ID_PORT_COM4, CSysLat_SoftwareDlg::SetPortCom4)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
 /////////////////////////////////////////////////////////////////////////////
-// CRTSSSharedMemorySampleDlg message handlers
+// CSysLat_SoftwareDlg message handlers
 /////////////////////////////////////////////////////////////////////////////
-BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
+BOOL CSysLat_SoftwareDlg::OnInitDialog()
 {
 	CDialog::OnInitDialog();
 
@@ -242,7 +242,7 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
-void CRTSSSharedMemorySampleDlg::OnSysCommand(UINT nID, LPARAM lParam)
+void CSysLat_SoftwareDlg::OnSysCommand(UINT nID, LPARAM lParam)
 {
 	if ((nID & 0xFFF0) == IDM_ABOUTBOX)
 	{
@@ -260,7 +260,7 @@ void CRTSSSharedMemorySampleDlg::OnSysCommand(UINT nID, LPARAM lParam)
 //  to draw the icon.  For MFC applications using the document/view model,
 //  this is automatically done for you by the framework.
 /////////////////////////////////////////////////////////////////////////////
-void CRTSSSharedMemorySampleDlg::OnPaint()
+void CSysLat_SoftwareDlg::OnPaint()
 {
 	if (IsIconic())
 	{
@@ -283,16 +283,16 @@ void CRTSSSharedMemorySampleDlg::OnPaint()
 		CDialog::OnPaint();
 	}
 }
-HCURSOR CRTSSSharedMemorySampleDlg::OnQueryDragIcon()
+HCURSOR CSysLat_SoftwareDlg::OnQueryDragIcon()
 {
 	return (HCURSOR)m_hIcon;
 }
-void CRTSSSharedMemorySampleDlg::OnTimer(UINT nIDEvent)
+void CSysLat_SoftwareDlg::OnTimer(UINT nIDEvent)
 {
 	Refresh();
 	CDialog::OnTimer(nIDEvent);
 }
-void CRTSSSharedMemorySampleDlg::OnDestroy()
+void CSysLat_SoftwareDlg::OnDestroy()
 {
 	if (m_nTimerID)
 		KillTimer(m_nTimerID);
@@ -308,7 +308,7 @@ void CRTSSSharedMemorySampleDlg::OnDestroy()
 
 	CDialog::OnDestroy();
 }
-DWORD CRTSSSharedMemorySampleDlg::GetSharedMemoryVersion()
+DWORD CSysLat_SoftwareDlg::GetSharedMemoryVersion()
 {
 	DWORD dwResult = 0;
 
@@ -333,7 +333,7 @@ DWORD CRTSSSharedMemorySampleDlg::GetSharedMemoryVersion()
 
 	return dwResult;
 }
-DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
+DWORD CSysLat_SoftwareDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
 {
 	DWORD dwResult = 0;
 
@@ -425,7 +425,7 @@ DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DW
 
 	return dwResult;
 }
-BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner) {
+BOOL CSysLat_SoftwareDlg::UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner) {
 	BOOL bResult = FALSE;
 
 	//Doesn't it seem inefficient to open a handle to the shared memory every time?  Can I not just leave it open?
@@ -517,7 +517,7 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText, const char* OSDSlotOwn
 }
 
 
-void CRTSSSharedMemorySampleDlg::ReleaseOSD(const char* OSDSlotOwner)
+void CSysLat_SoftwareDlg::ReleaseOSD(const char* OSDSlotOwner)
 {
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
@@ -550,7 +550,7 @@ void CRTSSSharedMemorySampleDlg::ReleaseOSD(const char* OSDSlotOwner)
 		CloseHandle(hMapFile);
 	}
 }
-DWORD CRTSSSharedMemorySampleDlg::GetClientsNum() {
+DWORD CSysLat_SoftwareDlg::GetClientsNum() {
 	DWORD dwClients = 0;
 
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
@@ -583,7 +583,7 @@ DWORD CRTSSSharedMemorySampleDlg::GetClientsNum() {
 
 	return dwClients;
 }
-void CRTSSSharedMemorySampleDlg::Refresh()
+void CSysLat_SoftwareDlg::Refresh()
 {
 	//init RivaTuner Statistics Server installation path
 
@@ -711,7 +711,7 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 	
 }
 
-void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
+void CSysLat_SoftwareDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
 {
 	if (bFormatTagsSupported && bObjTagsSupported)
 	{
@@ -726,14 +726,14 @@ void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTag
 	}
 }
 
-void CRTSSSharedMemorySampleDlg::CheckRefreshMutex()
+void CSysLat_SoftwareDlg::CheckRefreshMutex()
 {
 	if (m_refreshMutex == NULL)
 	{
 		AppendError("Error: Failed to create mutex");
 	}
 }
-void CRTSSSharedMemorySampleDlg::AppendError(const CString& error)
+void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
 	AcquireRefreshMutex();
 
@@ -743,7 +743,7 @@ void CRTSSSharedMemorySampleDlg::AppendError(const CString& error)
 
 	ReleaseRefreshMutex();
 }
-BOOL CRTSSSharedMemorySampleDlg::AcquireRefreshMutex()
+BOOL CSysLat_SoftwareDlg::AcquireRefreshMutex()
 {
 	if (m_refreshMutex != NULL)
 	{
@@ -752,14 +752,14 @@ BOOL CRTSSSharedMemorySampleDlg::AcquireRefreshMutex()
 
 	return TRUE;
 }
-void CRTSSSharedMemorySampleDlg::ReleaseRefreshMutex()
+void CSysLat_SoftwareDlg::ReleaseRefreshMutex()
 {
 	if (m_refreshMutex != NULL)
 	{
 		ReleaseMutex(m_refreshMutex);
 	}
 }
-void CRTSSSharedMemorySampleDlg::CloseRefreshMutex()
+void CSysLat_SoftwareDlg::CloseRefreshMutex()
 {
 	if (m_refreshMutex != NULL)
 	{
@@ -768,7 +768,7 @@ void CRTSSSharedMemorySampleDlg::CloseRefreshMutex()
 	}
 }
 
-void CRTSSSharedMemorySampleDlg::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
+void CSysLat_SoftwareDlg::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
 {
 	if (m_profileInterface.IsInitialized())
 	{
@@ -786,7 +786,7 @@ void CRTSSSharedMemorySampleDlg::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpP
 		}
 	}
 }
-void CRTSSSharedMemorySampleDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty)
+void CSysLat_SoftwareDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty)
 {
 	if (m_profileInterface.IsInitialized())
 	{
@@ -798,7 +798,7 @@ void CRTSSSharedMemorySampleDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpP
 }
 
 
-unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* data)
+unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 {
 	int TIMEOUT = 5;
 
@@ -869,7 +869,7 @@ unsigned int __stdcall CRTSSSharedMemorySampleDlg::CreateDrawingThread(void* dat
 
 	return 0;
 }
-void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults)
+void CSysLat_SoftwareDlg::SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults)
 {
 	BOOL success = AcquireRefreshMutex();		// begin the sync access to fields
 	if (!success)
@@ -900,7 +900,7 @@ void CRTSSSharedMemorySampleDlg::SetArduinoResultsComplete(unsigned int loopCoun
 	ReleaseRefreshMutex();		// end the sync access to fields
 }
 
-HANDLE CRTSSSharedMemorySampleDlg::OpenComPort(const CString& PortSpecifier)
+HANDLE CSysLat_SoftwareDlg::OpenComPort(const CString& PortSpecifier)
 {
 	HANDLE hPort = CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
 	if (hPort == INVALID_HANDLE_VALUE)
@@ -930,16 +930,16 @@ HANDLE CRTSSSharedMemorySampleDlg::OpenComPort(const CString& PortSpecifier)
 
 	return hPort;
 }
-void CRTSSSharedMemorySampleDlg::CloseComPort(HANDLE hPort)
+void CSysLat_SoftwareDlg::CloseComPort(HANDLE hPort)
 {
 	PurgeComm(hPort, PURGE_RXCLEAR);    // it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
 	CloseHandle(hPort);
 }
-bool CRTSSSharedMemorySampleDlg::IsComPortOpened(HANDLE hPort)
+bool CSysLat_SoftwareDlg::IsComPortOpened(HANDLE hPort)
 {
 	return hPort != INVALID_HANDLE_VALUE;
 }
-int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
+int CSysLat_SoftwareDlg::ReadByte(HANDLE hPort)
 {
 	int retVal;
 
@@ -952,17 +952,17 @@ int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
 	return retVal;
 }
 
-void CRTSSSharedMemorySampleDlg::DrawBlack()
+void CSysLat_SoftwareDlg::DrawBlack()
 {
 	//UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>", m_caSysLat);
 	UpdateOSD("<C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>", m_caSysLat);
 }
-void CRTSSSharedMemorySampleDlg::DrawWhite()
+void CSysLat_SoftwareDlg::DrawWhite()
 {
 	//UpdateOSD("<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><E=-1,-1,8><C=FFFFFF><I=-2,0,384,384,128,128><C>", m_caSysLat);
 	UpdateOSD("<C=80FFFFFF><B=0,0>\b<C><E=-1,-1,8><C=FFFFFF><I=-2,0,384,384,128,128><C>", m_caSysLat);
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom1()
+void CSysLat_SoftwareDlg::SetPortCom1()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -970,7 +970,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom1()
 
 	m_PortSpecifier = "COM1";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom2()
+void CSysLat_SoftwareDlg::SetPortCom2()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -978,7 +978,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom2()
 
 	m_PortSpecifier = "COM2";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom3()
+void CSysLat_SoftwareDlg::SetPortCom3()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -986,7 +986,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom3()
 
 	m_PortSpecifier = "COM3";
 }
-void CRTSSSharedMemorySampleDlg::SetPortCom4()
+void CSysLat_SoftwareDlg::SetPortCom4()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
 
@@ -994,7 +994,7 @@ void CRTSSSharedMemorySampleDlg::SetPortCom4()
 
 	m_PortSpecifier = "COM4";
 }
-CMenu* CRTSSSharedMemorySampleDlg::ResetPortsMenuItems()
+CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 {
 	CMenu* settingsMenu = GetMenu();
 	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);

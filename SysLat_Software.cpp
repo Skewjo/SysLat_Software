@@ -1,10 +1,11 @@
-// RTSSSharedMemorySample.cpp : Defines the class behaviors for the application.
+// SysLat_Software.cpp : Defines the class behaviors for the application.
 //
 // created by Unwinder
+// modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
-#include "RTSSSharedMemorySample.h"
-#include "RTSSSharedMemorySampleDlg.h"
+#include "SysLat_Software.h"
+#include "SysLat_SoftwareDlg.h"
 /////////////////////////////////////////////////////////////////////////////
 #ifdef _DEBUG
 #define new DEBUG_NEW
@@ -14,31 +15,31 @@ static char THIS_FILE[] = __FILE__;
 
 
 /////////////////////////////////////////////////////////////////////////////
-// CRTSSSharedMemorySampleApp
+// CSysLat_SoftwareApp
 /////////////////////////////////////////////////////////////////////////////
-BEGIN_MESSAGE_MAP(CRTSSSharedMemorySampleApp, CWinApp)
-	//{{AFX_MSG_MAP(CRTSSSharedMemorySampleApp)
+BEGIN_MESSAGE_MAP(CSysLat_SoftwareApp, CWinApp)
+	//{{AFX_MSG_MAP(CSysLat_SoftwareApp)
 		// NOTE - the ClassWizard will add and remove mapping macros here.
 		//    DO NOT EDIT what you see in these blocks of generated code!
 	//}}AFX_MSG
 	ON_COMMAND(ID_HELP, CWinApp::OnHelp)
 END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
-// CRTSSSharedMemorySampleApp construction
+// CSysLat_SoftwareApp construction
 /////////////////////////////////////////////////////////////////////////////
-CRTSSSharedMemorySampleApp::CRTSSSharedMemorySampleApp()
+CSysLat_SoftwareApp::CSysLat_SoftwareApp()
 {
 	// TODO: add construction code here,
 	// Place all significant initialization in InitInstance
 }
 /////////////////////////////////////////////////////////////////////////////
-// The one and only CRTSSSharedMemorySampleApp object
+// The one and only CSysLat_SoftwareApp object
 /////////////////////////////////////////////////////////////////////////////
-CRTSSSharedMemorySampleApp theApp;
+CSysLat_SoftwareApp theApp;
 /////////////////////////////////////////////////////////////////////////////
-// CRTSSSharedMemorySampleApp initialization
+// CSysLat_SoftwareApp initialization
 
-BOOL CRTSSSharedMemorySampleApp::InitInstance()
+BOOL CSysLat_SoftwareApp::InitInstance()
 {
 	AfxEnableControlContainer();
 
@@ -47,7 +48,7 @@ BOOL CRTSSSharedMemorySampleApp::InitInstance()
 	//  of your final executable, you should remove from the following
 	//  the specific initialization routines you do not need.
 
-	CRTSSSharedMemorySampleDlg dlg;
+	CSysLat_SoftwareDlg dlg;
 	m_pMainWnd = &dlg;
 	int nResponse = dlg.DoModal();
 	if (nResponse == IDOK)

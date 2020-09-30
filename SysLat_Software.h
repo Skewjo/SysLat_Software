@@ -1,8 +1,8 @@
-// RTSSSharedMemorySample.h : main header file for the RTSSSHAREDMEMORYSAMPLE application
+// SysLat_Software.h : main header file for the SYSLAT_SOFTWARE application
 //
 
-#if !defined(AFX_RTSSSHAREDMEMORYSAMPLE_H__8215FD88_8420_491C_9CFB_8DC6FBB27DC7__INCLUDED_)
-#define AFX_RTSSSHAREDMEMORYSAMPLE_H__8215FD88_8420_491C_9CFB_8DC6FBB27DC7__INCLUDED_
+#if !defined(AFX_SYSLAT_SOFTWARE_H__8215FD88_8420_491C_9CFB_8DC6FBB27DC7__INCLUDED_)
+#define AFX_SYSLAT_SOFTWARE_H__8215FD88_8420_491C_9CFB_8DC6FBB27DC7__INCLUDED_
 
 #if _MSC_VER > 1000
 #pragma once
@@ -15,14 +15,14 @@
 #include "resource.h"		// main symbols
 
 /////////////////////////////////////////////////////////////////////////////
-// CRTSSSharedMemorySampleApp:
-// See RTSSSharedMemorySample.cpp for the implementation of this class
+// CSysLat_SoftwareApp:
+// See SysLat_Software.cpp for the implementation of this class
 //
 
-class CRTSSSharedMemorySampleApp : public CWinApp
+class CSysLat_SoftwareApp : public CWinApp
 {
 public:
-	CRTSSSharedMemorySampleApp();
+	CSysLat_SoftwareApp();
 
 // Overrides
 	// ClassWizard generated virtual function overrides
@@ -33,7 +33,7 @@ public:
 
 // Implementation
 
-	//{{AFX_MSG(CRTSSSharedMemorySampleApp)
+	//{{AFX_MSG(CSysLat_SoftwareApp)
 		// NOTE - the ClassWizard will add and remove member functions here.
 		//    DO NOT EDIT what you see in these blocks of generated code !
 	//}}AFX_MSG
@@ -46,4 +46,4 @@ public:
 //{{AFX_INSERT_LOCATION}}
 // Microsoft Visual C++ will insert additional declarations immediately before the previous line.
 
-#endif // !defined(AFX_RTSSSHAREDMEMORYSAMPLE_H__8215FD88_8420_491C_9CFB_8DC6FBB27DC7__INCLUDED_)
+#endif // !defined(AFX_SYSLAT_SOFTWARE_H__8215FD88_8420_491C_9CFB_8DC6FBB27DC7__INCLUDED_)

@@ -1,9 +1,10 @@
-// RTSSSharedMemorySampleDlg.h : header file
+// SysLat_SoftwareDlg.h : header file
 //
 // created by Unwinder
+// modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
-#ifndef _RTSSSHAREDMEMORYSAMPLEDLG_H_INCLUDED_
-#define _RTSSSHAREDMEMORYSAMPLEDLG_H_INCLUDED_
+#ifndef _SYSLAT_SOFTWAREDLG_H_INCLUDED_
+#define _SYSLAT_SOFTWAREDLG_H_INCLUDED_
 /////////////////////////////////////////////////////////////////////////////
 #if _MSC_VER > 1000
 #pragma once
@@ -36,11 +37,11 @@ typedef struct SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION
     ULONG			Reserved2;
 } SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION;
 /////////////////////////////////////////////////////////////////////////////
-class CRTSSSharedMemorySampleDlg : public CDialog
+class CSysLat_SoftwareDlg : public CDialog
 {
 // Construction
 public:
-	CRTSSSharedMemorySampleDlg(CWnd* pParent = NULL);	// standard constructor
+	CSysLat_SoftwareDlg(CWnd* pParent = NULL);	// standard constructor
 
 
 	//////////////////
@@ -48,12 +49,12 @@ public:
 	/////////////////////
 
 // Dialog Data
-	//{{AFX_DATA(CRTSSSharedMemorySampleDlg)
-	enum { IDD = IDD_RTSSSHAREDMEMORYSAMPLE_DIALOG };
+	//{{AFX_DATA(CSysLat_SoftwareDlg)
+	enum { IDD = IDD_SYSLAT_SOFTWARE_DIALOG };
 	//}}AFX_DATA
 
 	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CRTSSSharedMemorySampleDlg)
+	//{{AFX_VIRTUAL(CSysLat_SoftwareDlg)
 	public:
 	protected:
 	virtual void DoDataExchange(CDataExchange* pDX);	// DDX/DDV support
@@ -123,12 +124,6 @@ protected:
 
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
-	//const static char* m_caSysLatStats;
-	//const static char* m_caSysLat;
-	//const static char* m_caSysLatStats = "SysLatStats";
-	//const static char* m_caSysLat = "SysLat";
-	//const char m_caSysLatStats[12] = "SysLatStats";
-	//const char m_caSysLat[7];// = "SysLat";
 
 	//End Skewjo's stuff
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -162,7 +157,7 @@ protected:
 
 	
 	// Generated message map functions
-	//{{AFX_MSG(CRTSSSharedMemorySampleDlg)
+	//{{AFX_MSG(CSysLat_SoftwareDlg)
 	virtual BOOL OnInitDialog();
 	afx_msg void OnSysCommand(UINT nID, LPARAM lParam);
 	afx_msg void OnPaint();
@@ -173,9 +168,6 @@ protected:
 	DECLARE_MESSAGE_MAP()
 };
 
-//CString CRTSSSharedMemorySampleDlg::PortOption = "COM3";
-//CString CRTSSSharedMemorySampleDlg::PortSpecifier = CString(_T(PortOption));
-//int CRTSSSharedMemorySampleDlg::serialReadData = 0;
 
 /////////////////////////////////////////////////////////////////////////////
 //{{AFX_INSERT_LOCATION}}
