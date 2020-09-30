@@ -28,7 +28,7 @@
 // Change class/namespace of RTSSSharedMemorySample to SysLat
 // Add graph functionality
 // DONE - Add minimize button
-// Make System Latency appear in OSD
+// DONE(well... it half-ass works) - Make System Latency appear in OSD
 // Save results to a table
 // Determine active window vs window that RTSS is operating in?
 // Fix COM port change settings
@@ -60,6 +60,9 @@ int CRTSSSharedMemorySampleDlg::m_systemLatencyTotalEVR = 0;
 double CRTSSSharedMemorySampleDlg::m_systemLatencyAverageEVR = 0;
 HANDLE CRTSSSharedMemorySampleDlg::m_refreshMutex = NULL;
 CString CRTSSSharedMemorySampleDlg::m_strError = "";
+
+//const char* CRTSSSharedMemorySampleDlg::m_caSysLatStats = "SysLatStats";
+//const char* CRTSSSharedMemorySampleDlg::m_caSysLat = "SysLat";
 
 
 /////////////////////////////////////////////////////////////////////////////
@@ -222,7 +225,8 @@ BOOL CRTSSSharedMemorySampleDlg::OnInitDialog()
 	//init timer for Skewjo...
 	time(&m_elapsedTimeStart);
 
-
+	//Attempt to claim the first slot for SysLat(??) - this definitely feels like the wrong location
+	UpdateOSD("", m_caSysLat);
 
 
 	//init mutex for refresh operation
@@ -298,8 +302,8 @@ void CRTSSSharedMemorySampleDlg::OnDestroy()
 	MSG msg;
 	while (PeekMessage(&msg, m_hWnd, WM_TIMER, WM_TIMER, PM_REMOVE));
 
-	ReleaseOSD();
-
+	ReleaseOSD(m_caSysLatStats);
+	ReleaseOSD(m_caSysLat);
 	CloseRefreshMutex();
 
 	CDialog::OnDestroy();
@@ -421,7 +425,7 @@ DWORD CRTSSSharedMemorySampleDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DW
 
 	return dwResult;
 }
-BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
+BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner) {
 	BOOL bResult = FALSE;
 
 	//Doesn't it seem inefficient to open a handle to the shared memory every time?  Can I not just leave it open?
@@ -442,7 +446,15 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
 					//1st pass : find previously captured OSD slot
 					//2nd pass : otherwise find the first unused OSD slot and capture it
 				{
-					for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
+					//If the caller is "SysLat" allow it to take over the first OSD slot
+					DWORD dwEntry = 0;
+					if (!strcmp(m_caSysLat, OSDSlotOwner)) {
+						dwEntry = 1;
+					}
+					else {
+						dwEntry = 0;
+					}
+					for (dwEntry; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 						//allow primary OSD clients (e.g. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party 
 						//applications start scanning the slots from the second one - CHANGED THIS TO 0 SO I CAN BE PRIMARY BECAUSE I NEED THE CORNERS
 					{
@@ -451,11 +463,11 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
 						if (dwPass)
 						{
 							if (!strlen(pEntry->szOSDOwner))
-								strcpy_s(pEntry->szOSDOwner, sizeof(pEntry->szOSDOwner), "RTSSSharedMemorySample");
+								strcpy_s(pEntry->szOSDOwner, sizeof(pEntry->szOSDOwner), OSDSlotOwner);
 						}
 
 						//remember that strcmp returns 0 if the strings match... so the following if statement basically says if the strings match 
-						if (!strcmp(pEntry->szOSDOwner, "RTSSSharedMemorySample"))
+						if (!strcmp(pEntry->szOSDOwner, OSDSlotOwner))
 						{
 							if (pMem->dwVersion >= 0x00020007)
 								//use extended text slot for v2.7 and higher shared memory, it allows displaying 4096 symbols
@@ -503,7 +515,9 @@ BOOL CRTSSSharedMemorySampleDlg::UpdateOSD(LPCSTR lpText) {
 
 	return bResult;
 }
-void CRTSSSharedMemorySampleDlg::ReleaseOSD()
+
+
+void CRTSSSharedMemorySampleDlg::ReleaseOSD(const char* OSDSlotOwner)
 {
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
 
@@ -522,7 +536,7 @@ void CRTSSSharedMemorySampleDlg::ReleaseOSD()
 				{
 					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
 
-					if (!strcmp(pEntry->szOSDOwner, "RTSSSharedMemorySample"))
+					if (!strcmp(pEntry->szOSDOwner, OSDSlotOwner))
 					{
 						memset(pEntry, 0, pMem->dwOSDEntrySize);
 						pMem->dwOSDFrame++;
@@ -614,7 +628,8 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 	//SetProfileProperty("", "ZoomRatio", 2);
 	//SetProfileProperty("", "RefreshPeriod", 0); //found this property by looking at the plaintext of the RTSSHooks.dll.  Doesn't appear to change the value.  Also attempted to use the "Inc" function as well, but it also failed.
 	//SetProfileProperty("", "RefreshPeriodMin", 0); //found this property by looking at the plaintext of the RTSSHooks.dll ... It didn't appear to change the value in RTSS... I hope I didn't break something lol
-	
+	//SetProfileProperty("", "CoordinateSpace", 1);
+	//SetProfileProperty("", "CoordinateSpace", 0);
 	m_strStatus = "";
 
 
@@ -630,31 +645,13 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 	BOOL bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
 	BOOL bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
 
+
 	CGroupedString strOSDBuilder(dwMaxTextSize - 1);
-	//GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
+	
+	GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 
 	BOOL bTruncated = FALSE;
-	CString strOSD = strOSDBuilder.Get(bTruncated);
-	if (!strOSD.IsEmpty())
-	{
-		BOOL bResult = UpdateOSD(strOSD);
 
-		m_bConnected = bResult;
-
-		if (bResult)
-		{
-			if (bTruncated)
-				AppendError("Warning: The text is too long to be displayed in OSD, some info has been truncated!");
-		}
-		else
-		{
-
-			if (m_strInstallPath.IsEmpty())
-				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Install RivaTuner Statistics Server");
-			else
-				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Press <Space> to start RivaTuner Statistics Server");
-		}
-	}
 
 	BOOL success = AcquireRefreshMutex();		// begin the sync access to fields
 	if (!success)
@@ -682,23 +679,52 @@ void CRTSSSharedMemorySampleDlg::Refresh()
 		m_strStatus.Append(m_strError);
 		m_strError = "";
 	}
+	ReleaseRefreshMutex();		// end the sync access to fields
+
+	CString strOSD = strOSDBuilder.Get(bTruncated);
+	strOSD += m_arduinoResultsComplete;
+	if (!strOSD.IsEmpty())
+	{
+		BOOL bResult = UpdateOSD(strOSD, m_caSysLatStats);
+
+		m_bConnected = bResult;
+
+		if (bResult)
+		{
+			if (bTruncated)
+				AppendError("Warning: The text is too long to be displayed in OSD, some info has been truncated!");
+		}
+		else
+		{
+
+			if (m_strInstallPath.IsEmpty())
+				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Install RivaTuner Statistics Server");
+			else
+				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Press <Space> to start RivaTuner Statistics Server");
+		}
+	}
+
+
 
 	m_richEditCtrl.SetWindowText(m_strStatus);
 
-	ReleaseRefreshMutex();		// end the sync access to fields
+	
 }
-/*void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
+
+void CRTSSSharedMemorySampleDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
 {
 	if (bFormatTagsSupported && bObjTagsSupported)
 	{
+		
 		//if (GetClientsNum() == 1)
-		//	osd.Add("<P=0,10>", "Skewjo's stuff", "|");
+			//osd.Add("<P=0,10>", "Skewjo's stuff", "|");
+			//osd.Add("<P=0,10>", "", "|");
 		//move to position 0,10 (in zoomed pixel units)
 		//Note: take a note that position is specified in absolute coordinates so use this tag with caution because your text may
 		//overlap with text slots displayed by other applications, so in this demo we explicitly disable this tag usage if more than
 		//one client is currently rendering something in OSD
 	}
-}*/
+}
 
 void CRTSSSharedMemorySampleDlg::CheckRefreshMutex()
 {
@@ -928,11 +954,13 @@ int CRTSSSharedMemorySampleDlg::ReadByte(HANDLE hPort)
 
 void CRTSSSharedMemorySampleDlg::DrawBlack()
 {
-	UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><C=000000><I=-2,0,384,384,128,128><C>");
+	//UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>", m_caSysLat);
+	UpdateOSD("<C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>", m_caSysLat);
 }
 void CRTSSSharedMemorySampleDlg::DrawWhite()
 {
-	UpdateOSD("<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><C=FFFFFF><I=-2,0,384,384,128,128><C>");
+	//UpdateOSD("<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><E=-1,-1,8><C=FFFFFF><I=-2,0,384,384,128,128><C>", m_caSysLat);
+	UpdateOSD("<C=80FFFFFF><B=0,0>\b<C><E=-1,-1,8><C=FFFFFF><I=-2,0,384,384,128,128><C>", m_caSysLat);
 }
 void CRTSSSharedMemorySampleDlg::SetPortCom1()
 {

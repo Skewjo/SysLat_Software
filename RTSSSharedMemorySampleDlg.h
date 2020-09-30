@@ -11,6 +11,7 @@
 /////////////////////////////////////////////////////////////////////////////
 #include "RTSSSharedMemory.h"
 #include "RTSSProfileInterface.h"
+#include "GroupedString.h"
 #include <string>
 #include <time.h>
 
@@ -67,8 +68,8 @@ protected:
 
 	DWORD						GetClientsNum();
 	DWORD						GetSharedMemoryVersion();
-	static  BOOL			    UpdateOSD(LPCSTR lpText);
-	void						ReleaseOSD();
+	static  BOOL			    UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner);
+	void						ReleaseOSD(const char* OSDSlotOwner);
 	void						IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement);
 	void						SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty);
 	
@@ -111,7 +112,7 @@ protected:
 	void						SetPortCom3();
 	void						SetPortCom4();
 	CMenu*						ResetPortsMenuItems();
-	//void						GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported);
+	void						GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported);
 	static void					CheckRefreshMutex();
 	static void					AppendError(const CString& error);
 	static BOOL					AcquireRefreshMutex();
@@ -119,6 +120,16 @@ protected:
 	static void					CloseRefreshMutex();
 
 	static void SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults);
+
+	static constexpr const char* m_caSysLatStats = "SysLatStats";
+	static constexpr const char* m_caSysLat = "SysLat";
+	//const static char* m_caSysLatStats;
+	//const static char* m_caSysLat;
+	//const static char* m_caSysLatStats = "SysLatStats";
+	//const static char* m_caSysLat = "SysLat";
+	//const char m_caSysLatStats[12] = "SysLatStats";
+	//const char m_caSysLat[7];// = "SysLat";
+
 	//End Skewjo's stuff
 	////////////////////////////////////////////////////////////////////////////////////////////////
 
