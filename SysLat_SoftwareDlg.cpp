@@ -31,7 +31,7 @@
 // DONE - Add minimize button
 // DONE(well... it half-ass works) - Make System Latency appear in OSD
 // Add graph functionality
-// Save results to a table
+// Save results to a table(save fps and frametime as well?)
 // DONE - Determine active window vs window that RTSS is operating in?
 // Enumerate all 3D programs that RTSS can run in and display them in a menu
 // Launch RTSS automatically in the background if it's not running
