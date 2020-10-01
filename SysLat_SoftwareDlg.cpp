@@ -239,10 +239,11 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 
 	Refresh();
 
-	unsigned int myCounter = 0;
+	
 	//HANDLE myhandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, 0, 0, 0);
-	HANDLE myhandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
-	SetThreadPriority(myhandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
+	//startThread();
+	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
+	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
 	//AfxBeginThread()
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
@@ -307,6 +308,7 @@ void CSysLat_SoftwareDlg::OnDestroy()
 	MSG msg;
 	while (PeekMessage(&msg, m_hWnd, WM_TIMER, WM_TIMER, PM_REMOVE));
 
+	TerminateThread(drawingThreadHandle, 0); //Does exit code need to be 0 for this?
 	ReleaseOSD(m_caSysLatStats);
 	ReleaseOSD(m_caSysLat);
 	CloseRefreshMutex();
@@ -838,6 +840,30 @@ void CSysLat_SoftwareDlg::Refresh()
 	
 }
 
+BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
+{
+	if (pMsg->message == WM_KEYDOWN)
+	{
+		switch (pMsg->wParam)
+		{
+		//THIS CASE NEEDS TO BE CHANGED ONCE THE VARIABLES I NEED ARE OWNED BY THE CLASS AND AREN'T JUST LOCAL
+		case VK_F11:
+			ReInitThread();
+			return TRUE;
+		case ' ':
+			if (!m_bConnected)
+			{
+				if (!m_strInstallPath.IsEmpty())
+					ShellExecute(GetSafeHwnd(), "open", m_strInstallPath, NULL, NULL, SW_SHOWNORMAL);
+			}
+			return TRUE;
+
+		}
+	}
+
+	return CDialog::PreTranslateMessage(pMsg);
+}
+
 void CSysLat_SoftwareDlg::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
 {
 	if (bFormatTagsSupported && bObjTagsSupported)
@@ -924,6 +950,22 @@ void CSysLat_SoftwareDlg::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileP
 	}
 }
 
+void CSysLat_SoftwareDlg::ReInitThread() {
+	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread
+	m_loopSize = 0;
+	WaitForSingleObject(drawingThreadHandle, INFINITE);
+	m_loopSize = 0xFFFFFFFF;
+	time(&m_elapsedTimeStart);
+	myCounter = 0;
+	m_systemLatencyTotal = 0;
+	m_systemLatencyAverage = 0;
+	m_loopCounterEVR = 0;
+	m_systemLatencyTotalEVR = 0;
+	m_systemLatencyAverageEVR = 0;
+
+	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
+	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
+}
 
 unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 {
@@ -1128,5 +1170,6 @@ CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
+	ReInitThread();
 	return settingsMenu;
 }

@@ -75,6 +75,7 @@ protected:
 	std::string					GetActiveWindowTitle();
 	static  BOOL			    UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner);
 	void						ReleaseOSD(const char* OSDSlotOwner);
+	BOOL						PreTranslateMessage(MSG* pMsg);
 	void						IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement);
 	void						SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty);
 	
@@ -103,6 +104,9 @@ protected:
 
 	static HANDLE				m_refreshMutex;
 
+	unsigned int				myCounter = 0;
+	HANDLE						drawingThreadHandle;
+	void						ReInitThread();
 	static unsigned int __stdcall		CreateDrawingThread(void* data);
 
 	static HANDLE				OpenComPort(const CString& PortSpecifier);
@@ -128,6 +132,7 @@ protected:
 
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
+
 
 	//End Skewjo's stuff
 	////////////////////////////////////////////////////////////////////////////////////////////////
