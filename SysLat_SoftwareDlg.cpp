@@ -8,15 +8,17 @@
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
 #include "GroupedString.h"
+#include "psapi.h"
+
 /////////////////////////////////////////////////////////////////////////////
 #include <shlwapi.h>
 #include <float.h>
 #include <io.h>
 #include <sstream>
+#include <algorithm>
 
 //TODO:
 // 
-// Launch RTSS automatically in the background if it's not running
 // WON'T WORK(profiles are for individual programs) Profile Setting -  Create new "SysLat" profile in RTSS so as to not break other people's profiles 
 // NOT AVAILABLE - Profile Setting - Set "Refresh Period" to 0 milliseconds  - doesn't appear to be an option available via shared memory
 // NOT AVAILABLE - Profile Setting - Change default corner to bottom right
@@ -24,16 +26,19 @@
 // NOT AVIALABLE(Opacity) - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
 //		Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
 // DONE(but code is in bad location) - Profile Setting - Set box size to what I want it to be?
-// Add hotkey to restart readings (F11?)
-// Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
-// Change class/namespace of RTSSSharedMemorySample to SysLat
-// Add graph functionality
+// DONE - Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
+// DONE - Change class/namespace of RTSSSharedMemorySample to SysLat
 // DONE - Add minimize button
 // DONE(well... it half-ass works) - Make System Latency appear in OSD
+// Add graph functionality
 // Save results to a table
-// Determine active window vs window that RTSS is operating in?
+// DONE - Determine active window vs window that RTSS is operating in?
+// Enumerate all 3D programs that RTSS can run in and display them in a menu
+// Launch RTSS automatically in the background if it's not running
+// Add hotkey to restart readings (F11?)
 // Fix COM port change settings
 // Seperate some initialization that happens in "Refresh" function into a different "Refresh" function??
+// Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
 ///
 /// 
 /// 
@@ -47,7 +52,7 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-//Define static variables - these should probably be done as an inline...
+//Define static variables - these should probably be done as an inline... It's available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 CString CSysLat_SoftwareDlg::m_arduinoResultsComplete = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
@@ -333,6 +338,98 @@ DWORD CSysLat_SoftwareDlg::GetSharedMemoryVersion()
 
 	return dwResult;
 }
+
+
+DWORD CSysLat_SoftwareDlg::GetLastForegroundApp()
+{
+	DWORD dwResult = 0;
+
+	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
+
+	if (hMapFile)
+	{
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
+
+		if (pMem)
+		{
+			if ((pMem->dwSignature == 'RTSS') &&
+				(pMem->dwVersion >= 0x00020000))
+				dwResult = pMem->dwLastForegroundApp;
+
+			UnmapViewOfFile(pMapAddr);
+		}
+
+		CloseHandle(hMapFile);
+	}
+
+	return dwResult;
+}
+
+DWORD CSysLat_SoftwareDlg::GetLastForegroundAppID()
+{
+	DWORD dwResult = 0;
+
+	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
+
+	if (hMapFile)
+	{
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
+
+		if (pMem)
+		{
+			if ((pMem->dwSignature == 'RTSS') &&
+				(pMem->dwVersion >= 0x00020000))
+				dwResult = pMem->dwLastForegroundAppProcessID;
+
+			UnmapViewOfFile(pMapAddr);
+		}
+
+		CloseHandle(hMapFile);
+	}
+
+	return dwResult;
+}
+
+std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
+	std::string ret;
+	HANDLE Handle = OpenProcess(
+		PROCESS_QUERY_LIMITED_INFORMATION,
+		FALSE,
+		processID 
+	);
+	if (Handle)
+	{
+		DWORD buffSize = 1024;
+		CHAR Buffer[1024];
+		if (QueryFullProcessImageNameA(Handle, 0, Buffer, &buffSize))
+		{
+			ret = strrchr(Buffer, '\\') + 1; // I can't believe this works
+		}
+		else
+		{
+			
+			printf("Error GetModuleBaseNameA : %lu", GetLastError());
+		}
+		CloseHandle(Handle);
+	}
+	else
+	{
+		printf("Error OpenProcess : %lu", GetLastError());
+	}
+	return ret;
+
+}
+
+std::string CSysLat_SoftwareDlg::GetActiveWindowTitle()
+{
+	char wnd_title[256];
+	CWnd* pWnd = GetForegroundWindow();
+	::GetWindowText((HWND)*pWnd, wnd_title, 256); //Had to use scope resolution because this function is defined in both WinUser.h and afxwin.h
+	return wnd_title;
+}
+
 DWORD CSysLat_SoftwareDlg::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
 {
 	DWORD dwResult = 0;
@@ -636,6 +733,8 @@ void CSysLat_SoftwareDlg::Refresh()
 	//init shared memory version
 
 	DWORD dwSharedMemoryVersion = GetSharedMemoryVersion();
+	//DWORD dwLastForegroundApp = GetLastForegroundApp();
+	DWORD dwLastForegroundAppProcessID = GetLastForegroundAppID();
 
 	//init max OSD text size, we'll use extended text slot for v2.7 and higher shared memory, 
 	//it allows displaying 4096 symbols /instead of 256 for regular text slot
@@ -667,6 +766,34 @@ void CSysLat_SoftwareDlg::Refresh()
 	double measurementsPerSecond = m_LoopCounterRefresh / dif;
 
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
+	m_strStatus.Append("\nLast RTSS Foreground App Name: ");
+	std::string processName = GetProcessNameFromPID(dwLastForegroundAppProcessID);
+	m_strStatus += processName.c_str();
+	m_strStatus.Append("\nCurrently active window: ");
+	std::string activeWindowTitle = GetActiveWindowTitle();
+	m_strStatus += activeWindowTitle.c_str();
+
+	size_t pos = processName.find(".exe");
+	if (pos != std::string::npos) {
+		processName.replace(pos, processName.size(), "");
+	}
+	while ((pos = processName.find(" ")) != std::string::npos) {
+		processName.replace(pos, 1, "");
+	}
+	std::transform(processName.begin(), processName.end(), processName.begin(),[](unsigned char c) { return std::tolower(c); });
+
+	
+	while ((pos = activeWindowTitle.find(" ")) != std::string::npos) {
+		activeWindowTitle.replace(pos, 1, "");
+	}
+	std::transform(activeWindowTitle.begin(), activeWindowTitle.end(), activeWindowTitle.begin(), [](unsigned char c) { return std::tolower(c); });
+	
+	m_strStatus.Append("\n");
+	m_strStatus += processName.c_str();
+	m_strStatus.Append("\n");
+	m_strStatus += activeWindowTitle.c_str();
+
+
 	m_strStatus.AppendFormat("\nSystem Latency: %s", m_arduinoResultsComplete);
 	m_strStatus.AppendFormat("\nLoop Counter : %d", m_LoopCounterRefresh);
 	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.2f", measurementsPerSecond);

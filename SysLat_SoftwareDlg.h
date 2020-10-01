@@ -69,6 +69,10 @@ protected:
 
 	DWORD						GetClientsNum();
 	DWORD						GetSharedMemoryVersion();
+	DWORD						GetLastForegroundApp();
+	DWORD						GetLastForegroundAppID();
+	std::string					GetProcessNameFromPID(DWORD processID);
+	std::string					GetActiveWindowTitle();
 	static  BOOL			    UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner);
 	void						ReleaseOSD(const char* OSDSlotOwner);
 	void						IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement);
