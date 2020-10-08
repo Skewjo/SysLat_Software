@@ -28,7 +28,6 @@ typedef struct SYSLAT_DATA {
 class CSysLatData
 {
 protected: 
-	//static int instancesThisSession; //Do I need to keep track of the number of these objects that I've created?
 	SYSLAT_DATA			sld;
 	CString				m_strSysLatResultsComplete;
 	HANDLE				m_Mutex = NULL;
@@ -36,6 +35,7 @@ protected:
 	
 public:
 	CSysLatData(); //this constructor only opens a mutex... does the destructor need to close the mutex? Also, do I need to init the struct in the constructor? It should init to all 0's off the bat...
+	
 	//using getters and setters for all of these seems stupid...
 	int					GetCounter();
 	int					GetTotal();
@@ -45,29 +45,29 @@ public:
 	double				GetAverageEVR();
 	CString				GetStringResult();
 
-	//int*				GetMovingAverage(); //????
 	int					GetMedian();
 	int					GetMedianEVR();
 	int					GetMax();
 	int					GetMin();
 	int					GetMaxEVR();
 	int					GetMinEVR();
+	//int*				GetMovingAverage(); //????
 
-	//double				CalculateMovingAverage(); //this function would be for calculating it from scratch...
-	//double				UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
+	//double			CalculateMovingAverage(); //this function would be for calculating it from scratch...
+	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
 
 	
 	void				UpdateSLD(unsigned int loopCounter, const CString& arduinoResults);
 
-	//mutex functions?
-	void					CheckSLDMutex();
-	BOOL					AcquireSLDMutex();
-	void					ReleaseSLDMutex();
-	void					CloseSLDMutex();
+	//mutex functions
+	void				CheckSLDMutex();
+	BOOL				AcquireSLDMutex();
+	void				ReleaseSLDMutex();
+	void				CloseSLDMutex();
 
-	void AppendError(const CString& error);
+	void				AppendError(const CString& error);
 
 	//data IO functions?
-	//BOOL					ExportData(); //to CSV or something? What's the 
+	//BOOL				ExportData(); //to CSV or something? JSON is Michael's favorite...
 };
 #endif

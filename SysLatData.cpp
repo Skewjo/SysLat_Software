@@ -24,7 +24,6 @@ int	CSysLatData::GetTotalEVR() {
 double CSysLatData::GetAverageEVR() {
 	return sld.m_systemLatencyAverageEVR;
 }
-//int*				GetMovingAverage(); //????
 
 int CSysLatData::GetMedian() {
 	return sld.m_aMovingAverage[50]; //THIS ISN'T RIGHT YOU DUMMY - going to have to implement a new data structure if I want this value
@@ -47,14 +46,6 @@ int CSysLatData::GetMinEVR() {
 CString CSysLatData::GetStringResult() {
 	return m_strSysLatResultsComplete;
 }
-
-/*
-double CSysLatData::CalculateMovingAverage() {
-} 
-double CSysLatData::UpdateMovingAverage() {
-}
-*/
-
 
 void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults)
 {
@@ -123,5 +114,5 @@ void CSysLatData::AppendError(const CString& error)
 }
 
 //data IO functions?
-//BOOL CSysLatData::ExportData() {//to CSV or something? JSON is Michael's favorite...
+//BOOL CSysLatData::ExportData() {
 //}

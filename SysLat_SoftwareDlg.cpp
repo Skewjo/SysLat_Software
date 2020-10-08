@@ -4,7 +4,6 @@
 // modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 #include "stdafx.h"
-//#include "RTSSClient.h"
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
 #include "USBController.h"
@@ -16,8 +15,6 @@
 #include <io.h>
 #include <sstream>
 #include <algorithm>
-
-
 
 //TODO:
 // 
@@ -61,8 +58,6 @@ unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
 CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
 CString CSysLat_SoftwareDlg::m_strError = "";
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
-
-
 
 /////////////////////////////////////////////////////////////////////////////
 // CAboutDlg dialog used for App About
@@ -310,7 +305,6 @@ std::string CSysLat_SoftwareDlg::GetActiveWindowTitle()
 	return wnd_title;
 }
 
-//PreTranslateMessage handles dialog box keybinds - might need to ask Unwinder way to intercept keystrokes from the 3d application, but I could be wrong
 BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -334,8 +328,6 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 
 	return CDialog::PreTranslateMessage(pMsg);
 }
-//Other Dialog functions
-//This funciton should probably be split into several different parts including: initRTSSVars, RefreshDlg and RefreshOSD
 void CSysLat_SoftwareDlg::Refresh()
 {
 	//I believe this needs to be somewhere else...
@@ -385,6 +377,9 @@ void CSysLat_SoftwareDlg::Refresh()
 	int seconds = static_cast<int>(dif) % 60;
 
 	double measurementsPerSecond = m_LoopCounterRefresh / dif;
+
+
+	// Need to clean up this giant block of "Appends", to make dialog box text more manageable, by creating multiple functions that append different things
 
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
 	m_strStatus.Append("\nLast RTSS Foreground App Name: ");
@@ -458,9 +453,6 @@ void CSysLat_SoftwareDlg::Refresh()
 
 
 } 
-
-
-
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
 	//I'm not sure why we had acquire and release here?
@@ -478,7 +470,7 @@ void CSysLat_SoftwareDlg::AppendError(const CString& error)
 void CSysLat_SoftwareDlg::ReInitThread() {
 	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread
 	m_loopSize = 0;
-	WaitForSingleObject(drawingThreadHandle, INFINITE); // since this is the function called by the "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
+	WaitForSingleObject(drawingThreadHandle, INFINITE); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
 	m_loopSize = 0xFFFFFFFF;
 	time(&m_elapsedTimeStart);
 	myCounter = 0;
@@ -491,7 +483,10 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 }
 unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 {
-	int TIMEOUT = 5;
+	int TIMEOUT = 5; //this should probably be a defined constant
+	int serialReadData = 0;
+	CString	sysLatResults;
+	CRTSSClient sysLatClient("SysLat", 0);
 
 	CUSBController usbController;
 	HANDLE hPort = usbController.OpenComPort(m_PortSpecifier);
@@ -503,21 +498,10 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 		return 0;
 	}
 
-	int serialReadData = 0;
-
-	
-	CRTSSClient sysLatClient("SysLat", 0);
-
-	CString	sysLatResults;
-
 	DrawBlack(sysLatClient);
 
 	for (unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
 	{
-		//std::ostringstream ostream1;
-		//ostream1 << sizeof(loopCounter);
-		
-		//OutputDebugStringA(ostream1.str().c_str());
 		time_t start = time(NULL);
 		while (serialReadData != 65 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
@@ -548,7 +532,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 	return 0;
 }
 
-//The following 2 functions should be combined into a "DrawSquare" function that takes different input strings for black and white
+//The following 2 functions should probably be combined into a "DrawSquare" function that takes different input strings for black and white
 void CSysLat_SoftwareDlg::DrawBlack(CRTSSClient sysLatClient)
 {
 	//UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>", m_caSysLat);

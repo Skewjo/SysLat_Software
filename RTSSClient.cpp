@@ -3,9 +3,10 @@
 #include "RTSSSharedMemory.h"
 #include "io.h"
 
+//static member initializations
+DWORD CRTSSClient::sharedMemoryVersion = 0;
 CRTSSProfileInterface CRTSSClient::m_profileInterface;
 CString CRTSSClient::m_strInstallPath = "";
-DWORD CRTSSClient::sharedMemoryVersion = 0;
 
 CRTSSClient::CRTSSClient(const char* setSlotOwner, int setClientPriority) {
 	slotOwnerOSD = setSlotOwner;
@@ -71,6 +72,68 @@ void CRTSSClient::InitRTSSInterface() {
 		sharedMemoryVersion = dwResult;
 	}
 }
+void CRTSSClient::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
+{
+	if (m_profileInterface.IsInitialized())
+	{
+		m_profileInterface.LoadProfile(lpProfile);
+
+		LONG dwProperty = 0;
+
+		if (m_profileInterface.GetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty)))
+		{
+			dwProperty += dwIncrement;
+
+			m_profileInterface.SetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty));
+			m_profileInterface.SaveProfile(lpProfile);
+			m_profileInterface.UpdateProfiles();
+		}
+	}
+}
+void CRTSSClient::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty)
+{
+	if (m_profileInterface.IsInitialized())
+	{
+		m_profileInterface.LoadProfile(lpProfile);
+		m_profileInterface.SetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty));
+		m_profileInterface.SaveProfile(lpProfile);
+		m_profileInterface.UpdateProfiles();
+	}
+}
+
+DWORD CRTSSClient::GetClientsNum() {
+	DWORD dwClients = 0;
+
+	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
+
+	if (hMapFile)
+	{
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
+
+		if (pMem)
+		{
+			if ((pMem->dwSignature == 'RTSS') &&
+				(pMem->dwVersion >= 0x00020000))
+			{
+				for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
+				{
+					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
+
+					if (strlen(pEntry->szOSDOwner))
+						dwClients++;
+				}
+			}
+
+			UnmapViewOfFile(pMapAddr);
+		}
+
+		CloseHandle(hMapFile);
+	}
+
+	return dwClients;
+}
 DWORD CRTSSClient::GetSharedMemoryVersion()
 {
 	
@@ -130,131 +193,7 @@ DWORD CRTSSClient::GetLastForegroundAppID()
 
 	return dwResult;
 }
-DWORD CRTSSClient::GetClientsNum() {
-	DWORD dwClients = 0;
 
-	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
-
-	if (hMapFile)
-	{
-		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-
-		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
-
-		if (pMem)
-		{
-			if ((pMem->dwSignature == 'RTSS') &&
-				(pMem->dwVersion >= 0x00020000))
-			{
-				for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
-				{
-					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
-
-					if (strlen(pEntry->szOSDOwner))
-						dwClients++;
-				}
-			}
-
-			UnmapViewOfFile(pMapAddr);
-		}
-
-		CloseHandle(hMapFile);
-	}
-
-	return dwClients;
-}
-DWORD CRTSSClient::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
-{
-	DWORD dwResult = 0;
-
-	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
-
-	if (hMapFile)
-	{
-		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
-		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
-
-		if (pMem)
-		{
-			if ((pMem->dwSignature == 'RTSS') &&
-				(pMem->dwVersion >= 0x00020000))
-			{
-				for (DWORD dwPass = 0; dwPass < 2; dwPass++)
-					//1st pass : find previously captured OSD slot
-					//2nd pass : otherwise find the first unused OSD slot and capture it
-				{
-					for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
-						//allow primary OSD clients (i.e. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party
-						//applications start scanning the slots from the second one
-					{
-						RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
-
-						if (dwPass)
-						{
-							if (!strlen(pEntry->szOSDOwner))
-								strcpy_s(pEntry->szOSDOwner, sizeof(pEntry->szOSDOwner), "RTSSSharedMemorySample");
-						}
-
-						if (!strcmp(pEntry->szOSDOwner, "RTSSSharedMemorySample"))
-						{
-							if (pMem->dwVersion >= 0x0002000c)
-								//embedded graphs are supported for v2.12 and higher shared memory
-							{
-								if (dwOffset + sizeof(RTSS_EMBEDDED_OBJECT_GRAPH) + dwBufferSize * sizeof(FLOAT) > sizeof(pEntry->buffer))
-									//validate embedded object offset and size and ensure that we don't overrun the buffer
-								{
-									UnmapViewOfFile(pMapAddr);
-
-									CloseHandle(hMapFile);
-
-									return 0;
-								}
-
-								LPRTSS_EMBEDDED_OBJECT_GRAPH lpGraph = (LPRTSS_EMBEDDED_OBJECT_GRAPH)(pEntry->buffer + dwOffset);
-								//get pointer to object in buffer
-
-								lpGraph->header.dwSignature = RTSS_EMBEDDED_OBJECT_GRAPH_SIGNATURE;
-								lpGraph->header.dwSize = sizeof(RTSS_EMBEDDED_OBJECT_GRAPH) + dwBufferSize * sizeof(FLOAT);
-								lpGraph->header.dwWidth = dwWidth;
-								lpGraph->header.dwHeight = dwHeight;
-								lpGraph->header.dwMargin = dwMargin;
-								lpGraph->dwFlags = dwFlags;
-								lpGraph->fltMin = fltMin;
-								lpGraph->fltMax = fltMax;
-								lpGraph->dwDataCount = dwBufferSize;
-
-								if (lpBuffer && dwBufferSize)
-								{
-									for (DWORD dwPos = 0; dwPos < dwBufferSize; dwPos++)
-									{
-										FLOAT fltData = lpBuffer[dwBufferPos];
-
-										lpGraph->fltData[dwPos] = (fltData == FLT_MAX) ? 0 : fltData;
-
-										dwBufferPos = (dwBufferPos + 1) & (dwBufferSize - 1);
-									}
-								}
-
-								dwResult = lpGraph->header.dwSize;
-							}
-
-							break;
-						}
-					}
-
-					if (dwResult)
-						break;
-				}
-			}
-
-			UnmapViewOfFile(pMapAddr);
-		}
-
-		CloseHandle(hMapFile);
-	}
-
-	return dwResult;
-}
 BOOL CRTSSClient::UpdateOSD(LPCSTR lpText) {
 	BOOL bResult = FALSE;
 
@@ -379,6 +318,98 @@ void CRTSSClient::ReleaseOSD()
 		CloseHandle(hMapFile);
 	}
 }
+DWORD CRTSSClient::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
+{
+	DWORD dwResult = 0;
+
+	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
+
+	if (hMapFile)
+	{
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
+
+		if (pMem)
+		{
+			if ((pMem->dwSignature == 'RTSS') &&
+				(pMem->dwVersion >= 0x00020000))
+			{
+				for (DWORD dwPass = 0; dwPass < 2; dwPass++)
+					//1st pass : find previously captured OSD slot
+					//2nd pass : otherwise find the first unused OSD slot and capture it
+				{
+					for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
+						//allow primary OSD clients (i.e. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party
+						//applications start scanning the slots from the second one
+					{
+						RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
+
+						if (dwPass)
+						{
+							if (!strlen(pEntry->szOSDOwner))
+								strcpy_s(pEntry->szOSDOwner, sizeof(pEntry->szOSDOwner), "RTSSSharedMemorySample");
+						}
+
+						if (!strcmp(pEntry->szOSDOwner, "RTSSSharedMemorySample"))
+						{
+							if (pMem->dwVersion >= 0x0002000c)
+								//embedded graphs are supported for v2.12 and higher shared memory
+							{
+								if (dwOffset + sizeof(RTSS_EMBEDDED_OBJECT_GRAPH) + dwBufferSize * sizeof(FLOAT) > sizeof(pEntry->buffer))
+									//validate embedded object offset and size and ensure that we don't overrun the buffer
+								{
+									UnmapViewOfFile(pMapAddr);
+
+									CloseHandle(hMapFile);
+
+									return 0;
+								}
+
+								LPRTSS_EMBEDDED_OBJECT_GRAPH lpGraph = (LPRTSS_EMBEDDED_OBJECT_GRAPH)(pEntry->buffer + dwOffset);
+								//get pointer to object in buffer
+
+								lpGraph->header.dwSignature = RTSS_EMBEDDED_OBJECT_GRAPH_SIGNATURE;
+								lpGraph->header.dwSize = sizeof(RTSS_EMBEDDED_OBJECT_GRAPH) + dwBufferSize * sizeof(FLOAT);
+								lpGraph->header.dwWidth = dwWidth;
+								lpGraph->header.dwHeight = dwHeight;
+								lpGraph->header.dwMargin = dwMargin;
+								lpGraph->dwFlags = dwFlags;
+								lpGraph->fltMin = fltMin;
+								lpGraph->fltMax = fltMax;
+								lpGraph->dwDataCount = dwBufferSize;
+
+								if (lpBuffer && dwBufferSize)
+								{
+									for (DWORD dwPos = 0; dwPos < dwBufferSize; dwPos++)
+									{
+										FLOAT fltData = lpBuffer[dwBufferPos];
+
+										lpGraph->fltData[dwPos] = (fltData == FLT_MAX) ? 0 : fltData;
+
+										dwBufferPos = (dwBufferPos + 1) & (dwBufferSize - 1);
+									}
+								}
+
+								dwResult = lpGraph->header.dwSize;
+							}
+
+							break;
+						}
+					}
+
+					if (dwResult)
+						break;
+				}
+			}
+
+			UnmapViewOfFile(pMapAddr);
+		}
+
+		CloseHandle(hMapFile);
+	}
+
+	return dwResult;
+}
 
 void CRTSSClient::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported)
 {
@@ -395,31 +426,3 @@ void CRTSSClient::GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOO
 	}
 }
 
-void CRTSSClient::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
-{
-	if (m_profileInterface.IsInitialized())
-	{
-		m_profileInterface.LoadProfile(lpProfile);
-
-		LONG dwProperty = 0;
-
-		if (m_profileInterface.GetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty)))
-		{
-			dwProperty += dwIncrement;
-
-			m_profileInterface.SetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty));
-			m_profileInterface.SaveProfile(lpProfile);
-			m_profileInterface.UpdateProfiles();
-		}
-	}
-}
-void CRTSSClient::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty)
-{
-	if (m_profileInterface.IsInitialized())
-	{
-		m_profileInterface.LoadProfile(lpProfile);
-		m_profileInterface.SetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty));
-		m_profileInterface.SaveProfile(lpProfile);
-		m_profileInterface.UpdateProfiles();
-	}
-}

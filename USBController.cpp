@@ -12,10 +12,10 @@ HANDLE CUSBController::OpenComPort(const CString& PortSpecifier)
 		CloseHandle(hPort);
 		return INVALID_HANDLE_VALUE;
 	}
-	dcb.BaudRate = CBR_9600; //9600 Baud
-	dcb.ByteSize = 8; //8 data bits
-	dcb.Parity = NOPARITY; //no parity
-	dcb.StopBits = ONESTOPBIT; //1 stop
+	dcb.BaudRate = CBR_9600;
+	dcb.ByteSize = 8;
+	dcb.Parity = NOPARITY;
+	dcb.StopBits = ONESTOPBIT;
 	if (!SetCommState(hPort, &dcb))
 	{
 		CloseHandle(hPort);
@@ -32,7 +32,7 @@ HANDLE CUSBController::OpenComPort(const CString& PortSpecifier)
 }
 void CUSBController::CloseComPort(HANDLE hPort)
 {
-	PurgeComm(hPort, PURGE_RXCLEAR);    // it is not clear whether the purge is needed on each read of the byte, or only when we need to close the port
+	PurgeComm(hPort, PURGE_RXCLEAR);
 	CloseHandle(hPort);
 }
 bool CUSBController::IsComPortOpened(HANDLE hPort)
