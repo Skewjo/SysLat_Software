@@ -27,7 +27,7 @@
 // NOT AVAILABLE(opacity) - Profile Setting - Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
 // NOT AVIALABLE(Opacity) - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
 //		Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
-// DONE(but code is in bad location) - Profile Setting - Set box size to what I want it to be?
+// DOESN'T WORK -(also code is in bad location) - Profile Setting - Set box size to what I want it to be?
 // DONE - Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
 // DONE - Change class/namespace of RTSSSharedMemorySample to SysLat
 // DONE - Add minimize button
@@ -40,7 +40,7 @@
 // DONE - Add hotkey to restart readings (F11?)
 // Fix COM port change settings
 // Seperate some initialization that happens in "Refresh" function into a different "Refresh-like" function?? - partially done?
-// Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
+// DONE - Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
 ///
 /// 
 /// 
@@ -54,11 +54,10 @@
 static char THIS_FILE[] = __FILE__;
 #endif
 
-//Define static variables - these should probably be done as an inline... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
+//Define static variables - these should probably be done as inline... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
-bool CSysLat_SoftwareDlg::m_debugMode = true;
 CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
 CString CSysLat_SoftwareDlg::m_strError = "";
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
@@ -119,9 +118,6 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 
 	m_hIcon						= AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-
-	m_dwNumberOfProcessors		= 0;
-	m_pNtQuerySystemInformation = NULL;
 	m_strStatus					= "";
 	m_strInstallPath			= "";
 
@@ -129,8 +125,6 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 	m_bFormatTags				= TRUE;
 	m_bFillGraphs				= FALSE;
 	m_bConnected				= FALSE;
-
-	m_dwHistoryPos				= 0;
 }
 void CSysLat_SoftwareDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -194,28 +188,6 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_richEditCtrl.SetFont(&m_font);
 	}
-
-	//init CPU usage calculation related variables	
-	SYSTEM_INFO info;
-	GetSystemInfo(&info);
-
-	m_dwNumberOfProcessors = info.dwNumberOfProcessors;
-	m_pNtQuerySystemInformation = (NTQUERYSYSTEMINFORMATION)GetProcAddress(GetModuleHandle("NTDLL"), "NtQuerySystemInformation");
-
-	for (DWORD dwCpu = 0; dwCpu < MAX_CPU; dwCpu++)
-	{
-		m_idleTime[dwCpu].QuadPart = 0;
-		m_fltCpuUsage[dwCpu] = FLT_MAX;
-		m_dwTickCount[dwCpu] = 0;
-
-		for (DWORD dwPos = 0; dwPos < MAX_HISTORY; dwPos++)
-			m_fltCpuUsageHistory[dwCpu][dwPos] = FLT_MAX;
-	}
-
-	//init RAM usage history
-	for (DWORD dwPos = 0; dwPos < MAX_HISTORY; dwPos++)
-		m_fltRamUsageHistory[dwPos] = FLT_MAX;
-
 
 	//init timers
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
@@ -382,7 +354,7 @@ void CSysLat_SoftwareDlg::Refresh()
 	m_strStatus = "";
 
 
-	//init shared memory version
+	//init shared memory version - these definitely need to be split into a different function or something...
 	DWORD dwSharedMemoryVersion = CRTSSClient::GetSharedMemoryVersion();
 	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
 
@@ -405,7 +377,7 @@ void CSysLat_SoftwareDlg::Refresh()
 	if (!success)
 		return;
 
-	//Make my own fucking clock...
+	//Make my own fucking clock... I think this should probably be done in the SysLatData class
 	time(&m_elapsedTimeEnd);
 
 	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
@@ -568,10 +540,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 		}
 
 		//I think this should be happening in a different thread so that the serial reads can continue uninterrupted
-		//SetArduinoResultsComplete(loopCounter, sysLatResults);
 		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults);
-
-
 	}
 
 	usbController.CloseComPort(hPort);
