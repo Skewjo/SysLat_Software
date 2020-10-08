@@ -150,13 +150,16 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="GroupedString.cpp" />
+    <ClCompile Include="RTSSClient.cpp" />
     <ClCompile Include="RTSSProfileInterface.cpp" />
+    <ClCompile Include="SysLatData.cpp" />
     <ClCompile Include="SysLat_Software.cpp" />
     <ClCompile Include="SysLat_SoftwareDlg.cpp" />
     <ClCompile Include="StdAfx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="USBController.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="SysLat_Software.rc" />
@@ -164,10 +167,13 @@
   <ItemGroup>
     <ClInclude Include="GroupedString.h" />
     <ClInclude Include="Resource.h" />
+    <ClInclude Include="RTSSClient.h" />
     <ClInclude Include="RTSSProfileInterface.h" />
+    <ClInclude Include="SysLatData.h" />
     <ClInclude Include="SysLat_Software.h" />
     <ClInclude Include="SysLat_SoftwareDlg.h" />
     <ClInclude Include="StdAfx.h" />
+    <ClInclude Include="USBController.h" />
   </ItemGroup>
   <ItemGroup>
     <Image Include="res\GRArialBlack.ico" />

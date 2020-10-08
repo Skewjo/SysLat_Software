@@ -11,10 +11,12 @@
 #endif // _MSC_VER > 1000
 /////////////////////////////////////////////////////////////////////////////
 #include "RTSSSharedMemory.h"
-#include "RTSSProfileInterface.h"
-#include "GroupedString.h"
+#include "RTSSClient.h"
+#include "SysLatData.h"
 #include <string>
 #include <time.h>
+#include <vector>
+
 
 /////////////////////////////////////////////////////////////////////////////
 #define MAX_CPU									8
@@ -28,6 +30,7 @@
 /////////////////////////////////////////////////////////////////////////////
 typedef HRESULT (WINAPI *NTQUERYSYSTEMINFORMATION)(UINT, PVOID, ULONG, PULONG);
 /////////////////////////////////////////////////////////////////////////////
+//Do I want to keep the following struct?  It's used in the "CalcCpuUsage" function I got rid of, but would I ever want that info?
 typedef struct SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION 
 {
     LARGE_INTEGER	IdleTime;
@@ -36,17 +39,13 @@ typedef struct SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION
     LARGE_INTEGER	Reserved1[2];
     ULONG			Reserved2;
 } SYSTEM_PROCESSOR_PERFORMANCE_INFORMATION;
-/////////////////////////////////////////////////////////////////////////////
+
+
 class CSysLat_SoftwareDlg : public CDialog
 {
 // Construction
 public:
 	CSysLat_SoftwareDlg(CWnd* pParent = NULL);	// standard constructor
-
-
-	//////////////////
-
-	/////////////////////
 
 // Dialog Data
 	//{{AFX_DATA(CSysLat_SoftwareDlg)
@@ -62,81 +61,49 @@ public:
 
 // Implementation
 protected:
-	void Refresh();
-	//static void Refresh(CString externalString);
+	BOOL						PreTranslateMessage(MSG* pMsg);
+	void						Refresh();
+	static void					AppendError(const CString& error);
+	
+	static unsigned int __stdcall		CreateDrawingThread(void* data);
+	void						ReInitThread();
 
-	DWORD						EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags);
 
-	DWORD						GetClientsNum();
-	DWORD						GetSharedMemoryVersion();
-	DWORD						GetLastForegroundApp();
-	DWORD						GetLastForegroundAppID();
+	static void					DrawBlack(CRTSSClient sysLatClient);
+	static void					DrawWhite(CRTSSClient sysLatClient);
 	std::string					GetProcessNameFromPID(DWORD processID);
 	std::string					GetActiveWindowTitle();
-	static  BOOL			    UpdateOSD(LPCSTR lpText, const char* OSDSlotOwner);
-	void						ReleaseOSD(const char* OSDSlotOwner);
-	BOOL						PreTranslateMessage(MSG* pMsg);
-	void						IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement);
-	void						SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty);
-	
-	
 
-	//////////////////////////////////////////////////////////////////////////////////////////////
-	//Skewjo's stuff
-	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
-	
-	static bool					m_debugMode;
-	
-	static CString				m_PortSpecifier;
-
-	static int					m_systemLatencyTotal;
-	static double				m_systemLatencyAverage;
-	static int					m_loopCounterEVR;
-	static int					m_systemLatencyTotalEVR; //EVR stands for expected value range
-	static double				m_systemLatencyAverageEVR;
-	
-
-	static CString				m_arduinoResultsComplete;
-	static unsigned int			m_loopSize;
-	static unsigned int			m_LoopCounterRefresh;
-
-	static CString				m_strError;
-
-	static HANDLE				m_refreshMutex;
-
-	unsigned int				myCounter = 0;
-	HANDLE						drawingThreadHandle;
-	void						ReInitThread();
-	static unsigned int __stdcall		CreateDrawingThread(void* data);
-
-	static HANDLE				OpenComPort(const CString& PortSpecifier);
-	static void					CloseComPort(HANDLE hPort);
-	static bool					IsComPortOpened(HANDLE hPort);
-	static int					ReadByte(HANDLE port);
-
-	static void					DrawBlack();
-	static void					DrawWhite();
+	//Dialog menu related functions
 	void						SetPortCom1();
 	void						SetPortCom2();
 	void						SetPortCom3();
 	void						SetPortCom4();
 	CMenu*						ResetPortsMenuItems();
-	void						GetOSDText(CGroupedString& osd, BOOL bFormatTagsSupported, BOOL bObjTagsSupported);
-	static void					CheckRefreshMutex();
-	static void					AppendError(const CString& error);
-	static BOOL					AcquireRefreshMutex();
-	static void					ReleaseRefreshMutex();
-	static void					CloseRefreshMutex();
 
-	static void SetArduinoResultsComplete(unsigned int loopCounter, const CString& arduinoResults);
 
+	
+	HANDLE						drawingThreadHandle;
+	static CSysLatData*			m_pOperatingSLD; // = new CSysLatData; //I think this is what I want...a static pointer(meaning I can use it both for "the thread" and for "refresh") to a data object so I can hold the old "SysLatData" objects for later
+	std::vector<CSysLatData*>	m_previousSLD;
+	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
+	static CString				m_PortSpecifier;
+
+	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
+
+	static bool					m_debugMode; // I don't think this is even used any more... but maybe I should re-implement it?
+	
+	unsigned int				myCounter = 0;
+	static unsigned int			m_loopSize;
+	static unsigned int			m_LoopCounterRefresh;
+	static CString				m_strError;
 
 
-	//End Skewjo's stuff
-	////////////////////////////////////////////////////////////////////////////////////////////////
 
+	//previously existing members
+	//need to go through these and figure out which ones I'm still using?
 	BOOL						m_bMultiLineOutput;
 	BOOL						m_bFormatTags;
 	BOOL						m_bFillGraphs;
@@ -161,8 +128,6 @@ protected:
 
 	static CString				m_strStatus;
 	CString						m_strInstallPath;
-
-	CRTSSProfileInterface		m_profileInterface;
 
 	
 	// Generated message map functions
