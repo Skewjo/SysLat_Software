@@ -77,10 +77,10 @@ protected:
 	static unsigned int			m_LoopCounterRefresh;
 	static CString				m_strError;
 
-	DWORD dwSharedMemoryVersion;// = CRTSSClient::GetSharedMemoryVersion();
-	DWORD dwMaxTextSize;// = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
-	BOOL bFormatTagsSupported;// = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
-	BOOL bObjTagsSupported;// = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
+	DWORD dwSharedMemoryVersion;
+	DWORD dwMaxTextSize;
+	BOOL bFormatTagsSupported;
+	BOOL bObjTagsSupported;
 	
 						   //previously existing members
 	BOOL						m_bMultiLineOutput;

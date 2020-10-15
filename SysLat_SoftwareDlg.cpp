@@ -43,7 +43,7 @@
 // Keep track of total tests performed in a config file vs. looking for existing log files and picking up from there?
 //		How many tests should we allow total? 100? 
 //		Would it be fine if SysLat overwrote the tests every time it was restarted? ...I think it would
-// Add lots more menu options - USB options, debug output, data upload?
+// Add lots more menu options - USB options, debug output, data upload, RTSS options(text color)
 // Put date/time in log file
 // Clear log files and put a configurable(?) cap on the number allowed
 // Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
@@ -535,13 +535,11 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 //The following 2 functions should probably be combined into a "DrawSquare" function that takes different input strings for black and white
 void CSysLat_SoftwareDlg::DrawBlack(CRTSSClient sysLatClient)
 {
-	//UpdateOSD("<P=0,0><L0><C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>", m_caSysLat);
-	sysLatClient.UpdateOSD("<C=80000000><B=0,0>\b<C><E=-1,-1,8><C=000000><I=-2,0,384,384,128,128><C>");
+	sysLatClient.UpdateOSD("<C=000000><B=10,10><C>");
 }
 void CSysLat_SoftwareDlg::DrawWhite(CRTSSClient sysLatClient)
 {
-	//UpdateOSD("<P=0,0><L0><C=80FFFFFF><B=0,0>\b<C><E=-1,-1,8><C=FFFFFF><I=-2,0,384,384,128,128><C>", m_caSysLat);
-	sysLatClient.UpdateOSD("<C=80FFFFFF><B=0,0>\b<C><E=-1,-1,8><C=FFFFFF><I=-2,0,384,384,128,128><C>");
+	sysLatClient.UpdateOSD("<C=FFFFFF><B=10,10><C>");
 }
 
 //Dialog menu functions
