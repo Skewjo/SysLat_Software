@@ -213,6 +213,10 @@ BEGIN
             MENUITEM "Polling",                     ID_USBREADTYPE_POLLING
             MENUITEM "Event Driven",                ID_USBREADTYPE_EVENTDRIVEN
         END
+        POPUP "Export Data"
+        BEGIN
+            MENUITEM "Export Data",                 ID_EXPORTDATA_EXPORTDATA
+        END
     END
 END
 

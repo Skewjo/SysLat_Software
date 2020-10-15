@@ -1,6 +1,6 @@
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
-// Used by RTSSSharedMemorySample.rc
+// Used by SysLat_Software.rc
 //
 #define IDM_ABOUTBOX                    0x0010
 #define IDD_ABOUTBOX                    100
@@ -22,13 +22,15 @@
 #define ID_USBREADTYPE_EVENTDRIVEN      32778
 #define ID_PORT_SERIALPORTS             32779
 #define ID_FILE                         32780
+#define ID_SETTINGS_EXPORTDATA          32781
+#define ID_EXPORTDATA_EXPORTDATA        32782
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        139
-#define _APS_NEXT_COMMAND_VALUE         32781
+#define _APS_NEXT_COMMAND_VALUE         32783
 #define _APS_NEXT_CONTROL_VALUE         1003
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

@@ -22,7 +22,7 @@
 // NOT AVAILABLE - Profile Setting - Set "Refresh Period" to 0 milliseconds  - doesn't appear to be an option available via shared memory
 // NOT AVAILABLE - Profile Setting - Change default corner to bottom right
 // NOT AVAILABLE(opacity) - Profile Setting - Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
-// NOT AVIALABLE(Opacity) - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
+// NOT AVIALABLE(opacity) - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
 //		Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
 // DOESN'T WORK -(also code is in bad location) - Profile Setting - Set box size to what I want it to be?
 // DONE - Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
@@ -38,9 +38,18 @@
 // Fix COM port change settings
 // Seperate some initialization that happens in "Refresh" function into a different "Refresh-like" function?? - partially done?
 // DONE - Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
-///
-/// 
-/// 
+// Errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
+//		Either use error codes, or check all errors  again in the refresh function(that doesn't make sense though, right?)... or maybe do dialog error pop-ups when errors occur outside of "refresh"?
+// Keep track of total tests performed in a config file vs. looking for existing log files and picking up from there?
+//		How many tests should we allow total? 100? 
+//		Would it be fine if SysLat overwrote the tests every time it was restarted? ...I think it would
+// Add lots more menu options - USB options, debug output, data upload?
+// Put date/time in log file
+// Clear log files and put a configurable(?) cap on the number allowed
+// Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
+// Account for corners???
+// Make executable/window names mesh better together?  Need a map/lookup table or something?
+
 #include <Windows.h>
 #include <process.h>
 /// 
@@ -138,6 +147,7 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialog)
 	ON_COMMAND(ID_PORT_COM2, CSysLat_SoftwareDlg::SetPortCom2)
 	ON_COMMAND(ID_PORT_COM3, CSysLat_SoftwareDlg::SetPortCom3)
 	ON_COMMAND(ID_PORT_COM4, CSysLat_SoftwareDlg::SetPortCom4)
+	ON_COMMAND(ID_EXPORTDATA_EXPORTDATA, CSysLat_SoftwareDlg::ExportData)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
@@ -304,6 +314,20 @@ std::string CSysLat_SoftwareDlg::GetActiveWindowTitle()
 	::GetWindowText((HWND)*pWnd, wnd_title, 256); //Had to use scope resolution because this function is defined in both WinUser.h and afxwin.h
 	return wnd_title;
 }
+void CSysLat_SoftwareDlg::ProcessNameTrim(std::string& processName, std::string& activeWindowTitle){
+	size_t pos = processName.find(".exe");
+	if (pos != std::string::npos) {
+		processName.replace(pos, processName.size(), "");
+	}
+	while ((pos = processName.find(" ")) != std::string::npos) {
+		processName.replace(pos, 1, "");
+	}
+	std::transform(processName.begin(), processName.end(), processName.begin(), [](unsigned char c) { return std::tolower(c); });
+	while ((pos = activeWindowTitle.find(" ")) != std::string::npos) {
+		activeWindowTitle.replace(pos, 1, "");
+	}
+	std::transform(activeWindowTitle.begin(), activeWindowTitle.end(), activeWindowTitle.begin(), [](unsigned char c) { return std::tolower(c); });
+}
 
 BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 {
@@ -311,15 +335,14 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 	{
 		switch (pMsg->wParam)
 		{
-			//THIS CASE NEEDS TO BE CHANGED ONCE THE VARIABLES I NEED ARE OWNED BY THE CLASS AND AREN'T JUST LOCAL
 		case VK_F11:
 			ReInitThread();
 			return TRUE;
 		case ' ':
 			if (!m_bConnected)
 			{
-				if (!m_strInstallPath.IsEmpty())
-					ShellExecute(GetSafeHwnd(), "open", m_strInstallPath, NULL, NULL, SW_SHOWNORMAL);
+				if (!CRTSSClient::m_strInstallPath.IsEmpty())
+					ShellExecute(GetSafeHwnd(), "open", CRTSSClient::m_strInstallPath, NULL, NULL, SW_SHOWNORMAL);
 			}
 			return TRUE;
 
@@ -333,7 +356,6 @@ void CSysLat_SoftwareDlg::Refresh()
 	//I believe this needs to be somewhere else...
 	CRTSSClient::InitRTSSInterface();
 	
-
 	//init some settings to global(?) profile - probably- scratch that, DEFINITELY need to move these
 	//SetProfileProperty("", "BaseColor", 0xFFFFFF);
 	//SetProfileProperty("", "BgndColor", 0x000000); //this value isn't actually modifiable in RTSS lol
@@ -345,25 +367,14 @@ void CSysLat_SoftwareDlg::Refresh()
 	//SetProfileProperty("", "CoordinateSpace", 0);
 	m_strStatus = "";
 
+	//I can definitely move the following function out and call it elsewhere... or at least conditionally
+	GetRTSSConfigs();
 
-	//init shared memory version - these definitely need to be split into a different function or something...
-	DWORD dwSharedMemoryVersion = CRTSSClient::GetSharedMemoryVersion();
-	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
-
-	//I feel like the following 3 functions shouldn't be local vars, but idk if I'd rather make them owned by the dlg class or the RTSSClient class...
-	//init max OSD text size, we'll use extended text slot for v2.7 and higher shared memory, 
-	//it allows displaying 4096 symbols /instead of 256 for regular text slot
-	DWORD dwMaxTextSize = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
-	BOOL bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
-	BOOL bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
-
-
-	CGroupedString strOSDBuilder(dwMaxTextSize - 1);
+	CGroupedString strOSDBuilder(dwMaxTextSize - 1); //I have no fucking clue wtf this CGroupedString class does, so I'm kind of scared to get rid of it.
 
 	sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 
 	BOOL bTruncated = FALSE;
-
 
 	BOOL success = m_pOperatingSLD->AcquireSLDMutex();		// begin the sync access to fields
 	if (!success)
@@ -371,51 +382,36 @@ void CSysLat_SoftwareDlg::Refresh()
 
 	//Make my own fucking clock... I think this should probably be done in the SysLatData class
 	time(&m_elapsedTimeEnd);
-
 	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
 	int minutes = static_cast<int>(dif) / 60;
 	int seconds = static_cast<int>(dif) % 60;
-
-	double measurementsPerSecond = m_LoopCounterRefresh / dif;
+	double measurementsPerSecond = m_pOperatingSLD->GetCounter() / dif;
 
 
 	// Need to clean up this giant block of "Appends", to make dialog box text more manageable, by creating multiple functions that append different things
 
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
+	
+	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
 	m_strStatus.Append("\nLast RTSS Foreground App Name: ");
 	std::string processName = GetProcessNameFromPID(dwLastForegroundAppProcessID);
 	m_strStatus += processName.c_str();
 	m_strStatus.Append("\nCurrently active window: ");
 	std::string activeWindowTitle = GetActiveWindowTitle();
 	m_strStatus += activeWindowTitle.c_str();
-
-	size_t pos = processName.find(".exe");
-	if (pos != std::string::npos) {
-		processName.replace(pos, processName.size(), "");
-	}
-	while ((pos = processName.find(" ")) != std::string::npos) {
-		processName.replace(pos, 1, "");
-	}
-	std::transform(processName.begin(), processName.end(), processName.begin(), [](unsigned char c) { return std::tolower(c); });
-
-
-	while ((pos = activeWindowTitle.find(" ")) != std::string::npos) {
-		activeWindowTitle.replace(pos, 1, "");
-	}
-	std::transform(activeWindowTitle.begin(), activeWindowTitle.end(), activeWindowTitle.begin(), [](unsigned char c) { return std::tolower(c); });
-
-	m_strStatus.Append("\n");
+	ProcessNameTrim(processName, activeWindowTitle);
+	m_strStatus.Append("\nTrimmed:");
 	m_strStatus += processName.c_str();
-	m_strStatus.Append("\n");
+	m_strStatus.Append("\nTrimmed:");
 	m_strStatus += activeWindowTitle.c_str();
+	
 
-
-	m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());//m_arduinoResultsComplete);
-	m_strStatus.AppendFormat("\nLoop Counter : %d", m_LoopCounterRefresh);
-	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.2f", measurementsPerSecond);
+	m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
+	m_strStatus.AppendFormat("\nLoop Counter : %d", m_pOperatingSLD->GetCounter());
+	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
 	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
 	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_pOperatingSLD->GetCounterEVR());
-	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());//m_systemLatencyAverageEVR);
+	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());
 
 	if (!m_strError.IsEmpty())
 	{
@@ -447,34 +443,32 @@ void CSysLat_SoftwareDlg::Refresh()
 		}
 	}
 
-
-
 	m_richEditCtrl.SetWindowText(m_strStatus);
-
-
 } 
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
-	//I'm not sure why we had acquire and release here?
-	//AcquireRefreshMutex();
-
-	if (!m_strError.IsEmpty())
-		m_strError.Append("\n");
+	m_strError.Append("\n");
 	m_strError.Append(error);
 	m_strError.Append("\n");
-
-	//ReleaseRefreshMutex();
+}
+void CSysLat_SoftwareDlg::GetRTSSConfigs() {
+	dwSharedMemoryVersion = CRTSSClient::GetSharedMemoryVersion();
+	dwMaxTextSize = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
+	bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
+	bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
 }
 
 //SysLat thread functions
-void CSysLat_SoftwareDlg::ReInitThread() {
-	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread
+void CSysLat_SoftwareDlg::ReInitThread() { //since implementing the the target and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
+	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread - THIS PROBLEM GOES AWAY IF I PUT *ANY* BREAKPOINTS IN THIS FUNCTION???
 	m_loopSize = 0;
 	WaitForSingleObject(drawingThreadHandle, INFINITE); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
+	//WaitForMultipleObjects(2, drawingThreadHandle, INFINITE);
 	m_loopSize = 0xFFFFFFFF;
 	time(&m_elapsedTimeStart);
 	myCounter = 0;
 
+	m_pOperatingSLD->SetEndTime();
 	m_previousSLD.push_back(m_pOperatingSLD);
 	m_pOperatingSLD = new CSysLatData;
 
@@ -500,22 +494,18 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 
 	DrawBlack(sysLatClient);
 
-	for (unsigned int loopCounter = 1; loopCounter < m_loopSize; loopCounter++)
+	for (unsigned int loopCounter = 0; loopCounter < m_loopSize; loopCounter++)
 	{
 		time_t start = time(NULL);
 		while (serialReadData != 65 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
 		}
 		DrawWhite(sysLatClient);
-
 		while (serialReadData != 66 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
 		}
 		DrawBlack(sysLatClient);
-		
-
 		sysLatResults = "";
-
 		while (serialReadData != 67 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
 			if (serialReadData != 67 && serialReadData != 65 && serialReadData != 66) {
@@ -523,8 +513,18 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 			}
 		}
 
-		//I think this should be happening in a different thread so that the serial reads can continue uninterrupted
-		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults);
+		//I think everything below should be happening in a different thread so that the serial reads can continue uninterrupted
+		std::string processName = GetProcessNameFromPID(CRTSSClient::GetLastForegroundAppID());
+		std::string activeWindowTitle;
+		if (loopCounter < m_loopSize) { //this was for a really strange issue
+			activeWindowTitle = GetActiveWindowTitle();
+		}
+		else {
+			activeWindowTitle = "";
+		}
+		ProcessNameTrim(processName, activeWindowTitle);
+
+		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults, processName, activeWindowTitle);
 	}
 
 	usbController.CloseComPort(hPort);
@@ -577,8 +577,7 @@ void CSysLat_SoftwareDlg::SetPortCom4()
 
 	m_PortSpecifier = "COM4";
 }
-
-//This function is definitely broken right now
+//This function is definitely broken right now - specifically breaks when I go from the real SysLat port to another occupied port & back
 CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 {
 	CMenu* settingsMenu = GetMenu();
@@ -589,3 +588,26 @@ CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 	ReInitThread();
 	return settingsMenu;
 }
+void CSysLat_SoftwareDlg::ExportData()
+{
+	if (m_previousSLD.size() > 0) {
+		for (int i = 0; i < m_previousSLD.size(); i++) {
+			if (!m_previousSLD[i]->dataExported) {
+				m_previousSLD[i]->ExportData(i);
+			}
+			else {
+				std::string error = "Data from test " + std::to_string(i) + " already exported.";
+				AppendError(error.c_str());
+			}
+		}
+	}
+	else {
+		//this is one of the errors that only appears for a few seconds and then dissapears... open an error dialog instead maybe?
+		AppendError("No tests have completed yet. Press F11 to begin a new test(ending the current test), or wait for the current test to finish.  You can change the test size in the menu.");
+	}
+}
+/*
+void CSysLat_SoftwareDlg::UploadData() {
+
+}
+*/

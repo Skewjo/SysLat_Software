@@ -41,14 +41,16 @@ protected:
 	BOOL							PreTranslateMessage(MSG* pMsg);
 	void							Refresh();
 	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData
+	void							GetRTSSConfigs();
 	
 	static unsigned int __stdcall	CreateDrawingThread(void* data);
 	void							ReInitThread();
 
 	static void						DrawBlack(CRTSSClient sysLatClient);
 	static void						DrawWhite(CRTSSClient sysLatClient);
-	std::string						GetProcessNameFromPID(DWORD processID);
-	std::string						GetActiveWindowTitle();
+	static std::string				GetProcessNameFromPID(DWORD processID);
+	static std::string				GetActiveWindowTitle();
+	static void						ProcessNameTrim(std::string&, std::string&);
 
 	//Dialog menu related functions
 	void							SetPortCom1();
@@ -56,7 +58,7 @@ protected:
 	void							SetPortCom3();
 	void							SetPortCom4();
 	CMenu*							ResetPortsMenuItems();
-
+	void							ExportData();
 
 	//Members
 	HANDLE						drawingThreadHandle;
@@ -75,8 +77,12 @@ protected:
 	static unsigned int			m_LoopCounterRefresh;
 	static CString				m_strError;
 
-
-	//previously existing members
+	DWORD dwSharedMemoryVersion;// = CRTSSClient::GetSharedMemoryVersion();
+	DWORD dwMaxTextSize;// = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
+	BOOL bFormatTagsSupported;// = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
+	BOOL bObjTagsSupported;// = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
+	
+						   //previously existing members
 	BOOL						m_bMultiLineOutput;
 	BOOL						m_bFormatTags;
 	BOOL						m_bFillGraphs;
