@@ -8,8 +8,7 @@ Add vcpkg installation instructions and jsoncpp installation instructions(maybe 
 Do I need a build server?
 
 
-To convert to static linkage:
-  //Instructions for the following 2 steps here: https://devblogs.microsoft.com/cppblog/vcpkg-updates-static-linking-is-now-available/
+[To convert to static linkage](https://devblogs.microsoft.com/cppblog/vcpkg-updates-static-linking-is-now-available/):
   1. Use vcpkg to install the version of the static library you want access to.
   2. Create a new property page and add the following lines:
   ```
