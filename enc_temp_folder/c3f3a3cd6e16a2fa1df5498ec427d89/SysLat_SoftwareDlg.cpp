@@ -49,7 +49,6 @@
 // Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
 // Account for corners???
 // Make executable/window names mesh better together?  Need a map/lookup table or something?
-// DONE - BUT THERE ARE PROBLEMS - Make the program statically linked so that it all packages together nicely in a single DLL
 
 #include <Windows.h>
 #include <process.h>
