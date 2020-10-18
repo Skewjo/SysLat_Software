@@ -17,50 +17,82 @@
 #include <algorithm>
 
 //TODO:
-// Organize TODO...
-//		Menu Issues
-//		Data Issues
-//		Optimization Issues
-//		Organizational Issues
+// Transfer TODO to GitHub Issues...
+// DONE - Organize TODO...
+//		DONE - Core Functionality
+//		DONE - Menu
+//		DONE - Data Issues
+//		DONE - Optimization
+//		DONE - Organizational Issues
+//		DONE - Anti-Fraud
+//
+//
+//Issues completed before the TODO reorg:
+//  NOT AVAILABLE(?) - Profile Setting - Set "Refresh Period" to 0 milliseconds  - doesn't appear to be an option available via shared memory
+//  DONE - Profile Setting - Change default corner to bottom right
+//  DONE (opacity) - Profile Setting - Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
+//  DONE - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
+//		DONE - Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
+//  DONE - Profile Setting - Set box size to what I want it to be?
+//  DONE - Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
+//  DONE - Change class/namespace of RTSSSharedMemorySample to SysLat
+//  DONE - Add minimize button
+//  DONE(well... it half-ass works) - Make System Latency appear in OSD
+//  DONE - Save results to a table - using an array
+//  DONE - Determine active window vs window that RTSS is operating in?
+//  DONE - Launch RTSS automatically in the background if it's not running
+//  DONE - Add hotkey to restart readings (F11?)
+//  DONE - Seperate some initialization that happens in "Refresh" function into a different "Refresh-like" function?? - partially done?
+//  DONE - Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
+//  DONE - BUT THERE ARE PROBLEMS(it just changed the priority of which client(syslat vs syslatStats) - Make the program statically linked so that it all packages together nicely in a single DLL
+//  DONE(BUT NOT GREAT) - Dynamically build the "drawSquare" string and change the P tag to account for the current corner and all other OSD text?
+//		DONE(Mostly...new issue created) - Then create an option to disable that setting - add keyboard arrow functionality to move it into place manually.
 //
 //
 //
-// WON'T WORK(profiles are for individual programs) Profile Setting -  Create new "SysLat" profile in RTSS so as to not break other people's profiles 
-// NOT AVAILABLE - Profile Setting - Set "Refresh Period" to 0 milliseconds  - doesn't appear to be an option available via shared memory
-// NOT AVAILABLE - Profile Setting - Change default corner to bottom right
-// NOT AVAILABLE(opacity) - Profile Setting - Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
-// NOT AVIALABLE(opacity) - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
-//		Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
-// DOESN'T WORK -(also code is in bad location) - Profile Setting - Set box size to what I want it to be?
-// DONE - Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
-// DONE - Change class/namespace of RTSSSharedMemorySample to SysLat
-// DONE - Add minimize button
-// DONE(well... it half-ass works) - Make System Latency appear in OSD
-// Add graph functionality
-// DONE - Save results to a table - using an array
-// save fps and frametime and other stats as well?
-// DONE - Determine active window vs window that RTSS is operating in?
-// Enumerate all 3D programs that RTSS can run in and display them in a menu
-// DONE - Launch RTSS automatically in the background if it's not running
-// DONE - Add hotkey to restart readings (F11?)
-// Fix COM port change settings
-// Seperate some initialization that happens in "Refresh" function into a different "Refresh-like" function?? - partially done?
-// DONE - Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
-// Errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
+//
+//Core Functionality:
+//  Add HTTP post function for uploading logs to website - use boost.beast library?
+//  Errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
 //		Either use error codes, or check all errors  again in the refresh function(that doesn't make sense though, right?)... or maybe do dialog error pop-ups when errors occur outside of "refresh"?
-// Keep track of total tests performed in a config file vs. looking for existing log files and picking up from there?
+//  Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
+//  Make executable/window names mesh better together?  Need a map/lookup table or something? - JUST USE PID YA IDIOT
+//
+//
+//Data Issues:
+//  Save fps and frametime and other stats as well?
+//  Add graph functionality
+//  Put elapsed time in log file
+//  Clear log files and put a configurable(?) cap on the number allowed
+//  Keep track of total tests performed in a config file vs. looking for existing log files and picking up from there?
 //		How many tests should we allow total? 100? 
 //		Would it be fine if SysLat overwrote the tests every time it was restarted? ...I think it would
-// Add lots more menu options - USB options, debug output, data upload, RTSS options(text color)
-// Put elapsed time in log file
-// Clear log files and put a configurable(?) cap on the number allowed
-// Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
-// Make executable/window names mesh better together?  Need a map/lookup table or something? - JUST USE PID YA IDIOT
-// DONE - BUT THERE ARE PROBLEMS - Make the program statically linked so that it all packages together nicely in a single DLL
-// Think about hardware/software signatures for uploading data? This probably needs more consideration on the web side
-// DONE(BUT NOT GREAT) - Dynamically build the "drawSquare" string and change the P tag to account for the current corner and all other OSD text?
-//		Then create an option to disable that setting - add keyboard arrow functionality to move it into place manually.
-// Add HTTP post function for uploading logs to website - use boost.beast library?
+//
+//
+//Menu:
+//  Enumerate all 3D programs that RTSS can run in and display them in a menu
+//  Fix COM port change settings
+//  Add lots more menu options - USB options, debug output, data upload, RTSS options(text color)
+//  Box position manual override toggle
+//
+//
+//Anti-Fraud:
+//  Create new dynamic build/installation process in order to obscure some code
+//  Think about hardware/software signatures for uploading data? This probably needs more consideration on the web side
+//  Obscure most functionality(things that don't need to be optimized) into DLLs(requires a new build/installation process)
+//  (Anti-Fraud, Optimization, and Data)Instead of recording certain variables on every measurement(such as RTSS XY position) record them once at the start and once at the end
+//
+//
+//Optimization:
+//  Move data update at the end of the CreateDrawingThread function into a different thread(or co-routine?)
+//  Calculating the position of the box before we draw it adds unnecessary delay(?)
+//
+//
+//Organizational Issues:
+//  Clean up(or get rid of) static vars in SysLat_SoftwareDlg class
+//  Clean up the refresh function a bit more by making some init functionality conditional
+//
+//
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //Major Bugs:
@@ -444,7 +476,6 @@ void CSysLat_SoftwareDlg::Refresh()
 	CRTSSClient::InitRTSSInterface();
 	m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
 	m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
-	//I can definitely move the following function out and call it elsewhere... or at least conditionally
 	if (m_bConnected && !m_bRTSSInitConfig) {
 		R_GetRTSSConfigs();
 	}
