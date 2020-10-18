@@ -32,7 +32,7 @@
 //  DONE - Profile Setting - Change default corner to bottom right
 //  DONE (opacity) - Profile Setting - Change "text"(foreground) color to white (255, 255, 255) with an opacity of 100
 //  DONE - Profile Setting - Change color of "background"(?) to black (0, 0, 0) with an opacity of 100
-//		DONE - Better yet - if I could change the box to use a plain black and plain white box so any other text isn't fucked up, that would be better
+//		DONE - Better yet - if I could change the box to use a plain black and plain white box so any other text isn't screwed up, that would be better
 //  DONE - Profile Setting - Set box size to what I want it to be?
 //  DONE - Change class/namespace name of RTSSSharedMemorySampleDlg to SysLatDlg
 //  DONE - Change class/namespace of RTSSSharedMemorySample to SysLat
@@ -819,7 +819,7 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 	//SetProfileProperty("", "CoordinateSpace", 1); //IDK what these do, but I thought they would
 	//SetProfileProperty("", "CoordinateSpace", 0);
 	//DWORD coordinateSpace = CRTSSClient::GetProfileProperty("", "CoordinateSpace");
-	//CGroupedString strOSDBuilder(dwMaxTextSize - 1); //I have no fucking clue wtf this CGroupedString class does, so I'm kind of scared to get rid of it.
+	//CGroupedString strOSDBuilder(dwMaxTextSize - 1); //I have no freaking clue what this CGroupedString class does, so I'm kind of scared to get rid of it.
 
 	//sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 */
