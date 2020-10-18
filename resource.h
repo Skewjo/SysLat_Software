@@ -24,13 +24,19 @@
 #define ID_FILE                         32780
 #define ID_SETTINGS_EXPORTDATA          32781
 #define ID_EXPORTDATA_EXPORTDATA        32782
+#define ID_TOOLS_EXPORTDATA             32783
+#define ID_TOOLS_UPLOADDATA             32784
+#define ID_SETTINGS_DEBUGMODE           32785
+#define ID_SETTINGS_DISPLAYSYSLATINOSD  32786
+#define ID_TOOLS_                       32787
+#define ID_TOOLS_NEWTEST                32788
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        139
-#define _APS_NEXT_COMMAND_VALUE         32783
+#define _APS_NEXT_COMMAND_VALUE         32789
 #define _APS_NEXT_CONTROL_VALUE         1003
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

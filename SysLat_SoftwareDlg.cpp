@@ -17,7 +17,14 @@
 #include <algorithm>
 
 //TODO:
-// 
+// Organize TODO...
+//		Menu Issues
+//		Data Issues
+//		Optimization Issues
+//		Organizational Issues
+//
+//
+//
 // WON'T WORK(profiles are for individual programs) Profile Setting -  Create new "SysLat" profile in RTSS so as to not break other people's profiles 
 // NOT AVAILABLE - Profile Setting - Set "Refresh Period" to 0 milliseconds  - doesn't appear to be an option available via shared memory
 // NOT AVAILABLE - Profile Setting - Change default corner to bottom right
@@ -30,7 +37,8 @@
 // DONE - Add minimize button
 // DONE(well... it half-ass works) - Make System Latency appear in OSD
 // Add graph functionality
-// Save results to a table(save fps and frametime as well?)
+// DONE - Save results to a table - using an array
+// save fps and frametime and other stats as well?
 // DONE - Determine active window vs window that RTSS is operating in?
 // Enumerate all 3D programs that RTSS can run in and display them in a menu
 // DONE - Launch RTSS automatically in the background if it's not running
@@ -44,12 +52,28 @@
 //		How many tests should we allow total? 100? 
 //		Would it be fine if SysLat overwrote the tests every time it was restarted? ...I think it would
 // Add lots more menu options - USB options, debug output, data upload, RTSS options(text color)
-// Put date/time in log file
+// Put elapsed time in log file
 // Clear log files and put a configurable(?) cap on the number allowed
 // Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
-// Account for corners???
-// Make executable/window names mesh better together?  Need a map/lookup table or something?
+// Make executable/window names mesh better together?  Need a map/lookup table or something? - JUST USE PID YA IDIOT
 // DONE - BUT THERE ARE PROBLEMS - Make the program statically linked so that it all packages together nicely in a single DLL
+// Think about hardware/software signatures for uploading data? This probably needs more consideration on the web side
+// DONE(BUT NOT GREAT) - Dynamically build the "drawSquare" string and change the P tag to account for the current corner and all other OSD text?
+//		Then create an option to disable that setting - add keyboard arrow functionality to move it into place manually.
+// Add HTTP post function for uploading logs to website - use boost.beast library?
+
+//////////////////////////////////////////////////////////////////////////////////////////////
+//Major Bugs:
+//  The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD - slot when restarting a test
+//	Issue when switching COM ports to an existing device that isn't SysLat and back
+//  Arrow key functionality has been optimized away somehow
+//  
+//
+//Minor Bugs:
+//  SysLat may not play nicely with other applications that use RTSS such as MSI Afterburner, or with advanced RTSS setups
+//
+//////////////////////////////////////////////////////////////////////////////////////////////
+
 
 #include <Windows.h>
 #include <process.h>
@@ -65,9 +89,20 @@ static char THIS_FILE[] = __FILE__;
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
+CString	CSysLat_SoftwareDlg::m_updateString = "";
 CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
 CString CSysLat_SoftwareDlg::m_strError = "";
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
+
+DWORD CSysLat_SoftwareDlg::m_positionX = 0;
+DWORD CSysLat_SoftwareDlg::m_positionY = 0;
+BOOL CSysLat_SoftwareDlg::m_bPositionManualOverride = false;
+INT CSysLat_SoftwareDlg::m_internalX = 0;
+INT CSysLat_SoftwareDlg::m_internalY = 0;
+
+CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
+CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
+DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 
 /////////////////////////////////////////////////////////////////////////////
 // CAboutDlg dialog used for App About
@@ -148,7 +183,10 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialog)
 	ON_COMMAND(ID_PORT_COM2, CSysLat_SoftwareDlg::SetPortCom2)
 	ON_COMMAND(ID_PORT_COM3, CSysLat_SoftwareDlg::SetPortCom3)
 	ON_COMMAND(ID_PORT_COM4, CSysLat_SoftwareDlg::SetPortCom4)
-	ON_COMMAND(ID_EXPORTDATA_EXPORTDATA, CSysLat_SoftwareDlg::ExportData)
+	ON_COMMAND(ID_TOOLS_EXPORTDATA, CSysLat_SoftwareDlg::ExportData)
+	ON_COMMAND(ID_SETTINGS_DEBUGMODE, CSysLat_SoftwareDlg::DebugMode)
+	ON_COMMAND(ID_SETTINGS_DISPLAYSYSLATINOSD, CSysLat_SoftwareDlg::DisplaySysLatInOSD)
+	ON_COMMAND(ID_TOOLS_NEWTEST, CSysLat_SoftwareDlg::ReInitThread)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
@@ -346,7 +384,55 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 					ShellExecute(GetSafeHwnd(), "open", CRTSSClient::m_strInstallPath, NULL, NULL, SW_SHOWNORMAL);
 			}
 			return TRUE;
-
+		//these next 4 keybinds are "optimized out" or something?? WTF???
+		case VK_UP:
+			if (m_internalY > 0) {
+				m_internalY - 1;
+			}
+			//else appendError ??
+			m_bPositionManualOverride = true;
+			return TRUE;
+		case VK_DOWN:
+			if (m_internalY < 255) {
+				m_internalY + 1;
+			}
+			m_bPositionManualOverride = true;
+			return TRUE;
+		case VK_LEFT:
+			if (m_internalX > 0) {
+				m_internalX - 1;
+			}
+			m_bPositionManualOverride = true;
+			return TRUE;
+		case VK_RIGHT:
+			if (m_internalX < 255) {
+				m_internalX + 1;
+			}
+			m_bPositionManualOverride = true;
+			return TRUE;
+		case 'R':
+			CRTSSClient::SetProfileProperty("", "BaseColor", 0xFF0000);
+			return TRUE;
+		case 'G':
+			CRTSSClient::SetProfileProperty("", "BaseColor", 0x00FF00);
+			return TRUE;
+		case 'B':
+			CRTSSClient::SetProfileProperty("", "BaseColor", 0x0000FF);
+			return TRUE;
+		case 'F':
+			if (m_bConnected)
+			{
+				m_bFormatTags = !m_bFormatTags;
+				Refresh();
+			}
+			break;
+		case 'I':
+			if (m_bConnected)
+			{
+				m_bFillGraphs = !m_bFillGraphs;
+				Refresh();
+			}
+			break;
 		}
 	}
 
@@ -356,45 +442,86 @@ void CSysLat_SoftwareDlg::Refresh()
 {
 	//I believe this needs to be somewhere else...
 	CRTSSClient::InitRTSSInterface();
-	
-	//init some settings to global(?) profile - probably- scratch that, DEFINITELY need to move these
-	//SetProfileProperty("", "BaseColor", 0xFFFFFF);
-	//SetProfileProperty("", "BgndColor", 0x000000); //this value isn't actually modifiable in RTSS lol
-	//SetProfileProperty("", "FillColor", 0x000000);
-	//SetProfileProperty("", "ZoomRatio", 2);
-	//SetProfileProperty("", "RefreshPeriod", 0); //found this property by looking at the plaintext of the RTSSHooks.dll.  Doesn't appear to change the value.  Also attempted to use the "Inc" function as well, but it also failed.
-	//SetProfileProperty("", "RefreshPeriodMin", 0); //found this property by looking at the plaintext of the RTSSHooks.dll ... It didn't appear to change the value in RTSS... I hope I didn't break something lol
-	//SetProfileProperty("", "CoordinateSpace", 1); //IDK what these do, but I thought they would 
-	//SetProfileProperty("", "CoordinateSpace", 0);
-	m_strStatus = "";
-
+	m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
+	m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
 	//I can definitely move the following function out and call it elsewhere... or at least conditionally
-	GetRTSSConfigs();
+	if (m_bConnected && !m_bRTSSInitConfig) {
+		R_GetRTSSConfigs();
+	}
+	else {
+		m_bRTSSInitConfig = false;
+	}
+	
+	m_strStatus = "";
+	if (!R_SysLatStats()) return;
+	if (m_bDebugMode) {
+		R_Position();
+		R_ProcessNames();
+	}
+	if (m_bSysLatInOSD) {
+		R_StrOSD();
+	}
+	else if (!m_bSysLatInOSD) { //need to add another condition to make this only happen once so that it will clear whatever exists in the buffer... or maybe use the releaseOSD function properly? IDK
+		sysLatStatsClient.UpdateOSD("");
+	}
 
-	CGroupedString strOSDBuilder(dwMaxTextSize - 1); //I have no fucking clue wtf this CGroupedString class does, so I'm kind of scared to get rid of it.
+	//Need to make a new function & boolean for displaying controls/hints
+	if (CRTSSClient::m_profileInterface.IsInitialized())
+	{
+		m_strStatus += "\n\n-Press <Up>,<Down>,<Left>,<Right> to change OSD position in global profile";
+		m_strStatus += "\n-Press <R>,<G>,<B> to change OSD color in global profile";
+	}
+	
+	if (!m_strError.IsEmpty())
+	{
+		m_strStatus += "\n\nErrors:";
+		m_strStatus.Append(m_strError);
+		m_strError = "";
+	}
 
-	sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
+	m_richEditCtrl.SetWindowText(m_strStatus);
+}
+void CSysLat_SoftwareDlg::R_GetRTSSConfigs() {
+	m_dwSharedMemoryVersion = CRTSSClient::GetSharedMemoryVersion();
+	m_dwMaxTextSize = (m_dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
+	m_bFormatTagsSupported = (m_dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
+	m_bObjTagsSupported = (m_dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
+	m_bRTSSInitConfig = true;
+}
+BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 
-	BOOL bTruncated = FALSE;
-
-	BOOL success = m_pOperatingSLD->AcquireSLDMutex();		// begin the sync access to fields
-	if (!success)
-		return;
-
-	//Make my own fucking clock... I think this should probably be done in the SysLatData class
+	//this timer stuff definitely needs to be in the SLD
 	time(&m_elapsedTimeEnd);
 	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
 	int minutes = static_cast<int>(dif) / 60;
 	int seconds = static_cast<int>(dif) % 60;
 	double measurementsPerSecond = m_pOperatingSLD->GetCounter() / dif;
 
-
-	// Need to clean up this giant block of "Appends", to make dialog box text more manageable, by creating multiple functions that append different things
+	BOOL success = m_pOperatingSLD->AcquireSLDMutex();		// begin the sync access to fields
+	if (!success)
+		return success;
 
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
-	
+	m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
+	m_strStatus.AppendFormat("\nLoop Counter : %d", m_pOperatingSLD->GetCounter());
+	m_strStatus.AppendFormat("\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
+	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
+	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_pOperatingSLD->GetCounterEVR());
+	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());
+
+	m_pOperatingSLD->ReleaseSLDMutex();		// end the sync access to fields
+
+	return success;
+}
+void CSysLat_SoftwareDlg::R_Position() {
+	m_strStatus.AppendFormat("\n\nClients num: %d", CRTSSClient::clientsNum);
+	m_strStatus.AppendFormat("\nSysLat Owned Slot: %d", m_sysLatOwnedSlot);
+	m_strStatus.AppendFormat("\nPositionX: %d", m_positionX);
+	m_strStatus.AppendFormat("\nPositionY: %d", m_positionY);
+}
+void CSysLat_SoftwareDlg::R_ProcessNames() {
 	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
-	m_strStatus.Append("\nLast RTSS Foreground App Name: ");
+	m_strStatus.Append("\n\nLast RTSS Foreground App Name: ");
 	std::string processName = GetProcessNameFromPID(dwLastForegroundAppProcessID);
 	m_strStatus += processName.c_str();
 	m_strStatus.Append("\nCurrently active window: ");
@@ -405,23 +532,10 @@ void CSysLat_SoftwareDlg::Refresh()
 	m_strStatus += processName.c_str();
 	m_strStatus.Append("\nTrimmed:");
 	m_strStatus += activeWindowTitle.c_str();
-	
-
-	m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
-	m_strStatus.AppendFormat("\nLoop Counter : %d", m_pOperatingSLD->GetCounter());
-	m_strStatus.AppendFormat("\n\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
-	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
-	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_pOperatingSLD->GetCounterEVR());
-	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());
-
-	if (!m_strError.IsEmpty())
-	{
-		m_strStatus.Append(m_strError);
-		m_strError = "";
-	}
-	m_pOperatingSLD->ReleaseSLDMutex();		// end the sync access to fields
-
-	CString strOSD = strOSDBuilder.Get(bTruncated);
+}
+void CSysLat_SoftwareDlg::R_StrOSD() {
+	//BOOL bTruncated = FALSE;
+	CString strOSD;// = strOSDBuilder.Get(bTruncated);
 	strOSD += m_pOperatingSLD->GetStringResult();
 	if (!strOSD.IsEmpty())
 	{
@@ -431,32 +545,34 @@ void CSysLat_SoftwareDlg::Refresh()
 
 		if (bResult)
 		{
-			if (bTruncated)
-				AppendError("Warning: The text is too long to be displayed in OSD, some info has been truncated!");
+			m_strStatus += "\n\nThe following text is being forwarded to OSD:\nFrom SysLat client: " + m_updateString + "\nFrom SysLatStats client: " + strOSD;
+
+			if (m_bFormatTagsSupported)
+				m_strStatus += "\n-Press <F> to toggle OSD text formatting tags";
+
+			if (m_bFormatTagsSupported)
+				m_strStatus += "\n-Press <I> to toggle graphs fill mode";
+			//if (bTruncated)
+			//	AppendError("Warning: The text is too long to be displayed in OSD, some info has been truncated!");
 		}
 		else
 		{
-
 			if (CRTSSClient::m_strInstallPath.IsEmpty())
 				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Install RivaTuner Statistics Server");
 			else
 				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Press <Space> to start RivaTuner Statistics Server");
 		}
-	}
 
-	m_richEditCtrl.SetWindowText(m_strStatus);
-} 
+		if (m_sysLatOwnedSlot != 0) {
+			AppendError("The SysLat client is unable to occupy RTSS client slot 0.\nThis may cause issues with the blinking square appearing in the corner.\nTo resolve this error\n\t1. Close other applications that use RTSS(such as MSI Afterburner)\n\t2. Restart RTSS\n\t3. Restart the testing phase(by pressing <F11>).");
+		}
+	}
+}
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
 	m_strError.Append("\n");
 	m_strError.Append(error);
 	m_strError.Append("\n");
-}
-void CSysLat_SoftwareDlg::GetRTSSConfigs() {
-	dwSharedMemoryVersion = CRTSSClient::GetSharedMemoryVersion();
-	dwMaxTextSize = (dwSharedMemoryVersion >= 0x00020007) ? sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSDEx) : sizeof(RTSS_SHARED_MEMORY::RTSS_SHARED_MEMORY_OSD_ENTRY().szOSD);
-	bFormatTagsSupported = (dwSharedMemoryVersion >= 0x0002000b);	//text format tags are supported for shared memory v2.11 and higher
-	bObjTagsSupported = (dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
 }
 
 //SysLat thread functions
@@ -464,7 +580,6 @@ void CSysLat_SoftwareDlg::ReInitThread() { //since implementing the the target a
 	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread - THIS PROBLEM GOES AWAY IF I PUT *ANY* BREAKPOINTS IN THIS FUNCTION???
 	m_loopSize = 0;
 	WaitForSingleObject(drawingThreadHandle, INFINITE); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
-	//WaitForMultipleObjects(2, drawingThreadHandle, INFINITE);
 	m_loopSize = 0xFFFFFFFF;
 	time(&m_elapsedTimeStart);
 	myCounter = 0;
@@ -473,6 +588,7 @@ void CSysLat_SoftwareDlg::ReInitThread() { //since implementing the the target a
 	m_previousSLD.push_back(m_pOperatingSLD);
 	m_pOperatingSLD = new CSysLatData;
 
+	Sleep(1000);
 	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
 	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
 }
@@ -482,10 +598,10 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 	int serialReadData = 0;
 	CString	sysLatResults;
 	CRTSSClient sysLatClient("SysLat", 0);
+	m_sysLatOwnedSlot = sysLatClient.ownedSlot;
 
 	CUSBController usbController;
 	HANDLE hPort = usbController.OpenComPort(m_PortSpecifier);
-	CString	m_localPortSpecifier = m_PortSpecifier;
 
 	if (!usbController.IsComPortOpened(hPort))
 	{
@@ -493,7 +609,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 		return 0;
 	}
 
-	DrawBlack(sysLatClient);
+	DrawSquare(sysLatClient, m_strBlack);
 
 	for (unsigned int loopCounter = 0; loopCounter < m_loopSize; loopCounter++)
 	{
@@ -501,11 +617,11 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 		while (serialReadData != 65 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
 		}
-		DrawWhite(sysLatClient);
+		DrawSquare(sysLatClient, m_strWhite);
 		while (serialReadData != 66 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
 		}
-		DrawBlack(sysLatClient);
+		DrawSquare(sysLatClient, m_strBlack);
 		sysLatResults = "";
 		while (serialReadData != 67 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
@@ -514,7 +630,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 			}
 		}
 
-		//I think everything below should be happening in a different thread so that the serial reads can continue uninterrupted
+		//I think everything below should be happening in a different thread so that the serial reads can continue uninterrupted - could the following be a coroutine?
 		std::string processName = GetProcessNameFromPID(CRTSSClient::GetLastForegroundAppID());
 		std::string activeWindowTitle;
 		if (loopCounter < m_loopSize) { //this was for a really strange issue
@@ -529,21 +645,67 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 	}
 
 	usbController.CloseComPort(hPort);
+	sysLatClient.ReleaseOSD();
 
 	return 0;
 }
-
-//The following 2 functions should probably be combined into a "DrawSquare" function that takes different input strings for black and white
-void CSysLat_SoftwareDlg::DrawBlack(CRTSSClient sysLatClient)
+void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorString)
 {
-	sysLatClient.UpdateOSD("<C=000000><B=10,10><C>");
-}
-void CSysLat_SoftwareDlg::DrawWhite(CRTSSClient sysLatClient)
-{
-	sysLatClient.UpdateOSD("<C=FFFFFF><B=10,10><C>");
+	m_updateString = "";
+	//The following conditional is FAR from perfect... In order for it to work properly I may need to count the number of rows and columns(in zoomed pixel units?) and use that value. 
+	if (sysLatClient.ownedSlot == 0 && !m_bPositionManualOverride) {
+		//int x = 0;
+		//int y = 0;
+		if ((int)m_positionX < 0) {
+			m_internalX = 0;
+		}
+		if ((int)m_positionY < 0) {
+			//y = CRTSSClient::clientsNum * 20;
+			m_internalY = 20;
+		}
+		m_updateString.AppendFormat("<P=%d,%d>", m_internalX, m_internalY);
+		m_updateString += colorString;
+		m_updateString += "<P=0,0>";
+	}
+	else if (m_bPositionManualOverride) {
+		m_updateString.AppendFormat("<P=%d,%d>", m_internalX, m_internalY);
+		m_updateString += colorString;
+		m_updateString += "<P=0,0>";
+	}
+	else {
+		m_updateString += colorString;
+	}
+	
+	sysLatClient.UpdateOSD(m_updateString);
 }
 
 //Dialog menu functions
+//Tools
+void CSysLat_SoftwareDlg::ExportData()
+{
+	if (m_previousSLD.size() > 0) {
+		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
+			if (!m_previousSLD[i]->dataExported) {
+				m_previousSLD[i]->ExportData(i);
+			}
+			else {
+				std::string error = "Data from test " + std::to_string(i) + " already exported.";
+				AppendError(error.c_str());
+			}
+		}
+	}
+	else {
+		//this is one of the errors that only appears for a few seconds and then dissapears... open an error dialog instead maybe?
+		AppendError("No tests have completed yet. \nPress F11 to begin a new test(ending the current test), or wait for the current test to finish. \nYou can change the test size in the menu."); // (Not yet you can't lol)
+	}
+}
+/*
+void CSysLat_SoftwareDlg::UploadData() {
+
+}
+*/
+
+//Settings
 void CSysLat_SoftwareDlg::SetPortCom1()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
@@ -587,26 +749,46 @@ CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 	ReInitThread();
 	return settingsMenu;
 }
-void CSysLat_SoftwareDlg::ExportData()
-{
-	if (m_previousSLD.size() > 0) {
-		for (int i = 0; i < m_previousSLD.size(); i++) {
-			if (!m_previousSLD[i]->dataExported) {
-				m_previousSLD[i]->ExportData(i);
-			}
-			else {
-				std::string error = "Data from test " + std::to_string(i) + " already exported.";
-				AppendError(error.c_str());
-			}
-		}
+void CSysLat_SoftwareDlg::DebugMode() {
+	CMenu* settingsMenu = GetMenu();
+	if (m_bDebugMode) {
+		settingsMenu->CheckMenuItem(ID_SETTINGS_DEBUGMODE, MF_UNCHECKED);
+		m_bDebugMode = false;
 	}
 	else {
-		//this is one of the errors that only appears for a few seconds and then dissapears... open an error dialog instead maybe?
-		AppendError("No tests have completed yet. Press F11 to begin a new test(ending the current test), or wait for the current test to finish.  You can change the test size in the menu.");
+		settingsMenu->CheckMenuItem(ID_SETTINGS_DEBUGMODE, MF_CHECKED);
+		m_bDebugMode = true;
 	}
 }
-/*
-void CSysLat_SoftwareDlg::UploadData() {
-
+void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
+	CMenu* settingsMenu = GetMenu();
+	if (m_bSysLatInOSD) {
+		settingsMenu->CheckMenuItem(ID_SETTINGS_DISPLAYSYSLATINOSD, MF_UNCHECKED);
+		m_bSysLatInOSD = false;
+	}
+	else {
+		settingsMenu->CheckMenuItem(ID_SETTINGS_DISPLAYSYSLATINOSD, MF_CHECKED);
+		m_bSysLatInOSD = true;
+	}
 }
+
+
+
+
+
+
+/*
+	//init some settings to global(?) profile - probably- scratch that, DEFINITELY need to move these
+	//SetProfileProperty("", "BaseColor", 0xFFFFFF);
+	//SetProfileProperty("", "BgndColor", 0x000000); //this value isn't actually modifiable in RTSS lol
+	//SetProfileProperty("", "FillColor", 0x000000);
+	//SetProfileProperty("", "ZoomRatio", 2);
+	//SetProfileProperty("", "RefreshPeriod", 0); //found this property by looking at the plaintext of the RTSSHooks.dll.  Doesn't appear to change the value.  Also attempted to use the "Inc" function as well, but it also failed.
+	//SetProfileProperty("", "RefreshPeriodMin", 0); //found this property by looking at the plaintext of the RTSSHooks.dll ... It didn't appear to change the value in RTSS... I hope I didn't break something lol
+	//SetProfileProperty("", "CoordinateSpace", 1); //IDK what these do, but I thought they would
+	//SetProfileProperty("", "CoordinateSpace", 0);
+	//DWORD coordinateSpace = CRTSSClient::GetProfileProperty("", "CoordinateSpace");
+	//CGroupedString strOSDBuilder(dwMaxTextSize - 1); //I have no fucking clue wtf this CGroupedString class does, so I'm kind of scared to get rid of it.
+
+	//sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 */

@@ -198,9 +198,15 @@ END
 
 IDR_MENU1 MENU
 BEGIN
+    POPUP "Tools"
+    BEGIN
+        MENUITEM "New Test                  F11", ID_TOOLS_NEWTEST
+        MENUITEM "Export Data",                 ID_TOOLS_EXPORTDATA
+        MENUITEM "Upload Data",                 ID_TOOLS_UPLOADDATA
+    END
     POPUP "Settings"
     BEGIN
-        POPUP "PORT"
+        POPUP "USB_PORT"
         BEGIN
             MENUITEM "Serial Ports",                ID_PORT_SERIALPORTS, INACTIVE
             MENUITEM "COM1",                        ID_PORT_COM1
@@ -208,15 +214,8 @@ BEGIN
             MENUITEM "COM3",                        ID_PORT_COM3, CHECKED
             MENUITEM "COM4",                        ID_PORT_COM4
         END
-        POPUP "USB Read Type"
-        BEGIN
-            MENUITEM "Polling",                     ID_USBREADTYPE_POLLING
-            MENUITEM "Event Driven",                ID_USBREADTYPE_EVENTDRIVEN
-        END
-        POPUP "Export Data"
-        BEGIN
-            MENUITEM "Export Data",                 ID_EXPORTDATA_EXPORTDATA
-        END
+        MENUITEM "Debug Mode",                  ID_SETTINGS_DEBUGMODE
+        MENUITEM "Display SysLat in OSD",       ID_SETTINGS_DISPLAYSYSLATINOSD, CHECKED
     END
 END
 
