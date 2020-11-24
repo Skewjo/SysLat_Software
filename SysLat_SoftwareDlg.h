@@ -40,23 +40,35 @@ public:
 protected:
 	BOOL							PreTranslateMessage(MSG* pMsg);
 	void							Refresh();
-	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData
+	void							R_GetRTSSConfigs();
+	BOOL							R_SysLatStats();
+	void							R_Position();
+	void							R_ProcessNames();
+	void							R_StrOSD();
+	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData - need to make this not used by the thread and then I can make it non-static like the other refresh functions
 	
 	static unsigned int __stdcall	CreateDrawingThread(void* data);
-	void							ReInitThread();
+	
 
-	static void						DrawBlack(CRTSSClient sysLatClient);
-	static void						DrawWhite(CRTSSClient sysLatClient);
-	std::string						GetProcessNameFromPID(DWORD processID);
-	std::string						GetActiveWindowTitle();
+	static void						DrawSquare(CRTSSClient sysLatClient, CString& colorString);
+	static std::string				GetProcessNameFromPID(DWORD processID);
+	static std::string				GetActiveWindowTitle();
+	static void						ProcessNameTrim(std::string&, std::string&);
 
 	//Dialog menu related functions
+	//Tools
+	void							ReInitThread();//used by the "New Test" menu function
+	void							ExportData();
+
+	//Settings
 	void							SetPortCom1();
 	void							SetPortCom2();
 	void							SetPortCom3();
 	void							SetPortCom4();
 	CMenu*							ResetPortsMenuItems();
-
+	void							DebugMode();
+	void							DisplaySysLatInOSD();
+	
 
 	//Members
 	HANDLE						drawingThreadHandle;
@@ -65,9 +77,15 @@ protected:
 	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
+	static DWORD				m_sysLatOwnedSlot;//UGH - I'm specifcally making the sysLatClient object thread local... but then to get a value from it I need to make a static var in this class to track it.  Seems dumb.
+	static CString				m_updateString;
 	static CString				m_PortSpecifier;
+	static CString				m_strBlack;
+	static CString				m_strWhite;
 
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
+	BOOL						m_bDebugMode = false; //save to config
+	BOOL						m_bSysLatInOSD = true;
 	
 	//the names and uses of the following 3 vars is stupid... Need to fix it
 	unsigned int				myCounter = 0; 
@@ -75,7 +93,19 @@ protected:
 	static unsigned int			m_LoopCounterRefresh;
 	static CString				m_strError;
 
+	//these 2 definitely belong somewhere else...
+	static DWORD				m_positionX;
+	static DWORD				m_positionY;
+	static BOOL					m_bPositionManualOverride;
+	static INT					m_internalX, m_internalY;
 
+	//RTSS Configs
+	DWORD						m_dwSharedMemoryVersion;
+	DWORD						m_dwMaxTextSize;
+	BOOL						m_bFormatTagsSupported;
+	BOOL						m_bObjTagsSupported;
+	BOOL						m_bRTSSInitConfig = false;
+	
 	//previously existing members
 	BOOL						m_bMultiLineOutput;
 	BOOL						m_bFormatTags;

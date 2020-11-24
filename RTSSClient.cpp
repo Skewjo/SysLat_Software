@@ -7,6 +7,8 @@
 DWORD CRTSSClient::sharedMemoryVersion = 0;
 CRTSSProfileInterface CRTSSClient::m_profileInterface;
 CString CRTSSClient::m_strInstallPath = "";
+DWORD CRTSSClient::clientsNum = 0;
+
 
 CRTSSClient::CRTSSClient(const char* setSlotOwner, int setClientPriority) {
 	slotOwnerOSD = setSlotOwner;
@@ -71,6 +73,18 @@ void CRTSSClient::InitRTSSInterface() {
 
 		sharedMemoryVersion = dwResult;
 	}
+}
+DWORD CRTSSClient::GetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty)
+{
+	DWORD dwProperty = 0;
+	if (m_profileInterface.IsInitialized())
+	{
+		m_profileInterface.LoadProfile(lpProfile);
+
+		m_profileInterface.GetProfileProperty(lpProfileProperty, (LPBYTE)&dwProperty, sizeof(dwProperty));
+	}
+
+	return dwProperty;
 }
 void CRTSSClient::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
 {
@@ -216,14 +230,13 @@ BOOL CRTSSClient::UpdateOSD(LPCSTR lpText) {
 					//2nd pass : otherwise find the first unused OSD slot and capture it
 				{
 					//If the caller is "SysLat" allow it to take over the first OSD slot
-					DWORD dwEntry = 0;
-					//Fix this whenever I figure out whether or not this function needs to be static... I don't believe it does
-					/*if (clientPriority == 0) {
+					DWORD dwEntry;
+					if (clientPriority == 0) {
 						dwEntry = 0;
 					}
 					else {
 						dwEntry = 1;
-					}*/
+					}
 					for (dwEntry; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 						//allow primary OSD clients (e.g. EVGA Precision / MSI Afterburner) to use the first slot exclusively, so third party 
 						//applications start scanning the slots from the second one - CHANGED THIS TO 0 SO I CAN BE PRIMARY BECAUSE I NEED THE CORNERS
@@ -268,6 +281,11 @@ BOOL CRTSSClient::UpdateOSD(LPCSTR lpText) {
 
 							bResult = TRUE;
 
+							ownedSlot = dwEntry;
+							//I really don't like how I'm storing this... I feel like I should be using a different var
+							clientsNum = pMem->dwOSDArrSize;
+
+
 							break;
 						}
 					}
@@ -300,7 +318,7 @@ void CRTSSClient::ReleaseOSD()
 			if ((pMem->dwSignature == 'RTSS') &&
 				(pMem->dwVersion >= 0x00020000))
 			{
-				for (DWORD dwEntry = 1; dwEntry < pMem->dwOSDArrSize; dwEntry++)
+				for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 				{
 					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
 
