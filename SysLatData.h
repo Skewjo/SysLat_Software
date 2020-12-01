@@ -4,6 +4,7 @@
 
 #include<vector>
 #include<string>
+#include<json/json.h>
 
 //#define MAX_TESTS										500
 #define MOVING_AVERAGE									100
@@ -44,6 +45,8 @@ protected:
 public:
 	CSysLatData(); //this constructor only opens a mutex... does the destructor need to close the mutex? Also, do I need to init the struct in the constructor? It should init to all 0's off the bat...
 	
+	Json::Value			jsonSLD; //this is basically a second copy of the data... will probably eat up a BOATLOAD of memory for no reason. There's got to be a better way...
+
 	//using getters and setters for all of these seems stupid...
 	int					GetCounter();
 	int					GetTotal();
@@ -75,9 +78,11 @@ public:
 
 	void				AppendError(const CString& error);
 
-	//This function probably needs to be moved so that I can add metadata and paired data to it
-	void				ExportData(int testNumber); //to CSV or something? JSON is Michael's favorite...
+	// I think I need to make the following 2 functions return BOOLs or INTs based on whether or not they failed.
+	void				CreateJSONSLD();
+	void				ExportData(int testNumber); 
 
 	bool				dataExported = false;
+	bool				dataUploaded = false;
 };
 #endif

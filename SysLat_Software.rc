@@ -216,6 +216,7 @@ BEGIN
         END
         MENUITEM "Debug Mode",                  ID_SETTINGS_DEBUGMODE
         MENUITEM "Display SysLat in OSD",       ID_SETTINGS_DISPLAYSYSLATINOSD, CHECKED
+        MENUITEM "Test Upload Mode",            ID_SETTINGS_TESTUPLOADMODE
     END
 END
 

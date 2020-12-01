@@ -30,13 +30,15 @@
 #define ID_SETTINGS_DISPLAYSYSLATINOSD  32786
 #define ID_TOOLS_                       32787
 #define ID_TOOLS_NEWTEST                32788
+#define ID_SETTINGS_UPLOADMODE          32789
+#define ID_SETTINGS_TESTUPLOADMODE      32790
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        139
-#define _APS_NEXT_COMMAND_VALUE         32789
+#define _APS_NEXT_COMMAND_VALUE         32791
 #define _APS_NEXT_CONTROL_VALUE         1003
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
