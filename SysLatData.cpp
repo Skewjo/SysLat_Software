@@ -1,6 +1,5 @@
 #include "stdafx.h"
 #include "SysLatData.h"
-#include<json/json.h>
 #include<fstream>
 
 CSysLatData::CSysLatData() {
@@ -127,15 +126,14 @@ void CSysLatData::AppendError(const CString& error)
 	//ReleaseSLDMutex();
 }
 
-//data IO functions?
-void CSysLatData::ExportData(int testNumber) {
-	Json::Value jsonSLD;
+void CSysLatData::CreateJSONSLD() {
 	Json::Value resultsSize(Json::arrayValue);
 	resultsSize.append(sld.m_allResults.size());
 	resultsSize.append(sld.m_v_strTargetWindow.size());
 	resultsSize.append(sld.m_v_strActiveWindow.size());
 	Json::Value resultsArray(Json::arrayValue);
 	
+	/*
 	for (int i = 0; i < sld.m_allResults.size(); i++) {
 		Json::Value subResultsArray(Json::arrayValue);
 		subResultsArray.append(Json::Value(i));
@@ -144,38 +142,37 @@ void CSysLatData::ExportData(int testNumber) {
 		subResultsArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
 		resultsArray.append(subResultsArray);
 	}
+	*/
 
 	
-	/* //This commented out block of code would keep the 3 arrays of data found in the SYSLAT_DATA struct seperate in the JSON. They are currently formatted to be an array of arrays to make the data easier to read.
-	Json::Value resultsArray(Json::arrayValue);
+	//This block of code would keep the 3 arrays of data found in the SYSLAT_DATA struct seperate in the JSON. They are currently formatted to be an array of arrays to make the data easier to read.
 	for (int i = 0; i < sld.m_counter; i++ ) {
 		resultsArray.append(Json::Value(sld.m_allResults[i]));
 	}
 	Json::Value targetArray(Json::arrayValue);
 	for (int i = 0; i < sld.m_counter; i++) {
-		targetArray.append(Json::Value(sld.m_a_strTargetWindow[i]));
+		targetArray.append(Json::Value(sld.m_v_strTargetWindow[i]));
 	}
 	Json::Value activeArray(Json::arrayValue);
 	for (int i = 0; i < sld.m_counter; i++) {
-		activeArray.append(Json::Value(sld.m_a_strActiveWindow[i]));
+		activeArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
 	}
 	
 
-	jsonSLD["SysLatData"]["targetWindow"] = targetArray;
-	jsonSLD["SysLatData"]["activeWindow"] = activeArray;
-	*/
+
+	
 
 
 	//Add elapsed time at some point
-	//Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
-	struct tm* startTimeUTC = gmtime(&m_startTime);
+	
+	struct tm* startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
 	char* startDateUTC = asctime(startTimeUTC);
-	jsonSLD["-MetaData"]["1StartTimeUTC"] = startDateUTC;
+	jsonSLD["MetaData"]["StartTimeUTC"] = startDateUTC;
 	struct tm* endTimeUTC = gmtime(&m_endTime);
 	char *endDateUTC = asctime(endTimeUTC);
-	jsonSLD["-MetaData"]["2EndTimeUTC"] = endDateUTC;
-	jsonSLD["-MetaData"]["3StartTimeLocal"] = m_startDate;
-	jsonSLD["-MetaData"]["4EndTimeLocal"] = m_endDate;
+	jsonSLD["MetaData"]["EndTimeUTC"] = endDateUTC;
+	jsonSLD["MetaData"]["StartTimeLocal"] = m_startDate;
+	jsonSLD["MetaData"]["EndTimeLocal"] = m_endDate;
 
 	jsonSLD["AggregateData"]["EVRCounter"] = sld.m_counterEVR;
 	jsonSLD["AggregateData"]["EVRSystemLatencyTotal"] = sld.m_systemLatencyTotalEVR;
@@ -186,9 +183,15 @@ void CSysLatData::ExportData(int testNumber) {
 
 	jsonSLD["SysLatData"]["SysLatResultSize"] = resultsSize;
 	jsonSLD["SysLatData"]["SysLatResults"] = resultsArray;
+	jsonSLD["SysLatData"]["targetWindow"] = targetArray;
+	jsonSLD["SysLatData"]["activeWindow"] = activeArray;
 
+
+}
+
+void CSysLatData::ExportData(int testNumber) {
 	std::ofstream exportData;
-	exportData.open("sld_export" + std::to_string(testNumber) + ".log");
+	exportData.open("./logs/sld_export" + std::to_string(testNumber) + ".json");
 
 	if (exportData.is_open()) {
 		exportData << jsonSLD;

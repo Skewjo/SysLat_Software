@@ -7,6 +7,7 @@
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
 #include "USBController.h"
+#include "HTTP_Client_Async.h"
 #include "psapi.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -216,7 +217,9 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialog)
 	ON_COMMAND(ID_PORT_COM3, CSysLat_SoftwareDlg::SetPortCom3)
 	ON_COMMAND(ID_PORT_COM4, CSysLat_SoftwareDlg::SetPortCom4)
 	ON_COMMAND(ID_TOOLS_EXPORTDATA, CSysLat_SoftwareDlg::ExportData)
+	ON_COMMAND(ID_TOOLS_UPLOADDATA, CSysLat_SoftwareDlg::UploadData)
 	ON_COMMAND(ID_SETTINGS_DEBUGMODE, CSysLat_SoftwareDlg::DebugMode)
+	ON_COMMAND(ID_SETTINGS_TESTUPLOADMODE, CSysLat_SoftwareDlg::TestUploadMode)
 	ON_COMMAND(ID_SETTINGS_DISPLAYSYSLATINOSD, CSysLat_SoftwareDlg::DisplaySysLatInOSD)
 	ON_COMMAND(ID_TOOLS_NEWTEST, CSysLat_SoftwareDlg::ReInitThread)
 	//}}AFX_MSG_MAP
@@ -271,7 +274,7 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 
 	//Attempt to claim the first slot for SysLat(??) - this definitely feels like the wrong location
 	//UpdateOSD("", m_caSysLat);
-
+	
 
 	Refresh();
 
@@ -419,26 +422,26 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 		//these next 4 keybinds are "optimized out" or something?? WTF???
 		case VK_UP:
 			if (m_internalY > 0) {
-				m_internalY - 1;
+				m_internalY--;
 			}
 			//else appendError ??
 			m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_DOWN:
 			if (m_internalY < 255) {
-				m_internalY + 1;
+				m_internalY++;
 			}
 			m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_LEFT:
 			if (m_internalX > 0) {
-				m_internalX - 1;
+				m_internalX--;
 			}
 			m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_RIGHT:
 			if (m_internalX < 255) {
-				m_internalX + 1;
+				m_internalX++;
 			}
 			m_bPositionManualOverride = true;
 			return TRUE;
@@ -616,8 +619,10 @@ void CSysLat_SoftwareDlg::ReInitThread() { //since implementing the the target a
 	myCounter = 0;
 
 	m_pOperatingSLD->SetEndTime();
+	m_pOperatingSLD->CreateJSONSLD();
 	m_previousSLD.push_back(m_pOperatingSLD);
 	m_pOperatingSLD = new CSysLatData;
+	
 
 	Sleep(1000);
 	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
@@ -730,11 +735,30 @@ void CSysLat_SoftwareDlg::ExportData()
 		AppendError("No tests have completed yet. \nPress F11 to begin a new test(ending the current test), or wait for the current test to finish. \nYou can change the test size in the menu."); // (Not yet you can't lol)
 	}
 }
-/*
-void CSysLat_SoftwareDlg::UploadData() {
 
+void CSysLat_SoftwareDlg::UploadData()
+{
+
+	if (m_previousSLD.size() > 0) {
+		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
+			if (!m_previousSLD[i]->dataUploaded) {
+				if (m_bTestUploadMode) {
+					int uploadStatus = upload_data(m_previousSLD[i], "localhost", "3000");
+				}
+				int uploadStatus = upload_data(m_previousSLD[i]);
+				m_previousSLD[i]->dataUploaded = true;
+			}
+			else {
+				std::string error = "Data from test " + std::to_string(i) + " already uploaded.";
+				AppendError(error.c_str());
+			}
+		}
+	}
+	else {
+		//this is one of the errors that only appears for a few seconds and then dissapears... open an error dialog instead maybe?
+		AppendError("No tests have completed yet. \nPress F11 to begin a new test(ending the current test), or wait for the current test to finish. \nYou can change the test size in the menu."); // (Not yet you can't lol)
+	}
 }
-*/
 
 //Settings
 void CSysLat_SoftwareDlg::SetPortCom1()
@@ -791,7 +815,19 @@ void CSysLat_SoftwareDlg::DebugMode() {
 		m_bDebugMode = true;
 	}
 }
+void CSysLat_SoftwareDlg::TestUploadMode() {
+	CMenu* settingsMenu = GetMenu();
+	if (m_bTestUploadMode) {
+		settingsMenu->CheckMenuItem(ID_SETTINGS_DEBUGMODE, MF_UNCHECKED);
+		m_bTestUploadMode = false;
+	}
+	else {
+		settingsMenu->CheckMenuItem(ID_SETTINGS_DEBUGMODE, MF_CHECKED);
+		m_bTestUploadMode = true;
+	}
+}
 void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
+	//this needs to default to "on" if you have a version with no LCD on "off" if your SysLat does have an LCD
 	CMenu* settingsMenu = GetMenu();
 	if (m_bSysLatInOSD) {
 		settingsMenu->CheckMenuItem(ID_SETTINGS_DISPLAYSYSLATINOSD, MF_UNCHECKED);
@@ -804,7 +840,9 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 }
 
 
-
+//int CSysLat_SoftwareDlg::UploadResults() {
+//	upload_data();
+//}
 
 
 

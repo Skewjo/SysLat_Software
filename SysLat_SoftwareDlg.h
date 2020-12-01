@@ -59,6 +59,9 @@ protected:
 	//Tools
 	void							ReInitThread();//used by the "New Test" menu function
 	void							ExportData();
+	void							UploadData();
+	//bool							UploadUserData();
+	//int							UploadResults();
 
 	//Settings
 	void							SetPortCom1();
@@ -67,7 +70,9 @@ protected:
 	void							SetPortCom4();
 	CMenu*							ResetPortsMenuItems();
 	void							DebugMode();
+	void							TestUploadMode();
 	void							DisplaySysLatInOSD();
+
 	
 
 	//Members
@@ -85,6 +90,7 @@ protected:
 
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
 	BOOL						m_bDebugMode = false; //save to config
+	BOOL						m_bTestUploadMode = false; //change name?
 	BOOL						m_bSysLatInOSD = true;
 	
 	//the names and uses of the following 3 vars is stupid... Need to fix it
