@@ -351,6 +351,7 @@ void CSysLat_SoftwareDlg::OnDestroy()
 	CDialog::OnDestroy();
 }
 
+
 //Skewjo's Dialog functions
 std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
 	std::string ret;
@@ -475,8 +476,9 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 }
 void CSysLat_SoftwareDlg::Refresh()
 {
-	//I believe this needs to be somewhere else...
-	CRTSSClient::InitRTSSInterface();
+	if (!(CRTSSClient::m_profileInterface.IsInitialized())) {
+		CRTSSClient::InitRTSSInterface();
+	}
 	m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
 	m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
 	if (m_bConnected && !m_bRTSSInitConfig) {
@@ -598,7 +600,7 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 		}
 
 		if (m_sysLatOwnedSlot != 0) {
-			AppendError("The SysLat client is unable to occupy RTSS client slot 0.\nThis may cause issues with the blinking square appearing in the corner.\nTo resolve this error\n\t1. Close other applications that use RTSS(such as MSI Afterburner)\n\t2. Restart RTSS\n\t3. Restart the testing phase(by pressing <F11>).");
+			AppendError("The SysLat client is unable to occupy RTSS client slot 0.\nThis may cause issues with the blinking square appearing in the corner.\nTo resolve this error try one of the following:\n\t1. Close other applications that use RTSS(such as MSI Afterburner)\n\t2. Restart RTSS\n\t3. Restart the testing phase(by pressing <F11>).");
 		}
 	}
 }
@@ -609,24 +611,39 @@ void CSysLat_SoftwareDlg::AppendError(const CString& error)
 	m_strError.Append("\n");
 }
 
+
+
 //SysLat thread functions
-void CSysLat_SoftwareDlg::ReInitThread() { //since implementing the the target and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
+void CSysLat_SoftwareDlg::ReInitThread() { 
+	//since implementing the the target and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
 	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread - THIS PROBLEM GOES AWAY IF I PUT *ANY* BREAKPOINTS IN THIS FUNCTION???
 	m_loopSize = 0;
-	WaitForSingleObject(drawingThreadHandle, INFINITE); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
+	//DWORD waitForThread;
+	//do {
+	//waitForThread = 
+		WaitForSingleObjectEx(drawingThreadHandle, INFINITE, false); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
+	//} while (waitForThread != WAIT_OBJECT_0);
+	//CloseHandle(drawingThreadHandle);
+	
+	m_pOperatingSLD->SetEndTime();
 	m_loopSize = 0xFFFFFFFF;
-	time(&m_elapsedTimeStart);
+
+	//resets the timer 
+	time(&m_elapsedTimeStart); //probably need to add a second timer for total run time
 	myCounter = 0;
 
-	m_pOperatingSLD->SetEndTime();
-	m_pOperatingSLD->CreateJSONSLD();
+	//"save" the data from the test that just completed
 	m_previousSLD.push_back(m_pOperatingSLD);
 	m_pOperatingSLD = new CSysLatData;
 	
-
-	Sleep(1000);
+	//restart the thread
 	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
 	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
+
+	//convert the previous data to JSON
+	m_previousSLD.back()->CreateJSONSLD();
+	//then export it
+	//then upload it
 }
 unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 {
@@ -639,10 +656,12 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
 	CUSBController usbController;
 	HANDLE hPort = usbController.OpenComPort(m_PortSpecifier);
 
-	if (!usbController.IsComPortOpened(hPort))
+	while (!usbController.IsComPortOpened(hPort) && m_loopSize > 0)
 	{
+		hPort = usbController.OpenComPort(m_PortSpecifier);
 		AppendError("Failed to open COM port: " + m_PortSpecifier);
-		return 0;
+		//poll the device once per second
+		Sleep(1000);
 	}
 
 	DrawSquare(sysLatClient, m_strBlack);
@@ -692,10 +711,10 @@ void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorStr
 	if (sysLatClient.ownedSlot == 0 && !m_bPositionManualOverride) {
 		//int x = 0;
 		//int y = 0;
-		if ((int)m_positionX < 0) {
+		if (m_positionX < 0) {
 			m_internalX = 0;
 		}
-		if ((int)m_positionY < 0) {
+		if (m_positionY < 0) {
 			//y = CRTSSClient::clientsNum * 20;
 			m_internalY = 20;
 		}
@@ -735,7 +754,6 @@ void CSysLat_SoftwareDlg::ExportData()
 		AppendError("No tests have completed yet. \nPress F11 to begin a new test(ending the current test), or wait for the current test to finish. \nYou can change the test size in the menu."); // (Not yet you can't lol)
 	}
 }
-
 void CSysLat_SoftwareDlg::UploadData()
 {
 
@@ -793,7 +811,6 @@ void CSysLat_SoftwareDlg::SetPortCom4()
 
 	m_PortSpecifier = "COM4";
 }
-//This function is definitely broken right now - specifically breaks when I go from the real SysLat port to another occupied port & back
 CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 {
 	CMenu* settingsMenu = GetMenu();
@@ -804,6 +821,7 @@ CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 	ReInitThread();
 	return settingsMenu;
 }
+
 void CSysLat_SoftwareDlg::DebugMode() {
 	CMenu* settingsMenu = GetMenu();
 	if (m_bDebugMode) {

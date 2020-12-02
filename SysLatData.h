@@ -12,9 +12,9 @@
 #define EVR_MAX											100
 
 typedef struct SYSLAT_DATA {
-	std::vector<int>	m_allResults;
-	std::vector<std::string>	m_v_strTargetWindow;
-	std::vector<std::string>	m_v_strActiveWindow;
+	//std::vector<int>	m_allResults;
+	//std::vector<std::string>	m_v_strTargetWindow;
+	//std::vector<std::string>	m_v_strActiveWindow;
 	int					m_counter = 0;
 	int					m_systemLatencyTotal = 0;
 	double				m_systemLatencyAverage = 0;

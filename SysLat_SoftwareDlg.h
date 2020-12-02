@@ -95,7 +95,7 @@ protected:
 	
 	//the names and uses of the following 3 vars is stupid... Need to fix it
 	unsigned int				myCounter = 0; 
-	static unsigned int			m_loopSize;
+	static unsigned int			m_loopSize; //really need to change the name of this var to "threadContinue" or something more descriptive
 	static unsigned int			m_LoopCounterRefresh;
 	static CString				m_strError;
 

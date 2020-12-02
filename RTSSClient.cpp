@@ -282,6 +282,7 @@ BOOL CRTSSClient::UpdateOSD(LPCSTR lpText) {
 							bResult = TRUE;
 
 							ownedSlot = dwEntry;
+							
 							//I really don't like how I'm storing this... I feel like I should be using a different var
 							clientsNum = pMem->dwOSDArrSize;
 
@@ -321,7 +322,6 @@ void CRTSSClient::ReleaseOSD()
 				for (DWORD dwEntry = 0; dwEntry < pMem->dwOSDArrSize; dwEntry++)
 				{
 					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_OSD_ENTRY)((LPBYTE)pMem + pMem->dwOSDArrOffset + dwEntry * pMem->dwOSDEntrySize);
-
 					if (!strcmp(pEntry->szOSDOwner, slotOwnerOSD))
 					{
 						memset(pEntry, 0, pMem->dwOSDEntrySize);

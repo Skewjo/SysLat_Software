@@ -70,9 +70,9 @@ void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResul
 	int systemLatency = 0;
 	if (!m_strSysLatResultsComplete.IsEmpty()) {
 		systemLatency = StrToInt(m_strSysLatResultsComplete);
-		sld.m_allResults.push_back(systemLatency);
-		sld.m_v_strTargetWindow.push_back(targetWindow);
-		sld.m_v_strActiveWindow.push_back(activeWindow);
+		//sld.m_allResults.push_back(systemLatency);
+		//sld.m_v_strTargetWindow.push_back(targetWindow);
+		//sld.m_v_strActiveWindow.push_back(activeWindow);
 		sld.m_systemLatencyTotal += systemLatency;
 		sld.m_systemLatencyAverage = static_cast<double>(sld.m_systemLatencyTotal) / sld.m_counter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit... - working now?
 
@@ -128,23 +128,14 @@ void CSysLatData::AppendError(const CString& error)
 
 void CSysLatData::CreateJSONSLD() {
 	Json::Value resultsSize(Json::arrayValue);
-	resultsSize.append(sld.m_allResults.size());
-	resultsSize.append(sld.m_v_strTargetWindow.size());
-	resultsSize.append(sld.m_v_strActiveWindow.size());
 	Json::Value resultsArray(Json::arrayValue);
 	
 	/*
-	for (int i = 0; i < sld.m_allResults.size(); i++) {
-		Json::Value subResultsArray(Json::arrayValue);
-		subResultsArray.append(Json::Value(i));
-		subResultsArray.append(Json::Value(sld.m_allResults[i]));
-		subResultsArray.append(Json::Value(sld.m_v_strTargetWindow[i]));
-		subResultsArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
-		resultsArray.append(subResultsArray);
-	}
-	*/
+	//These 3 values were being used to send ALL test data. I think it's overkill.
+	resultsSize.append(sld.m_allResults.size());
+	resultsSize.append(sld.m_v_strTargetWindow.size());
+	resultsSize.append(sld.m_v_strActiveWindow.size());
 
-	
 	//This block of code would keep the 3 arrays of data found in the SYSLAT_DATA struct seperate in the JSON. They are currently formatted to be an array of arrays to make the data easier to read.
 	for (int i = 0; i < sld.m_counter; i++ ) {
 		resultsArray.append(Json::Value(sld.m_allResults[i]));
@@ -157,11 +148,19 @@ void CSysLatData::CreateJSONSLD() {
 	for (int i = 0; i < sld.m_counter; i++) {
 		activeArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
 	}
-	
 
 
-	
 
+	//This block was for making a 2d JSON array and was kind of stupid.
+	for (int i = 0; i < sld.m_allResults.size(); i++) {
+		Json::Value subResultsArray(Json::arrayValue);
+		subResultsArray.append(Json::Value(i));
+		subResultsArray.append(Json::Value(sld.m_allResults[i]));
+		subResultsArray.append(Json::Value(sld.m_v_strTargetWindow[i]));
+		subResultsArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
+		resultsArray.append(subResultsArray);
+	}
+	*/
 
 	//Add elapsed time at some point
 	
@@ -182,11 +181,9 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["AggregateData"]["systemLatencyAverage"] = sld.m_systemLatencyAverage;
 
 	jsonSLD["SysLatData"]["SysLatResultSize"] = resultsSize;
-	jsonSLD["SysLatData"]["SysLatResults"] = resultsArray;
-	jsonSLD["SysLatData"]["targetWindow"] = targetArray;
-	jsonSLD["SysLatData"]["activeWindow"] = activeArray;
-
-
+	//jsonSLD["SysLatData"]["SysLatResults"] = resultsArray;
+	//jsonSLD["SysLatData"]["targetWindow"] = targetArray;
+	//jsonSLD["SysLatData"]["activeWindow"] = activeArray;
 }
 
 void CSysLatData::ExportData(int testNumber) {
