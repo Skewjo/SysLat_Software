@@ -645,7 +645,7 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 	//then export it
 	//then upload it
 }
-unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data)
+unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //this is probably dangerous, right?
 {
 	int TIMEOUT = 5; //this should probably be a defined constant
 	int serialReadData = 0;
@@ -709,12 +709,10 @@ void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorStr
 	m_updateString = "";
 	//The following conditional is FAR from perfect... In order for it to work properly I may need to count the number of rows and columns(in zoomed pixel units?) and use that value. 
 	if (sysLatClient.ownedSlot == 0 && !m_bPositionManualOverride) {
-		//int x = 0;
-		//int y = 0;
-		if (m_positionX < 0) {
+		if ((int)m_positionX < 0) {
 			m_internalX = 0;
 		}
-		if (m_positionY < 0) {
+		if ((int)m_positionY < 0) {
 			//y = CRTSSClient::clientsNum * 20;
 			m_internalY = 20;
 		}
@@ -778,7 +776,7 @@ void CSysLat_SoftwareDlg::UploadData()
 	}
 }
 
-//Settings
+//Settings - need to look into GetCommPorts function to enumerate COM ports https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getcommports
 void CSysLat_SoftwareDlg::SetPortCom1()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
