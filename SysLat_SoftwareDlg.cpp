@@ -8,6 +8,7 @@
 #include "SysLat_SoftwareDlg.h"
 #include "USBController.h"
 #include "HTTP_Client_Async.h"
+#include "HTTP_Client_Async_SSL.h"
 #include "psapi.h"
 
 /////////////////////////////////////////////////////////////////////////////
@@ -16,6 +17,11 @@
 #include <io.h>
 #include <sstream>
 #include <algorithm>
+#include <uuids.h>
+
+
+
+
 
 //TODO:
 // Transfer TODO to GitHub Issues...
@@ -272,8 +278,28 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
 
-	//Attempt to claim the first slot for SysLat(??) - this definitely feels like the wrong location
-	//UpdateOSD("", m_caSysLat);
+	
+
+	
+
+	char userName[UNLEN + 1] = { 0 };
+	DWORD userNameSize = UNLEN + 1;
+	GetUserName(userName, &userNameSize);
+	OutputDebugStringA("\n");
+	OutputDebugStringA(userName);
+
+	char computerName[UNLEN + 1] = { 0 };
+	DWORD computerNameSize = UNLEN + 1;
+	GetComputerName(computerName, &computerNameSize);
+	OutputDebugStringA("\n");
+	OutputDebugStringA(computerName);
+	OutputDebugStringA("\n");
+
+
+
+
+	
+
 	
 
 	Refresh();
@@ -615,7 +641,7 @@ void CSysLat_SoftwareDlg::AppendError(const CString& error)
 
 //SysLat thread functions
 void CSysLat_SoftwareDlg::ReInitThread() { 
-	//since implementing the the target and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
+	//since implementing the the RTSS and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
 	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread - THIS PROBLEM GOES AWAY IF I PUT *ANY* BREAKPOINTS IN THIS FUNCTION???
 	m_loopSize = 0;
 	//DWORD waitForThread;
@@ -742,7 +768,7 @@ void CSysLat_SoftwareDlg::ExportData()
 				m_previousSLD[i]->ExportData(i);
 			}
 			else {
-				std::string error = "Data from test " + std::to_string(i) + " already exported.";
+				std::string error = "Data from test " + std::to_string(i) + " already exported."; //this error message is garbage in every way
 				AppendError(error.c_str());
 			}
 		}
@@ -754,15 +780,17 @@ void CSysLat_SoftwareDlg::ExportData()
 }
 void CSysLat_SoftwareDlg::UploadData()
 {
-
+	const char* APItarget = "/api/benchmarkData/benchmarkData";
 	if (m_previousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
 			if (!m_previousSLD[i]->dataUploaded) {
 				if (m_bTestUploadMode) {
-					int uploadStatus = upload_data(m_previousSLD[i], "localhost", "3000");
+					int uploadStatus = upload_data(m_previousSLD[i]->jsonSLD, APItarget);
 				}
-				int uploadStatus = upload_data(m_previousSLD[i]);
-				m_previousSLD[i]->dataUploaded = true;
+				else {
+					int uploadStatus = upload_data_secure(m_previousSLD[i]->jsonSLD, APItarget);
+				}
+				m_previousSLD[i]->dataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
 			}
 			else {
 				std::string error = "Data from test " + std::to_string(i) + " already uploaded.";
@@ -834,11 +862,11 @@ void CSysLat_SoftwareDlg::DebugMode() {
 void CSysLat_SoftwareDlg::TestUploadMode() {
 	CMenu* settingsMenu = GetMenu();
 	if (m_bTestUploadMode) {
-		settingsMenu->CheckMenuItem(ID_SETTINGS_DEBUGMODE, MF_UNCHECKED);
+		settingsMenu->CheckMenuItem(ID_SETTINGS_TESTUPLOADMODE, MF_UNCHECKED);
 		m_bTestUploadMode = false;
 	}
 	else {
-		settingsMenu->CheckMenuItem(ID_SETTINGS_DEBUGMODE, MF_CHECKED);
+		settingsMenu->CheckMenuItem(ID_SETTINGS_TESTUPLOADMODE, MF_CHECKED);
 		m_bTestUploadMode = true;
 	}
 }
@@ -854,13 +882,6 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 		m_bSysLatInOSD = true;
 	}
 }
-
-
-//int CSysLat_SoftwareDlg::UploadResults() {
-//	upload_data();
-//}
-
-
 
 /*
 	//init some settings to global(?) profile - probably- scratch that, DEFINITELY need to move these

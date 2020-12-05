@@ -12,9 +12,9 @@
 #define EVR_MAX											100
 
 typedef struct SYSLAT_DATA {
-	//std::vector<int>	m_allResults;
-	//std::vector<std::string>	m_v_strTargetWindow;
-	//std::vector<std::string>	m_v_strActiveWindow;
+	std::vector<int>	m_allResults;
+	std::vector<std::string>	m_v_strRTSSWindow;
+	std::vector<std::string>	m_v_strActiveWindow;
 	int					m_counter = 0;
 	int					m_systemLatencyTotal = 0;
 	double				m_systemLatencyAverage = 0;
@@ -46,6 +46,10 @@ public:
 	CSysLatData(); //this constructor only opens a mutex... does the destructor need to close the mutex? Also, do I need to init the struct in the constructor? It should init to all 0's off the bat...
 	
 	Json::Value			jsonSLD; //this is basically a second copy of the data... will probably eat up a BOATLOAD of memory for no reason. There's got to be a better way...
+	
+	//Need to pull this out and put it in it's own hardware retrieval class
+	//LPHW_PROFILE_INFOA lpHwProfileInfo = { 0 }; // why did this work??
+	HW_PROFILE_INFOA	hwProfileInfo{ 0 };
 
 	//using getters and setters for all of these seems stupid...
 	int					GetCounter();
@@ -68,7 +72,7 @@ public:
 	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
 	void				SetEndTime();
 	
-	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string targetWindow, std::string activeWindow);
+	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow);
 	
 	//mutex functions
 	void				CheckSLDMutex();

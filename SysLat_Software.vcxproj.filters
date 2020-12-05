@@ -28,6 +28,9 @@
     <ClCompile Include="HTTP_Client_Async.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="HTTP_Client_Async_SSL.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GroupedString.h">
@@ -58,6 +61,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="HTTP_Client_Async.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="HTTP_Client_Async_SSL.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

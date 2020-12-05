@@ -60,8 +60,6 @@ protected:
 	void							ReInitThread();//used by the "New Test" menu function
 	void							ExportData();
 	void							UploadData();
-	//bool							UploadUserData();
-	//int							UploadResults();
 
 	//Settings
 	void							SetPortCom1();

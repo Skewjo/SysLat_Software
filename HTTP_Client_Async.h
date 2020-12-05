@@ -43,7 +43,10 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 inline void
 boostFail(beast::error_code ec, char const* what)
 {
-    std::cerr << what << ": " << ec.message() << "\n";
+    //std::cerr << what << ": " << ec.message() << "\n";
+    std::string error = what;
+    error += ": " + ec.message() + "\n";
+    OutputDebugStringA(error.c_str());
 }
 
 
@@ -70,7 +73,7 @@ public:
     }
 
     // Start the asynchronous operation
-    void    run(CSysLatData* dataToSend, char const* host, char const* port, char const* target, int version);
+    void    run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version);
     void    on_resolve(beast::error_code ec, tcp::resolver::results_type results);
     void    on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type);
     void    on_write(beast::error_code ec, std::size_t bytes_transferred);
@@ -80,14 +83,10 @@ public:
 
 
 //char const* host, char const* port, char const* target, int version, char const* method, char const* contentType
-inline int upload_data(CSysLatData* dataToSend, char const* host = "https://syslat.com", char const* port = "80", char const* target = "/api/benchmarkData/benchmarkData") {
+inline int upload_data(Json::Value dataToSend, char const* target = "/api/benchmarkData/benchmarkData") {
     
-    //auto const host = "localhost";
-    //auto const port = "3000";
-    //auto const target = "/api/benchmarkData/benchmarkData";
-    //auto const httpMethod = "POST" //need to add this as a var
-    //auto const contentType = "application/json" //need to add this as a var
-    //int version = argc == 5 && !std::strcmp("1.0", argv[4]) ? 10 : 11; //don't think we need this piece because we should always be doing 1.1 calls...
+    auto const host = "localhost";
+    auto const port = "3000";
     int version = 11;
 
     // The io_context is required for all I/O

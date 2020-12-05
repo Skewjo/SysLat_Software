@@ -9,6 +9,8 @@ CSysLatData::CSysLatData() {
 	m_startTime = time(0);
 	ctime_s(m_startDate, sizeof(m_startDate), &m_startTime);
 
+	
+	::GetCurrentHwProfileA(&hwProfileInfo);
 }
 
 int CSysLatData::GetCounter() {
@@ -57,7 +59,7 @@ void CSysLatData::SetEndTime() {
 	ctime_s(m_endDate, sizeof(m_endDate), &m_endTime);
 }
 
-void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string targetWindow, std::string activeWindow)
+void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow)
 {
 	BOOL success = AcquireSLDMutex();		// begin the sync access to fields
 	if (!success)
@@ -70,13 +72,13 @@ void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResul
 	int systemLatency = 0;
 	if (!m_strSysLatResultsComplete.IsEmpty()) {
 		systemLatency = StrToInt(m_strSysLatResultsComplete);
-		//sld.m_allResults.push_back(systemLatency);
-		//sld.m_v_strTargetWindow.push_back(targetWindow);
-		//sld.m_v_strActiveWindow.push_back(activeWindow);
+		sld.m_allResults.push_back(systemLatency);
+		sld.m_v_strRTSSWindow.push_back(RTSSWindow);
+		sld.m_v_strActiveWindow.push_back(activeWindow);
 		sld.m_systemLatencyTotal += systemLatency;
 		sld.m_systemLatencyAverage = static_cast<double>(sld.m_systemLatencyTotal) / sld.m_counter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit... - working now?
 
-		if (systemLatency > 3 && systemLatency < 100 && targetWindow == activeWindow) {
+		if (systemLatency > 3 && systemLatency < 100 && RTSSWindow == activeWindow) {
 			sld.m_counterEVR++;
 			sld.m_systemLatencyTotalEVR += systemLatency;
 			sld.m_systemLatencyAverageEVR = static_cast<double>(sld.m_systemLatencyTotalEVR) / sld.m_counterEVR;
@@ -130,19 +132,19 @@ void CSysLatData::CreateJSONSLD() {
 	Json::Value resultsSize(Json::arrayValue);
 	Json::Value resultsArray(Json::arrayValue);
 	
-	/*
+	
 	//These 3 values were being used to send ALL test data. I think it's overkill.
 	resultsSize.append(sld.m_allResults.size());
-	resultsSize.append(sld.m_v_strTargetWindow.size());
+	resultsSize.append(sld.m_v_strRTSSWindow.size());
 	resultsSize.append(sld.m_v_strActiveWindow.size());
 
 	//This block of code would keep the 3 arrays of data found in the SYSLAT_DATA struct seperate in the JSON. They are currently formatted to be an array of arrays to make the data easier to read.
 	for (int i = 0; i < sld.m_counter; i++ ) {
 		resultsArray.append(Json::Value(sld.m_allResults[i]));
 	}
-	Json::Value targetArray(Json::arrayValue);
+	Json::Value RTSSArray(Json::arrayValue);
 	for (int i = 0; i < sld.m_counter; i++) {
-		targetArray.append(Json::Value(sld.m_v_strTargetWindow[i]));
+		RTSSArray.append(Json::Value(sld.m_v_strRTSSWindow[i]));
 	}
 	Json::Value activeArray(Json::arrayValue);
 	for (int i = 0; i < sld.m_counter; i++) {
@@ -151,16 +153,16 @@ void CSysLatData::CreateJSONSLD() {
 
 
 
-	//This block was for making a 2d JSON array and was kind of stupid.
-	for (int i = 0; i < sld.m_allResults.size(); i++) {
-		Json::Value subResultsArray(Json::arrayValue);
-		subResultsArray.append(Json::Value(i));
-		subResultsArray.append(Json::Value(sld.m_allResults[i]));
-		subResultsArray.append(Json::Value(sld.m_v_strTargetWindow[i]));
-		subResultsArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
-		resultsArray.append(subResultsArray);
-	}
-	*/
+	////This block was for making a 2d JSON array and was kind of stupid.
+	//for (int i = 0; i < sld.m_allResults.size(); i++) {
+	//	Json::Value subResultsArray(Json::arrayValue);
+	//	subResultsArray.append(Json::Value(i));
+	//	subResultsArray.append(Json::Value(sld.m_allResults[i]));
+	//	subResultsArray.append(Json::Value(sld.m_v_strTargetWindow[i]));
+	//	subResultsArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
+	//	resultsArray.append(subResultsArray);
+	//}
+
 
 	//Add elapsed time at some point
 	
@@ -172,6 +174,9 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["MetaData"]["EndTimeUTC"] = endDateUTC;
 	jsonSLD["MetaData"]["StartTimeLocal"] = m_startDate;
 	jsonSLD["MetaData"]["EndTimeLocal"] = m_endDate;
+	jsonSLD["MetaData"]["TargetWindow"] = "Dota 2";
+	jsonSLD["MetaData"]["HardwareID"] = hwProfileInfo.szHwProfileGuid;
+
 
 	jsonSLD["AggregateData"]["EVRCounter"] = sld.m_counterEVR;
 	jsonSLD["AggregateData"]["EVRSystemLatencyTotal"] = sld.m_systemLatencyTotalEVR;
@@ -181,9 +186,14 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["AggregateData"]["systemLatencyAverage"] = sld.m_systemLatencyAverage;
 
 	jsonSLD["SysLatData"]["SysLatResultSize"] = resultsSize;
-	//jsonSLD["SysLatData"]["SysLatResults"] = resultsArray;
-	//jsonSLD["SysLatData"]["targetWindow"] = targetArray;
-	//jsonSLD["SysLatData"]["activeWindow"] = activeArray;
+	jsonSLD["SysLatData"]["SysLatResults"] = resultsArray;
+	jsonSLD["SysLatData"]["RTSSWindow"] = RTSSArray;
+	jsonSLD["SysLatData"]["activeWindow"] = activeArray;
+
+
+
+
+
 }
 
 void CSysLatData::ExportData(int testNumber) {

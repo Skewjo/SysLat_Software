@@ -6,7 +6,7 @@
 #include <debugapi.h>
 
 
-void session::run(CSysLatData* dataToSend, char const* host, char const* port, char const* target, int version)
+void session::run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version)
 {
     // Set up an HTTP POST request message
     req_.version(version);
@@ -17,8 +17,12 @@ void session::run(CSysLatData* dataToSend, char const* host, char const* port, c
     req_.set(beast::http::field::content_type, "application/json");
     
     Json::FastWriter fastWriter;
-    std::string output = fastWriter.write(dataToSend->jsonSLD);
+    std::string output = fastWriter.write(dataToSend);
     req_.body() = output;
+
+    std::ostringstream debugOut;
+    debugOut << req_ << std::endl;
+    OutputDebugStringA(debugOut.str().c_str());
     req_.prepare_payload();
 
     // Look up the domain name

@@ -154,6 +154,7 @@
   <ItemGroup>
     <ClCompile Include="GroupedString.cpp" />
     <ClCompile Include="HTTP_Client_Async.cpp" />
+    <ClCompile Include="HTTP_Client_Async_SSL.cpp" />
     <ClCompile Include="RTSSClient.cpp" />
     <ClCompile Include="RTSSProfileInterface.cpp" />
     <ClCompile Include="SysLatData.cpp" />
@@ -171,6 +172,7 @@
   <ItemGroup>
     <ClInclude Include="GroupedString.h" />
     <ClInclude Include="HTTP_Client_Async.h" />
+    <ClInclude Include="HTTP_Client_Async_SSL.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RTSSClient.h" />
     <ClInclude Include="RTSSProfileInterface.h" />
