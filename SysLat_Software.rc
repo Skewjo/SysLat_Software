@@ -136,12 +136,13 @@ BEGIN
     BEGIN
         BLOCK "040904b0"
         BEGIN
-            VALUE "FileDescription", "RTSS shared memory sample"
+            VALUE "CompanyName", "SysLat"
+            VALUE "FileDescription", "SysLat Software"
             VALUE "FileVersion", "0.1.0.0"
-            VALUE "InternalName", "RTSSSharedMemorySample"
+            VALUE "InternalName", "SysLat_Software"
             VALUE "LegalCopyright", "Copyright (C) 2017-2020 by John Eskew aka Skewjo"
-            VALUE "OriginalFilename", "RTSSSharedMemorySample.EXE"
-            VALUE "ProductName", "SysLat_RTSS_Shared_Memory_Integration"
+            VALUE "OriginalFilename", "SysLat.EXE"
+            VALUE "ProductName", "SysLat"
             VALUE "ProductVersion", "0.1.0.0"
         END
     END
@@ -228,7 +229,7 @@ END
 
 STRINGTABLE
 BEGIN
-    IDS_ABOUTBOX            "&About RTSS shared memory sample..."
+    IDS_ABOUTBOX            "&About SysLat..."
 END
 
 #endif    // English (United States) resources

@@ -11,12 +11,13 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "RTSSSharedMemory.h"
-#include "RTSSClient.h"
-#include "SysLatData.h"
 #include <string>
 #include <time.h>
 #include <vector>
+#include "RTSSSharedMemory.h"
+#include "RTSSClient.h"
+#include "SysLatData.h"
+
 
 class CSysLat_SoftwareDlg : public CDialog
 {

@@ -3,24 +3,25 @@
 // created by Unwinder
 // modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
-#include "stdafx.h"
-#include "SysLat_Software.h"
-#include "SysLat_SoftwareDlg.h"
-#include "USBController.h"
-#include "HTTP_Client_Async.h"
-#include "HTTP_Client_Async_SSL.h"
-#include "psapi.h"
 
-/////////////////////////////////////////////////////////////////////////////
+#include <stdafx.h>
+#include <Windows.h>
+#include <process.h>
 #include <shlwapi.h>
 #include <float.h>
 #include <io.h>
 #include <sstream>
 #include <algorithm>
 #include <uuids.h>
+#include <Psapi.h>
 
-
-
+/////////////////////////////////////////////////////////////////////////////
+#include "AboutDlg.h"
+#include "SysLat_Software.h"
+#include "SysLat_SoftwareDlg.h"
+#include "USBController.h"
+#include "HTTP_Client_Async.h"
+#include "HTTP_Client_Async_SSL.h"
 
 
 //TODO:
@@ -114,8 +115,6 @@
 //////////////////////////////////////////////////////////////////////////////////////////////
 
 
-#include <Windows.h>
-#include <process.h>
 /// 
 
 #ifdef _DEBUG
@@ -143,49 +142,9 @@ CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
 CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
 DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 
-/////////////////////////////////////////////////////////////////////////////
-// CAboutDlg dialog used for App About
-/////////////////////////////////////////////////////////////////////////////
-class CAboutDlg : public CDialog
-{
-public:
-	CAboutDlg();
 
-	// Dialog Data
-		//{{AFX_DATA(CAboutDlg)
-	enum { IDD = IDD_ABOUTBOX };
-	//}}AFX_DATA
 
-	// ClassWizard generated virtual function overrides
-	//{{AFX_VIRTUAL(CAboutDlg)
-protected:
-	virtual void DoDataExchange(CDataExchange* pDX);    // DDX/DDV support
-	//}}AFX_VIRTUAL
-
-// Implementation
-protected:
-	//{{AFX_MSG(CAboutDlg)
-	//}}AFX_MSG
-	DECLARE_MESSAGE_MAP()
-};
-CAboutDlg::CAboutDlg() : CDialog(CAboutDlg::IDD)
-{
-	//{{AFX_DATA_INIT(CAboutDlg)
-	//}}AFX_DATA_INIT
-}
-void CAboutDlg::DoDataExchange(CDataExchange* pDX)
-{
-	CDialog::DoDataExchange(pDX);
-	//{{AFX_DATA_MAP(CAboutDlg)
-	//}}AFX_DATA_MAP
-}
-BEGIN_MESSAGE_MAP(CAboutDlg, CDialog)
-	//{{AFX_MSG_MAP(CAboutDlg)
-		// No message handlers
-	//}}AFX_MSG_MAP
-END_MESSAGE_MAP()
-
-//Windows Dialog function overrides(?)
+//Windows Dialog inherited function overrides
 /////////////////////////////////////////////////////////////////////////////
 // CSysLat_SoftwareDlg dialog
 /////////////////////////////////////////////////////////////////////////////
