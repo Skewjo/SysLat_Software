@@ -4,7 +4,7 @@
 // modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 
-#include <stdafx.h>
+#include "stdafx.h"
 #include <Windows.h>
 #include <process.h>
 #include <shlwapi.h>

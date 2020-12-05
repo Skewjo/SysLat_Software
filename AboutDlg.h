@@ -1,7 +1,7 @@
 #pragma once
 
-#include "StdAfx.h"
-#include "SysLat_Software.h"
+#include "stdafx.h"
+#include "resource.h"
 //#include <Windows.h>
 //#include <process.h>
 

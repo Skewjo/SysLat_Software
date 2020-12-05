@@ -22,7 +22,6 @@
 #define ID_USBREADTYPE_EVENTDRIVEN      32778
 #define ID_PORT_SERIALPORTS             32779
 #define ID_FILE                         32780
-#define ID_SETTINGS_EXPORTDATA          32781
 #define ID_EXPORTDATA_EXPORTDATA        32782
 #define ID_TOOLS_EXPORTDATA             32783
 #define ID_TOOLS_UPLOADDATA             32784
