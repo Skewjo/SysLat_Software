@@ -4,6 +4,8 @@
 // modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 
+#include "resource.h"
+
 #include "stdafx.h"
 #include <Windows.h>
 #include <process.h>
@@ -60,7 +62,7 @@
 //
 //
 //Core Functionality:
-//  Add HTTP post function for uploading logs to website - use boost.beast library?
+//  DONE - Add HTTP post function for uploading logs to website - use boost.beast library?
 //  Errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
 //		Either use error codes, or check all errors  again in the refresh function(that doesn't make sense though, right?)... or maybe do dialog error pop-ups when errors occur outside of "refresh"?
 //  Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
@@ -68,9 +70,9 @@
 //
 //
 //Data Issues:
+//  #1 - Put elapsed time in log file
 //  Save fps and frametime and other stats as well?
 //  Add graph functionality
-//  Put elapsed time in log file
 //  Clear log files and put a configurable(?) cap on the number allowed
 //  Keep track of total tests performed in a config file vs. looking for existing log files and picking up from there?
 //		How many tests should we allow total? 100? 
@@ -78,17 +80,19 @@
 //
 //
 //Menu:
+//  Create "Test Viewer" menu for viewing, exporting, and uploading tests
 //  Enumerate all 3D programs that RTSS can run in and display them in a menu
 //  Fix COM port change settings
 //  Add lots more menu options - USB options, debug output, data upload, RTSS options(text color)
-//  Box position manual override toggle
+//  Option to close RTSS when you close SysLat
+//  DONE - Box position manual override toggle
 //
 //
 //Anti-Fraud:
 //  Create new dynamic build/installation process in order to obscure some code
 //  Think about hardware/software signatures for uploading data? This probably needs more consideration on the web side
 //  Obscure most functionality(things that don't need to be optimized) into DLLs(requires a new build/installation process)
-//  (Anti-Fraud, Optimization, and Data)Instead of recording certain variables on every measurement(such as RTSS XY position) record them once at the start and once at the end
+//  #1 - (Anti-Fraud, Optimization, and Data)Instead of recording certain variables on every measurement(such as RTSS XY position) record them once at the start and once at the end
 //
 //
 //Optimization:
@@ -104,13 +108,13 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //Major Bugs:
-//  The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD - slot when restarting a test
-//	Issue when switching COM ports to an existing device that isn't SysLat and back
-//  Arrow key functionality has been optimized away somehow
+//  FIXED - The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD - slot when restarting a test
+//	FIXED - Issue when switching COM ports to an existing device that isn't SysLat and back
+//  FIXED - Arrow key functionality has been optimized away somehow
 //  
 //
 //Minor Bugs:
-//  SysLat may not play nicely with other applications that use RTSS such as MSI Afterburner, or with advanced RTSS setups
+//  UNFIXABLE - SysLat may not play nicely with other applications that use RTSS such as MSI Afterburner, or with advanced RTSS setups
 //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -144,6 +148,347 @@ DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 
 
 
+
+
+
+
+
+#define DAYS_IN_WEEK 7
+
+// Creates a tab control, sized to fit the specified parent window's client
+//   area, and adds some tabs. 
+// Returns the handle to the tab control. 
+// hwndParent - parent window (the application's main window). 
+// 
+HWND DoCreateTabControl(HWND hwndParent)
+{
+	RECT rcClient;
+	INITCOMMONCONTROLSEX icex;
+	HWND hwndTab;
+	TCITEM tie;
+	int i;
+	TCHAR achTemp[256];  // Temporary buffer for strings.
+
+	// Initialize common controls.
+	icex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	icex.dwICC = ICC_TAB_CLASSES;
+	InitCommonControlsEx(&icex);
+
+	// Get the dimensions of the parent window's client area, and 
+	// create a tab control child window of that size. Note that g_hInst
+	// is the global instance handle.
+	GetClientRect(hwndParent, &rcClient);
+	
+	
+	HINSTANCE g_hInst = GetModuleHandle(NULL);
+	hwndTab = CreateWindow(WC_TABCONTROL, "",
+		WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
+		0, 0, rcClient.right, rcClient.bottom,
+		hwndParent, NULL, g_hInst, NULL);
+	if (hwndTab == NULL)
+	{
+		return NULL;
+	}
+
+	// Add tabs for each day of the week. 
+	tie.mask = TCIF_TEXT | TCIF_IMAGE;
+	tie.iImage = -1;
+	tie.pszText = achTemp;
+
+	for (i = 0; i < DAYS_IN_WEEK; i++)
+	{
+		// Load the day string from the string resources. Note that
+		// g_hInst is the global instance handle.
+		UINT IDS_SUNDAY = 0;
+		LoadString(g_hInst, IDS_SUNDAY + i,
+			achTemp, sizeof(achTemp) / sizeof(achTemp[0]));
+		if (TabCtrl_InsertItem(hwndTab, i, &tie) == -1)
+		{
+			DestroyWindow(hwndTab);
+			return NULL;
+		}
+	}
+	return hwndTab;
+}
+
+
+
+HWND DoCreateDisplayWindow(HWND hwndTab)
+{
+	HINSTANCE g_hInst = GetModuleHandle(NULL);
+	HWND hwndStatic = CreateWindow(WC_STATIC, "",
+		WS_CHILD | WS_VISIBLE | WS_BORDER,
+		100, 100, 100, 100,        // Position and dimensions; example only.
+		hwndTab, NULL, g_hInst,    // g_hInst is the global instance handle
+		NULL);
+	return hwndStatic;
+}
+
+// Handles the WM_SIZE message for the main window by resizing the 
+//   tab control. 
+// hwndTab - handle of the tab control.
+// lParam - the lParam parameter of the WM_SIZE message.
+//
+HRESULT OnSize(HWND hwndTab, LPARAM lParam)
+{
+	RECT rc;
+
+	if (hwndTab == NULL)
+		return E_INVALIDARG;
+
+	// Resize the tab control to fit the client are of main window.
+	if (!SetWindowPos(hwndTab, HWND_TOP, 0, 0, GET_X_LPARAM(lParam), GET_Y_LPARAM(lParam), SWP_SHOWWINDOW))
+		return E_FAIL;
+
+	return S_OK;
+}
+
+// Handles notifications from the tab control, as follows: 
+//   TCN_SELCHANGING - always returns FALSE to allow the user to select a 
+//     different tab.  
+//   TCN_SELCHANGE - loads a string resource and displays it in a static 
+//     control on the selected tab.
+// hwndTab - handle of the tab control.
+// hwndDisplay - handle of the static control. 
+// lParam - the lParam parameter of the WM_NOTIFY message.
+//
+BOOL OnNotify(HWND hwndTab, HWND hwndDisplay, LPARAM lParam)
+{
+	TCHAR achTemp[256]; // temporary buffer for strings
+
+	switch (((LPNMHDR)lParam)->code)
+	{
+	case TCN_SELCHANGING:
+	{
+		// Return FALSE to allow the selection to change.
+		return FALSE;
+	}
+
+	case TCN_SELCHANGE:
+	{
+		int iPage = TabCtrl_GetCurSel(hwndTab);
+		HINSTANCE g_hInst = GetModuleHandle(NULL);
+		// Note that g_hInst is the global instance handle.
+		LoadString(g_hInst, 0 + iPage, achTemp,
+			sizeof(achTemp) / sizeof(achTemp[0]));
+		LRESULT result = SendMessage(hwndDisplay, WM_SETTEXT, 0,
+			(LPARAM)achTemp);
+		break;
+	}
+	}
+	return TRUE;
+}
+
+
+
+
+
+// Handles the WM_INITDIALOG message for a dialog box that contains 
+//   a tab control used to select among three child dialog boxes.
+// Returns a result code.
+// hwndDlg - handle of the dialog box.
+// 
+
+// Loads and locks a dialog box template resource. 
+// Returns the address of the locked dialog box template resource. 
+// lpszResName - name of the resource. 
+//
+DLGTEMPLATEEX* DoLockDlgRes(LPCTSTR lpszResName)
+{
+	HRSRC hrsrc = FindResourceExA(NULL, lpszResName, RT_DIALOG, MAKELANGID(LANG_NEUTRAL, SUBLANG_NEUTRAL));
+
+	HINSTANCE g_hInst = GetModuleHandle(NULL);
+	// Note that g_hInst is the global instance handle
+	HGLOBAL hglb = LoadResource(g_hInst, hrsrc);
+	return (DLGTEMPLATEEX*)LockResource(hglb);
+}
+
+// Processes the TCN_SELCHANGE notification. 
+// hwndDlg - handle to the parent dialog box. 
+//
+VOID OnSelChanged(HWND hwndDlg)
+{
+	// Get the dialog header data.
+	DLGHDR* pHdr = (DLGHDR*)GetWindowLongPtr(
+		hwndDlg, GWLP_USERDATA);
+
+	// Get the index of the selected tab.
+	int iSel = TabCtrl_GetCurSel(pHdr->hwndTab);
+
+	// Destroy the current child dialog box, if any. 
+	if (pHdr->hwndDisplay != NULL)
+		DestroyWindow(pHdr->hwndDisplay);
+
+	HINSTANCE g_hInst = GetModuleHandle(NULL);
+	// Create the new child dialog box. Note that g_hInst is the
+	// global instance handle.
+	//pHdr->hwndDisplay = CreateDialogIndirectA(g_hInst,
+	//	(DLGTEMPLATE*)pHdr->apRes[iSel], hwndDlg, ChildDialogProc);
+
+	return;
+}
+
+
+HRESULT OnTabbedDialogInit(HWND hwndDlg)
+{
+	INITCOMMONCONTROLSEX iccex;
+	DWORD dwDlgBase = GetDialogBaseUnits();
+	int cxMargin = LOWORD(dwDlgBase) / 4;
+	int cyMargin = HIWORD(dwDlgBase) / 8;
+
+	TCITEM tie;
+	RECT rcTab;
+	HWND hwndButton;
+	RECT rcButton;
+	int i;
+
+	// Initialize common controls.
+	iccex.dwSize = sizeof(INITCOMMONCONTROLSEX);
+	iccex.dwICC = ICC_TAB_CLASSES;
+	InitCommonControlsEx(&iccex);
+
+	// Allocate memory for the DLGHDR structure. Remember to 
+	// free this memory before the dialog box is destroyed.
+	DLGHDR* pHdr = (DLGHDR*)LocalAlloc(LPTR, sizeof(DLGHDR));
+
+	// Save a pointer to the DLGHDR structure in the window
+	// data of the dialog box. 
+	SetWindowLongPtr(hwndDlg, GWLP_USERDATA, (LONG_PTR)pHdr);
+
+	// Create the tab control. Note that g_hInst is a global 
+	// instance handle. 
+	HINSTANCE g_hInst = GetModuleHandle(NULL);
+	pHdr->hwndTab = CreateWindow(
+		WC_TABCONTROL, "",
+		WS_CHILD | WS_CLIPSIBLINGS | WS_VISIBLE,
+		0, 0, 100, 100,
+		hwndDlg, NULL, g_hInst, NULL
+	);
+	if (pHdr->hwndTab == NULL)
+	{
+		return HRESULT_FROM_WIN32(GetLastError());
+	}
+
+	// Add a tab for each of the three child dialog boxes. 
+	tie.mask = TCIF_TEXT | TCIF_IMAGE;
+	tie.iImage = -1;
+	tie.pszText = "First";
+	TabCtrl_InsertItem(pHdr->hwndTab, 0, &tie);
+	//tie.pszText = "Second";
+	//TabCtrl_InsertItem(pHdr->hwndTab, 1, &tie);
+	//tie.pszText = "Third";
+	//TabCtrl_InsertItem(pHdr->hwndTab, 2, &tie);
+
+	// Lock the resources for the three child dialog boxes. 
+	
+	pHdr->apRes[0] = DoLockDlgRes(MAKEINTRESOURCE(IDC_PLACEHOLDER));
+	//pHdr->apRes[1] = DoLockDlgRes(MAKEINTRESOURCE(IDD_SECONDDLG));
+	//pHdr->apRes[2] = DoLockDlgRes(MAKEINTRESOURCE(IDD_THIRDDLG));
+
+	// Determine a bounding rectangle that is large enough to 
+	// contain the largest child dialog box. 
+	SetRectEmpty(&rcTab);
+	for (i = 0; i < C_PAGES; i++)
+	{
+		if (pHdr->apRes[i]->cx > rcTab.right)
+			rcTab.right = pHdr->apRes[i]->cx;
+		if (pHdr->apRes[i]->cy > rcTab.bottom)
+			rcTab.bottom = pHdr->apRes[i]->cy;
+	}
+
+	// Map the rectangle from dialog box units to pixels.
+	MapDialogRect(hwndDlg, &rcTab);
+
+	// Calculate how large to make the tab control, so 
+	// the display area can accommodate all the child dialog boxes. 
+	TabCtrl_AdjustRect(pHdr->hwndTab, TRUE, &rcTab);
+	OffsetRect(&rcTab, cxMargin - rcTab.left, cyMargin - rcTab.top);
+
+	// Calculate the display rectangle. 
+	CopyRect(&pHdr->rcDisplay, &rcTab);
+	TabCtrl_AdjustRect(pHdr->hwndTab, FALSE, &pHdr->rcDisplay);
+
+	// Set the size and position of the tab control, buttons, 
+	// and dialog box. 
+	SetWindowPos(pHdr->hwndTab, NULL, rcTab.left, rcTab.top,
+		rcTab.right - rcTab.left, rcTab.bottom - rcTab.top,
+		SWP_NOZORDER);
+
+	// Move the first button below the tab control. 
+	//hwndButton = GetDlgItem(hwndDlg, IDB_CLOSE);
+	//SetWindowPos(hwndButton, NULL,
+	//	rcTab.left, rcTab.bottom + cyMargin, 0, 0,
+	//	SWP_NOSIZE | SWP_NOZORDER);
+
+	// Determine the size of the button. 
+	GetWindowRect(hwndButton, &rcButton);
+	rcButton.right -= rcButton.left;
+	rcButton.bottom -= rcButton.top;
+
+	// Move the second button to the right of the first. 
+	//hwndButton = GetDlgItem(hwndDlg, IDB_TEST);
+	//SetWindowPos(hwndButton, NULL,
+	//	rcTab.left + rcButton.right + cxMargin,
+	//	rcTab.bottom + cyMargin, 0, 0,
+	//	SWP_NOSIZE | SWP_NOZORDER);
+
+	// Size the dialog box. 
+	SetWindowPos(hwndDlg, NULL, 0, 0,
+		rcTab.right + cyMargin + (2 * GetSystemMetrics(SM_CXDLGFRAME)),
+		rcTab.bottom + rcButton.bottom + (2 * cyMargin)
+		+ (2 * GetSystemMetrics(SM_CYDLGFRAME))
+		+ GetSystemMetrics(SM_CYCAPTION),
+		SWP_NOMOVE | SWP_NOZORDER);
+
+	// Simulate selection of the first item. 
+	OnSelChanged(hwndDlg);
+
+	return S_OK;
+}
+
+
+
+
+// Positions the child dialog box to occupy the display area of the 
+//   tab control. 
+// hwndDlg - handle of the dialog box.
+//
+VOID WINAPI OnChildDialogInit(HWND hwndDlg)
+{
+	HWND hwndParent = GetParent(hwndDlg);
+	DLGHDR* pHdr = (DLGHDR*)GetWindowLongPtr(
+		hwndParent, GWLP_USERDATA);
+	SetWindowPos(hwndDlg, NULL, pHdr->rcDisplay.left,
+		pHdr->rcDisplay.top,//-2,
+		(pHdr->rcDisplay.right - pHdr->rcDisplay.left),
+		(pHdr->rcDisplay.bottom - pHdr->rcDisplay.top),
+		SWP_SHOWWINDOW);
+
+	return;
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Windows Dialog inherited function overrides
 /////////////////////////////////////////////////////////////////////////////
 // CSysLat_SoftwareDlg dialog
@@ -156,6 +501,7 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 
 	m_hIcon						= AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	
 	m_strStatus					= "";
 	m_strInstallPath			= "";
 
@@ -218,20 +564,43 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 
+	//
+	//HRESULT stuff = OnTabbedDialogInit(hwndParent);
 
-	CWnd* pPlaceholder = GetDlgItem(IDC_PLACEHOLDER);
 
-	if (pPlaceholder)
-	{
+
+
+
+
+
+	InitCommonControlsEx;
+	CWnd* pTab = GetDlgItem(IDC_TAB1);
+	if (pTab) {
 		CRect rect;
-		pPlaceholder->GetClientRect(&rect);
 
-		if (!m_richEditCtrl.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, this, 0))
+		m_TabCtrl = (CTabCtrl*)pTab;
+		m_TabCtrl->GetClientRect(&rect);
+		
+		
+		m_TabCtrl->InsertItem(0, "Stats");
+		m_TabCtrl->InsertItem(1, "Settings");
+		m_TabCtrl->AdjustRect(true, &rect);
+
+		BOOL getRect = m_TabCtrl->GetItemRect(0, &rect);
+		//TCS_FIXEDWIDTH
+
+		if (!m_richEditCtrl.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, m_TabCtrl, 0))
 			return FALSE;
+
+		//if (!m_richEditCtrl2.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, m_TabCtrl->GetWindow(1), 0))
+			//return FALSE;
 
 		m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_richEditCtrl.SetFont(&m_font);
 	}
+
+
+
 
 	//init timers
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
@@ -857,3 +1226,7 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 
 	//sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 */
+
+
+
+

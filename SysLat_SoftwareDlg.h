@@ -19,6 +19,36 @@
 #include "SysLatData.h"
 
 
+typedef struct {
+	WORD      dlgVer;
+	WORD      signature;
+	DWORD     helpID;
+	DWORD     exStyle;
+	DWORD     style;
+	WORD      cDlgItems;
+	short     x;
+	short     y;
+	short     cx = 0;
+	short     cy = 0;
+	//sz_Or_Ord menu;
+	//sz_Or_Ord windowClass;
+	//WCHAR     title[titleLen];
+	//WORD      pointsize;
+	//WORD      weight;
+	//BYTE      italic;
+	//BYTE      charset;
+	//WCHAR     typeface[stringLen];
+} DLGTEMPLATEEX;
+
+#define C_PAGES 1
+typedef struct tag_dlghdr {
+	HWND hwndTab;       // tab control 
+	HWND hwndDisplay;   // current child dialog box 
+	RECT rcDisplay;     // display rectangle for the tab control 
+	DLGTEMPLATEEX* apRes[C_PAGES];
+} DLGHDR;
+
+
 class CSysLat_SoftwareDlg : public CDialog
 {
 // Construction
@@ -122,6 +152,11 @@ protected:
 
 	CFont						m_font;
 	CRichEditCtrl				m_richEditCtrl;
+
+	//MY NEW TAB THINGY
+	CTabCtrl*					m_TabCtrl;
+	CRichEditCtrl				m_richEditCtrl2;
+
 
 	static CString				m_strStatus;
 	CString						m_strInstallPath;

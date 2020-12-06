@@ -12,6 +12,7 @@
 #define IDR_RC1                         138
 #define IDC_STATUS                      1000
 #define IDC_PLACEHOLDER                 1002
+#define IDC_TAB1                        1005
 #define ID_SETTINGS_PORT                32771
 #define ID_PORT_COM1                    32772
 #define ID_PORT_COM2                    32773
@@ -36,9 +37,9 @@
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
-#define _APS_NEXT_RESOURCE_VALUE        139
+#define _APS_NEXT_RESOURCE_VALUE        143
 #define _APS_NEXT_COMMAND_VALUE         32791
-#define _APS_NEXT_CONTROL_VALUE         1003
+#define _APS_NEXT_CONTROL_VALUE         1009
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif
