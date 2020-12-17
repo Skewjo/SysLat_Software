@@ -47,9 +47,7 @@ public:
 	
 	Json::Value			jsonSLD; //this is basically a second copy of the data... will probably eat up a BOATLOAD of memory for no reason. There's got to be a better way...
 	
-	//Need to pull this out and put it in it's own hardware retrieval class
-	//LPHW_PROFILE_INFOA lpHwProfileInfo = { 0 }; // why did this work??
-	HW_PROFILE_INFOA	hwProfileInfo{ 0 };
+	
 
 	//using getters and setters for all of these seems stupid...
 	int					GetCounter();

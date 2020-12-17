@@ -83,7 +83,7 @@ public:
 
 
 //char const* host, char const* port, char const* target, int version, char const* method, char const* contentType
-inline int upload_data(Json::Value dataToSend, char const* target = "/api/benchmarkData/benchmarkData") {
+inline int upload_data(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
     
     auto const host = "localhost";
     auto const port = "3000";

@@ -118,7 +118,7 @@ inline void load_root_certificates(ssl::context& ctx)
 }
 
 
-inline int upload_data_secure(Json::Value dataToSend, char const* target = "/api/benchmarkData/benchmarkData") {
+inline int upload_data_secure(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
 
     char const* host = "syslat.com";
     char const* port = "443";

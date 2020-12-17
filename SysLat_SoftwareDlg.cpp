@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <uuids.h>
 #include <Psapi.h>
+#include <winternl.h>
+#include <fstream>
 
 /////////////////////////////////////////////////////////////////////////////
 #include "AboutDlg.h"
@@ -22,6 +24,7 @@
 #include "USBController.h"
 #include "HTTP_Client_Async.h"
 #include "HTTP_Client_Async_SSL.h"
+#include "PreferencesDlg.h"
 
 
 //TODO:
@@ -60,7 +63,7 @@
 //
 //
 //Core Functionality:
-//  Add HTTP post function for uploading logs to website - use boost.beast library?
+//  DONE - Add HTTP post function for uploading logs to website - use boost.beast library?
 //  Errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
 //		Either use error codes, or check all errors  again in the refresh function(that doesn't make sense though, right?)... or maybe do dialog error pop-ups when errors occur outside of "refresh"?
 //  Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
@@ -116,14 +119,13 @@
 
 
 /// 
-
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
 static char THIS_FILE[] = __FILE__;
 #endif
 
-//Define static variables - these should probably be done as inline... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
+//Define static variables - these should probably be done as inline or something... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
@@ -149,7 +151,7 @@ DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 // CSysLat_SoftwareDlg dialog
 /////////////////////////////////////////////////////////////////////////////
 CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
-	: CDialog(CSysLat_SoftwareDlg::IDD, pParent)
+	: CDialogEx(CSysLat_SoftwareDlg::IDD, pParent)
 {
 	//{{AFX_DATA_INIT(CSysLat_SoftwareDlg)
 	//}}AFX_DATA_INIT
@@ -166,11 +168,13 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 }
 void CSysLat_SoftwareDlg::DoDataExchange(CDataExchange* pDX)
 {
-	CDialog::DoDataExchange(pDX);
+	CDialogEx::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CSysLat_SoftwareDlg)
 	//}}AFX_DATA_MAP
 }
-BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialog)
+
+
+BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	//{{AFX_MSG_MAP(CSysLat_SoftwareDlg)
 	ON_WM_SYSCOMMAND()
 	ON_WM_PAINT()
@@ -187,15 +191,29 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialog)
 	ON_COMMAND(ID_SETTINGS_TESTUPLOADMODE, CSysLat_SoftwareDlg::TestUploadMode)
 	ON_COMMAND(ID_SETTINGS_DISPLAYSYSLATINOSD, CSysLat_SoftwareDlg::DisplaySysLatInOSD)
 	ON_COMMAND(ID_TOOLS_NEWTEST, CSysLat_SoftwareDlg::ReInitThread)
+	ON_COMMAND(ID_SETTINGS_PREFERENCES, CSysLat_SoftwareDlg::OpenPreferences)
 	//}}AFX_MSG_MAP
+	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CSysLat_SoftwareDlg message handlers
 /////////////////////////////////////////////////////////////////////////////
 BOOL CSysLat_SoftwareDlg::OnInitDialog()
 {
-	CDialog::OnInitDialog();
+	m_color = RGB(136, 217, 242);
+	m_brush.CreateSolidBrush(m_color);
 
+	CDialogEx::OnInitDialog();
+
+	//CDialogEx::SetBackgroundColor(RGB(136, 217, 242), 1);
+
+	CWnd* pMainDlg = GetDlgItem(IDD_SYSLAT_SOFTWARE_DIALOG);
+
+	if (pMainDlg)
+	{
+		pMainDlg->GetClientRect(&clientRect);
+	}
+	
 	// Add "About..." menu item to system menu.
 
 	// IDM_ABOUTBOX must be in the system command range.
@@ -218,52 +236,37 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	//  when the application's main window is not a dialog
 	SetIcon(m_hIcon, TRUE);			// Set big icon
 
-
 	CWnd* pPlaceholder = GetDlgItem(IDC_PLACEHOLDER);
 
 	if (pPlaceholder)
 	{
 		CRect rect;
 		pPlaceholder->GetClientRect(&rect);
-
+		
 		if (!m_richEditCtrl.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, this, 0))
 			return FALSE;
 
+		//m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_richEditCtrl.SetFont(&m_font);
+		//m_richEditCtrl.SetBackgroundColor(FALSE, m_color);
 	}
 
+	
 	//init timers
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
 
-	
 
-	
-
-	char userName[UNLEN + 1] = { 0 };
-	DWORD userNameSize = UNLEN + 1;
-	GetUserName(userName, &userNameSize);
-	OutputDebugStringA("\n");
-	OutputDebugStringA(userName);
-
-	char computerName[UNLEN + 1] = { 0 };
-	DWORD computerNameSize = UNLEN + 1;
-	GetComputerName(computerName, &computerNameSize);
-	OutputDebugStringA("\n");
-	OutputDebugStringA(computerName);
-	OutputDebugStringA("\n");
+	//need to make these run again at the start of each test or something so that if the user changes hardware(??) while the program is running, I can update it(??) - seems dumb
+	m_machineInfo.ExportData();
+	m_hardwareID.ExportData();
 
 
 
-
-	
-
-	
 
 	Refresh();
 
-	
 	unsigned threadID;
 	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, &threadID);
 	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
@@ -279,7 +282,7 @@ void CSysLat_SoftwareDlg::OnSysCommand(UINT nID, LPARAM lParam)
 	}
 	else
 	{
-		CDialog::OnSysCommand(nID, lParam);
+		CDialogEx::OnSysCommand(nID, lParam);
 	}
 }
 /////////////////////////////////////////////////////////////////////////////
@@ -307,9 +310,10 @@ void CSysLat_SoftwareDlg::OnPaint()
 	}
 	else
 	{
-		CDialog::OnPaint();
+		CDialogEx::OnPaint();
 	}
 }
+
 HCURSOR CSysLat_SoftwareDlg::OnQueryDragIcon()
 {
 	return (HCURSOR)m_hIcon;
@@ -317,7 +321,7 @@ HCURSOR CSysLat_SoftwareDlg::OnQueryDragIcon()
 void CSysLat_SoftwareDlg::OnTimer(UINT nIDEvent)
 {
 	Refresh();
-	CDialog::OnTimer(nIDEvent);
+	CDialogEx::OnTimer(nIDEvent);
 }
 void CSysLat_SoftwareDlg::OnDestroy()
 {
@@ -333,9 +337,8 @@ void CSysLat_SoftwareDlg::OnDestroy()
 	sysLatStatsClient.ReleaseOSD();
 	m_pOperatingSLD->CloseSLDMutex();
 
-	CDialog::OnDestroy();
+	CDialogEx::OnDestroy();
 }
-
 
 //Skewjo's Dialog functions
 std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
@@ -355,7 +358,6 @@ std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
 		}
 		else
 		{
-
 			printf("Error GetModuleBaseNameA : %lu", GetLastError());
 		}
 		CloseHandle(Handle);
@@ -457,10 +459,21 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 		}
 	}
 
-	return CDialog::PreTranslateMessage(pMsg);
+	return CDialogEx::PreTranslateMessage(pMsg);
 }
 void CSysLat_SoftwareDlg::Refresh()
 {
+	CHARFORMAT cf;
+	cf.dwEffects &= ~CFE_AUTOCOLOR;
+	cf.cbSize = sizeof(CHARFORMAT);
+	m_richEditCtrl.GetSelectionCharFormat(cf);
+	cf.dwMask = CFM_COLOR | CFM_BOLD;
+	cf.dwEffects = CFE_BOLD;
+	cf.crTextColor = RGB(255, 0, 0);
+	m_richEditCtrl.SetSelectionCharFormat(cf);
+	m_richEditCtrl.Invalidate();
+
+
 	if (!(CRTSSClient::m_profileInterface.IsInitialized())) {
 		CRTSSClient::InitRTSSInterface();
 	}
@@ -739,12 +752,18 @@ void CSysLat_SoftwareDlg::ExportData()
 }
 void CSysLat_SoftwareDlg::UploadData()
 {
-	const char* APItarget = "/api/benchmarkData/benchmarkData";
+	//I DIDN'T WANT TO SET THE API TARGET LIKE THIS - HAD TO DO IT THIS WAY BECAUSE FUNCTIONS THAT ARE USED BY DIALOG MENU BUTTONS CAN'T HAVE PARAMETERS <.<
+	const char* APItarget = "/api/benchmarkData";
 	if (m_previousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
 			if (!m_previousSLD[i]->dataUploaded) {
 				if (m_bTestUploadMode) {
-					int uploadStatus = upload_data(m_previousSLD[i]->jsonSLD, APItarget);
+					Json::Value newJSON;
+					newJSON.append(m_previousSLD[i]->jsonSLD);
+					newJSON.append(m_hardwareID.HardwareIDJSON);
+					newJSON.append(m_machineInfo.MachineInfoJSON);
+					int uploadStatus = upload_data(newJSON, APItarget);
+					//int uploadStatus = upload_data(m_previousSLD[i]->jsonSLD, APItarget);
 				}
 				else {
 					int uploadStatus = upload_data_secure(m_previousSLD[i]->jsonSLD, APItarget);
@@ -842,6 +861,11 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 	}
 }
 
+void CSysLat_SoftwareDlg::OpenPreferences() {
+	PreferencesDlg preferencesDlg;
+	preferencesDlg.DoModal();
+}
+
 /*
 	//init some settings to global(?) profile - probably- scratch that, DEFINITELY need to move these
 	//SetProfileProperty("", "BaseColor", 0xFFFFFF);
@@ -857,3 +881,28 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 
 	//sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 */
+							
+HBRUSH CSysLat_SoftwareDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
+{
+	pDC->SetTextColor(RGB(255, 0, 0));
+	return m_brush;
+}
+
+
+
+
+
+
+void CSysLat_SoftwareDlg::ExportData(Json::Value stuffToExport) {
+	std::ofstream exportData;
+	exportData.open("./logs/exportSLD.json");
+
+	if (exportData.is_open()) {
+		exportData << stuffToExport;
+	}
+	else {
+		OutputDebugStringA("\nError exporting JSON SLD file.\n");
+	}
+
+	exportData.close();
+}

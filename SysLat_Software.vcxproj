@@ -87,7 +87,6 @@
     </ClCompile>
     <ResourceCompile>
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <Culture>0x0419</Culture>
     </ResourceCompile>
     <Link>
       <AdditionalDependencies>shlwapi.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -156,6 +155,9 @@
     <ClCompile Include="GroupedString.cpp" />
     <ClCompile Include="HTTP_Client_Async.cpp" />
     <ClCompile Include="HTTP_Client_Async_SSL.cpp" />
+    <ClCompile Include="HardwareID.cpp" />
+    <ClCompile Include="MachineInfo.cpp" />
+    <ClCompile Include="PreferencesDlg.cpp" />
     <ClCompile Include="RTSSClient.cpp" />
     <ClCompile Include="RTSSProfileInterface.cpp" />
     <ClCompile Include="SysLatData.cpp" />
@@ -175,6 +177,9 @@
     <ClInclude Include="GroupedString.h" />
     <ClInclude Include="HTTP_Client_Async.h" />
     <ClInclude Include="HTTP_Client_Async_SSL.h" />
+    <ClInclude Include="HardwareID.h" />
+    <ClInclude Include="MachineInfo.h" />
+    <ClInclude Include="PreferencesDlg.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="RTSSClient.h" />
     <ClInclude Include="RTSSProfileInterface.h" />

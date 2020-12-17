@@ -11,6 +11,7 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
+#include "afxdialogex.h"
 #include <string>
 #include <time.h>
 #include <vector>
@@ -18,8 +19,12 @@
 #include "RTSSClient.h"
 #include "SysLatData.h"
 
+#include "HardwareID.h"
+#include "MachineInfo.h"
 
-class CSysLat_SoftwareDlg : public CDialog
+
+
+class CSysLat_SoftwareDlg : public CDialogEx
 {
 // Construction
 public:
@@ -47,7 +52,6 @@ protected:
 	void							R_ProcessNames();
 	void							R_StrOSD();
 	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData - need to make this not used by the thread and then I can make it non-static like the other refresh functions
-	
 	static unsigned int __stdcall	CreateDrawingThread(void* data);
 	
 
@@ -71,8 +75,8 @@ protected:
 	void							DebugMode();
 	void							TestUploadMode();
 	void							DisplaySysLatInOSD();
-
-	
+	void							OpenPreferences();
+	void							ExportData(Json::Value stuffToExport);
 
 	//Members
 	HANDLE						drawingThreadHandle;
@@ -86,6 +90,9 @@ protected:
 	static CString				m_PortSpecifier;
 	static CString				m_strBlack;
 	static CString				m_strWhite;
+
+	MachineInfo					m_machineInfo;
+	HardwareID					m_hardwareID;
 
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
 	BOOL						m_bDebugMode = false; //save to config
@@ -126,7 +133,12 @@ protected:
 	static CString				m_strStatus;
 	CString						m_strInstallPath;
 
-	
+
+	//for dark mode
+	COLORREF m_color;
+	CBrush m_brush;
+	CRect clientRect;
+
 	// Generated message map functions
 	//{{AFX_MSG(CSysLat_SoftwareDlg)
 	virtual BOOL OnInitDialog();
@@ -137,6 +149,8 @@ protected:
 	afx_msg void OnDestroy();
 	//}}AFX_MSG
 	DECLARE_MESSAGE_MAP()
+public:
+	afx_msg HBRUSH OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor);
 };
 
 

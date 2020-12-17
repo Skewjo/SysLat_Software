@@ -10,7 +10,7 @@ CSysLatData::CSysLatData() {
 	ctime_s(m_startDate, sizeof(m_startDate), &m_startTime);
 
 	
-	::GetCurrentHwProfileA(&hwProfileInfo);
+	
 }
 
 int CSysLatData::GetCounter() {
@@ -168,32 +168,40 @@ void CSysLatData::CreateJSONSLD() {
 	
 	struct tm* startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
 	char* startDateUTC = asctime(startTimeUTC);
+
+
+	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
+	jsonSLD["MetaData"]["RTSSVersion"] = "vPLACEHOLDER";
+	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
+	jsonSLD["MetaData"]["TargetApplication"] = "PLACEHOLDER";
 	jsonSLD["MetaData"]["StartTimeUTC"] = startDateUTC;
+	//THIS NEEDS TO BE MOVED!! WHY DID I PUT IT HERE??
 	struct tm* endTimeUTC = gmtime(&m_endTime);
 	char *endDateUTC = asctime(endTimeUTC);
 	jsonSLD["MetaData"]["EndTimeUTC"] = endDateUTC;
 	jsonSLD["MetaData"]["StartTimeLocal"] = m_startDate;
 	jsonSLD["MetaData"]["EndTimeLocal"] = m_endDate;
-	jsonSLD["MetaData"]["TargetWindow"] = "Dota 2";
-	jsonSLD["MetaData"]["HardwareID"] = hwProfileInfo.szHwProfileGuid;
-
+	//NumProcBegin: Int
+	//NumProcEnd : Int
+	//ProcListBegin : [String]
+	//ProcListEnd : [String]
+	//NumServBegin : Int
+	//NumServEnd : Int
+	//ServListBegin : [String]
+	//ServListEnd : [String]
+	
 
 	jsonSLD["AggregateData"]["EVRCounter"] = sld.m_counterEVR;
 	jsonSLD["AggregateData"]["EVRSystemLatencyTotal"] = sld.m_systemLatencyTotalEVR;
 	jsonSLD["AggregateData"]["EVRsystemLatencyAverage"] = sld.m_systemLatencyAverageEVR;
 	jsonSLD["AggregateData"]["SysLatTestCount"] = sld.m_counter;
 	jsonSLD["AggregateData"]["SystemLatencyTotal"] = sld.m_systemLatencyTotal;
-	jsonSLD["AggregateData"]["systemLatencyAverage"] = sld.m_systemLatencyAverage;
+	jsonSLD["AggregateData"]["SystemLatencyAverage"] = sld.m_systemLatencyAverage;
 
 	jsonSLD["SysLatData"]["SysLatResultSize"] = resultsSize;
 	jsonSLD["SysLatData"]["SysLatResults"] = resultsArray;
 	jsonSLD["SysLatData"]["RTSSWindow"] = RTSSArray;
-	jsonSLD["SysLatData"]["activeWindow"] = activeArray;
-
-
-
-
-
+	jsonSLD["SysLatData"]["ActiveWindow"] = activeArray;
 }
 
 void CSysLatData::ExportData(int testNumber) {
