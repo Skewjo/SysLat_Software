@@ -30,3 +30,9 @@ When integrating the Boost/Beast library, I had to add a macro ```#undef max``` 
 I've defined 2 functions in the HTTP_Client_Async header file that are not associated with the class ("session") defined there. 
 - What are these functions called? 
 - Should I define them somewhere else?
+
+
+# License
+GNU General Public License v3.0 or later
+
+See COPYING to see the full text.
