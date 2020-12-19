@@ -757,11 +757,11 @@ void CSysLat_SoftwareDlg::UploadData()
 	if (m_previousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
 			if (!m_previousSLD[i]->dataUploaded) {
+				Json::Value newJSON;
+				newJSON.append(m_previousSLD[i]->jsonSLD);
+				newJSON.append(m_hardwareID.HardwareIDJSON);
+				newJSON.append(m_machineInfo.MachineInfoJSON);
 				if (m_bTestUploadMode) {
-					Json::Value newJSON;
-					newJSON.append(m_previousSLD[i]->jsonSLD);
-					newJSON.append(m_hardwareID.HardwareIDJSON);
-					newJSON.append(m_machineInfo.MachineInfoJSON);
 					int uploadStatus = upload_data(newJSON, APItarget);
 					//int uploadStatus = upload_data(m_previousSLD[i]->jsonSLD, APItarget);
 				}
