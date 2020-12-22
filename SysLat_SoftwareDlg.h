@@ -76,6 +76,7 @@ protected:
 	void							TestUploadMode();
 	void							DisplaySysLatInOSD();
 	void							OpenPreferences();
+	void							OpenTestCtrl();
 	void							ExportData(Json::Value stuffToExport);
 
 	//Members

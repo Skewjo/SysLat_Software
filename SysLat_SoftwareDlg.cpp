@@ -18,13 +18,16 @@
 #include <fstream>
 
 /////////////////////////////////////////////////////////////////////////////
-#include "AboutDlg.h"
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
 #include "USBController.h"
 #include "HTTP_Client_Async.h"
 #include "HTTP_Client_Async_SSL.h"
+
+//Child dialog boxes
+#include "AboutDlg.h"
 #include "PreferencesDlg.h"
+#include "TestCtrl.h"
 
 
 //TODO:
@@ -192,6 +195,7 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_COMMAND(ID_SETTINGS_DISPLAYSYSLATINOSD, CSysLat_SoftwareDlg::DisplaySysLatInOSD)
 	ON_COMMAND(ID_TOOLS_NEWTEST, CSysLat_SoftwareDlg::ReInitThread)
 	ON_COMMAND(ID_SETTINGS_PREFERENCES, CSysLat_SoftwareDlg::OpenPreferences)
+	ON_COMMAND(ID_TOOLS_TESTCONTROL, CSysLat_SoftwareDlg::OpenTestCtrl)
 	//}}AFX_MSG_MAP
 	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
@@ -736,6 +740,18 @@ void CSysLat_SoftwareDlg::ExportData()
 {
 	if (m_previousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
+			//The following code is for testing file export changes
+			//Json::Value newJSON;
+			//const Json::Value* const sources[] = {
+			//	&m_previousSLD[i]->jsonSLD,
+			//	&m_hardwareID.HardwareIDJSON,
+			//	&m_machineInfo.MachineInfoJSON
+			//};
+			//for (const Json::Value* src : sources)
+			//	for (auto srcIt = src->begin(); srcIt != src->end(); ++srcIt)
+			//		newJSON[srcIt.name()] = *srcIt;
+			//ExportData(newJSON);
+
 			if (!m_previousSLD[i]->dataExported) {
 				m_previousSLD[i]->ExportData(i);
 			}
@@ -757,16 +773,23 @@ void CSysLat_SoftwareDlg::UploadData()
 	if (m_previousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
 			if (!m_previousSLD[i]->dataUploaded) {
+
 				Json::Value newJSON;
-				newJSON.append(m_previousSLD[i]->jsonSLD);
-				newJSON.append(m_hardwareID.HardwareIDJSON);
-				newJSON.append(m_machineInfo.MachineInfoJSON);
+				const Json::Value* const sources[] = {
+					&m_previousSLD[i]->jsonSLD,
+					&m_hardwareID.HardwareIDJSON,
+					&m_machineInfo.MachineInfoJSON
+				};
+				for (const Json::Value* src : sources)
+					for (auto srcIt = src->begin(); srcIt != src->end(); ++srcIt)
+						newJSON[srcIt.name()] = *srcIt;
+
+
 				if (m_bTestUploadMode) {
 					int uploadStatus = upload_data(newJSON, APItarget);
-					//int uploadStatus = upload_data(m_previousSLD[i]->jsonSLD, APItarget);
 				}
 				else {
-					int uploadStatus = upload_data_secure(m_previousSLD[i]->jsonSLD, APItarget);
+					int uploadStatus = upload_data_secure(newJSON, APItarget);
 				}
 				m_previousSLD[i]->dataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
 			}
@@ -864,6 +887,11 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 void CSysLat_SoftwareDlg::OpenPreferences() {
 	PreferencesDlg preferencesDlg;
 	preferencesDlg.DoModal();
+}
+
+void CSysLat_SoftwareDlg::OpenTestCtrl() {
+	TestCtrl testCtrl(&m_previousSLD);
+	testCtrl.DoModal();
 }
 
 /*

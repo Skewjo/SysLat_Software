@@ -109,18 +109,28 @@ CAPTION "Preferences"
 FONT 8, "MS Shell Dlg", 400, 0, 0x0
 BEGIN
     CONTROL         "Auto Download Updates",IDC_CHECK_AUTOUPDATE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,18,92,10
+    CONTROL         "Auto Export Logs",IDC_CHECK_AUTOEXPORT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,29,71,10
     CONTROL         "Auto Upload Logs to SysLat.com",IDC_CHECK_AUTOUPLOAD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,40,119,10
-    CONTROL         "<a>SysLink2</a>",IDC_SYSLINK2,"SysLink",WS_TABSTOP,20,95,60,14
+    CONTROL         "Dark Mode",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,58,50,10
     CONTROL         "",IDC_MFCEDITBROWSE1,"MfcEditBrowse",WS_BORDER | WS_TABSTOP | 0x80,175,15,95,14
-    CONTROL         "MfcLink1",IDC_MFCLINK1,"MfcLink",WS_TABSTOP,20,102,60,14
     CONTROL         "",IDC_SLIDER_MAX_LOGS,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,174,57,100,15
+    CONTROL         "",IDC_SLIDER_MAX_DURATION,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,174,92,100,15
+    LTEXT           "LOL GOT YA",IDC_STATIC,72,63,40,8,NOT WS_VISIBLE
+    CONTROL         "<a>SysLink2</a>",IDC_SYSLINK2,"SysLink",WS_TABSTOP,20,95,60,14
+    CONTROL         "MfcLink1",IDC_MFCLINK1,"MfcLink",WS_TABSTOP,20,102,60,14
     LTEXT           "Max Logs",IDC_STATIC,207,47,31,8
     LTEXT           "Max Test Duration",IDC_STATIC,192,82,60,8
-    CONTROL         "",IDC_SLIDER_MAX_DURATION,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,174,92,100,15
-    CONTROL         "Dark Mode",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,58,50,10
-    LTEXT           "LOL GOT YA",IDC_STATIC,72,63,40,8,NOT WS_VISIBLE
-    CONTROL         "Auto Export Logs",IDC_CHECK_AUTOEXPORT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,29,71,10
+END
+
+IDD_TESTCTRL_DIALOG DIALOGEX 0, 0, 285, 203
+STYLE DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | WS_POPUP | WS_CAPTION | WS_SYSMENU
+EXSTYLE WS_EX_TOOLWINDOW
+CAPTION "Test Control"
+FONT 8, "MS Shell Dlg", 400, 0, 0x0
+BEGIN
+    LTEXT           "TODO: layout property page",IDC_STATIC,73,74,90,8
+    CONTROL         "",IDC_TESTLISTCTRL,"SysListView32",LVS_REPORT | LVS_ALIGNLEFT | WS_BORDER | WS_TABSTOP,7,7,271,189
 END
 
 
@@ -196,6 +206,14 @@ BEGIN
         HORZGUIDE, 29
         HORZGUIDE, 40
     END
+
+    IDD_TESTCTRL_DIALOG, DIALOG
+    BEGIN
+        LEFTMARGIN, 7
+        RIGHTMARGIN, 278
+        TOPMARGIN, 7
+        BOTTOMMARGIN, 196
+    END
 END
 #endif    // APSTUDIO_INVOKED
 
@@ -220,6 +238,11 @@ BEGIN
     0
 END
 
+IDD_TESTCTRL_DIALOG AFX_DIALOG_LAYOUT
+BEGIN
+    0
+END
+
 
 /////////////////////////////////////////////////////////////////////////////
 //
@@ -233,6 +256,7 @@ BEGIN
         MENUITEM "New Test                  F11", ID_TOOLS_NEWTEST
         MENUITEM "Export Data",                 ID_TOOLS_EXPORTDATA
         MENUITEM "Upload Data",                 ID_TOOLS_UPLOADDATA
+        MENUITEM "Test Control",                ID_TOOLS_TESTCONTROL
     END
     POPUP "Settings"
     BEGIN
