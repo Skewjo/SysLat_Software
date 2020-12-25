@@ -28,10 +28,7 @@
 #include <iostream>
 #include <memory>
 #include <string>
-#include "SysLatData.h"
-
-
-
+#include <json/json.h>
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -49,8 +46,6 @@ inline void boostFail_secure(beast::error_code ec, char const* what)
     error += ": " + ec.message() + "\n";
     OutputDebugStringA(error.c_str());
 }
-
-
 
 
 // Performs an HTTP GET and prints the response
@@ -117,7 +112,6 @@ inline void load_root_certificates(ssl::context& ctx)
     if (ec) throw boost::system::system_error{ ec };
 }
 
-
 inline int upload_data_secure(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
 
     char const* host = "syslat.com";
@@ -147,18 +141,5 @@ inline int upload_data_secure(Json::Value dataToSend, char const* target = "/api
 
     return EXIT_SUCCESS;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 #endif

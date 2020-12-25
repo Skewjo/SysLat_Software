@@ -20,9 +20,6 @@ TestCtrl::TestCtrl(std::vector<CSysLatData*>* p_previousSLD, CWnd* pParent /*=nu
 BOOL TestCtrl::OnInitDialog() {
 	CDialogEx::OnInitDialog();
 
-
-	// TODO: Add extra initialization here
-	// Ask Mfc to create/insert a column
 	m_TestListCtrl.InsertColumn(0, "ID", LVCFMT_LEFT, 30);     
 	m_TestListCtrl.InsertColumn(1, "Target", LVCFMT_LEFT, 60);
 	m_TestListCtrl.InsertColumn(2, "Duration", LVCFMT_CENTER, 60);

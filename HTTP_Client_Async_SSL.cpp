@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "HTTP_Client_Async_SSL.h"
 #include <fstream>
-#include<iostream>
+#include <iostream>
 #include <string>
 #include <debugapi.h>
 #include <wincrypt.h>

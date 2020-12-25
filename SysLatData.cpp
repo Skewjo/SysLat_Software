@@ -8,9 +8,6 @@ CSysLatData::CSysLatData() {
 
 	m_startTime = time(0);
 	ctime_s(m_startDate, sizeof(m_startDate), &m_startTime);
-
-	
-	
 }
 
 int CSysLatData::GetCounter() {
@@ -132,7 +129,6 @@ void CSysLatData::CreateJSONSLD() {
 	Json::Value resultsSize(Json::arrayValue);
 	Json::Value resultsArray(Json::arrayValue);
 	
-	
 	//These 3 values were being used to send ALL test data. I think it's overkill.
 	resultsSize.append(sld.m_allResults.size());
 	resultsSize.append(sld.m_v_strRTSSWindow.size());
@@ -151,8 +147,6 @@ void CSysLatData::CreateJSONSLD() {
 		activeArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
 	}
 
-
-
 	////This block was for making a 2d JSON array and was kind of stupid.
 	//for (int i = 0; i < sld.m_allResults.size(); i++) {
 	//	Json::Value subResultsArray(Json::arrayValue);
@@ -163,12 +157,10 @@ void CSysLatData::CreateJSONSLD() {
 	//	resultsArray.append(subResultsArray);
 	//}
 
-
 	//Add elapsed time at some point
 	
 	struct tm* startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
 	char* startDateUTC = asctime(startTimeUTC);
-
 
 	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
 	jsonSLD["MetaData"]["RTSSVersion"] = "vPLACEHOLDER";
@@ -190,7 +182,6 @@ void CSysLatData::CreateJSONSLD() {
 	//ServListBegin : [String]
 	//ServListEnd : [String]
 	
-
 	jsonSLD["AggregateData"]["EVRCounter"] = sld.m_counterEVR;
 	jsonSLD["AggregateData"]["EVRSystemLatencyTotal"] = sld.m_systemLatencyTotalEVR;
 	jsonSLD["AggregateData"]["EVRsystemLatencyAverage"] = sld.m_systemLatencyAverageEVR;

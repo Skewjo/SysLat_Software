@@ -21,6 +21,7 @@
 
 #include "HardwareID.h"
 #include "MachineInfo.h"
+#include "SysLatPreferences.h"
 
 
 
@@ -52,9 +53,9 @@ protected:
 	void							R_ProcessNames();
 	void							R_StrOSD();
 	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData - need to make this not used by the thread and then I can make it non-static like the other refresh functions
-	static unsigned int __stdcall	CreateDrawingThread(void* data);
-	
 
+	//Drawing thread functions
+	static unsigned int __stdcall	CreateDrawingThread(void* data);
 	static void						DrawSquare(CRTSSClient sysLatClient, CString& colorString);
 	static std::string				GetProcessNameFromPID(DWORD processID);
 	static std::string				GetActiveWindowTitle();
@@ -80,39 +81,41 @@ protected:
 	void							ExportData(Json::Value stuffToExport);
 
 	//Members
+	HardwareID					m_hardwareID;
+	MachineInfo					m_machineInfo;
+	SysLatPreferences			m_sysLatPreferences;
+
 	HANDLE						drawingThreadHandle;
+
 	static CSysLatData*			m_pOperatingSLD; //Does this need to be a "const" pointer?  It changes if the thread is re-initialized, so I'm thinking no...
 	std::vector<CSysLatData*>	m_previousSLD;
-	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
+	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other
 	static DWORD				m_sysLatOwnedSlot;//UGH - I'm specifcally making the sysLatClient object thread local... but then to get a value from it I need to make a static var in this class to track it.  Seems dumb.
 	static CString				m_updateString;
-	static CString				m_PortSpecifier;
 	static CString				m_strBlack;
 	static CString				m_strWhite;
 
-	MachineInfo					m_machineInfo;
-	HardwareID					m_hardwareID;
-
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
-	BOOL						m_bDebugMode = false; //save to config
-	BOOL						m_bTestUploadMode = false; //change name?
-	BOOL						m_bSysLatInOSD = true;
-	
+
 	//the names and uses of the following 3 vars is stupid... Need to fix it
-	unsigned int				myCounter = 0; 
+	unsigned int				myCounter = 0;
 	static unsigned int			m_loopSize; //really need to change the name of this var to "threadContinue" or something more descriptive
 	static unsigned int			m_LoopCounterRefresh;
 	static CString				m_strError;
 
-	//these 2 definitely belong somewhere else...
+
+	static CString				m_PortSpecifier;
+	BOOL						m_bDebugMode = false; //save to config
+	BOOL						m_bTestUploadMode = false; //change name?
+	BOOL						m_bSysLatInOSD = true;
 	static DWORD				m_positionX;
 	static DWORD				m_positionY;
 	static BOOL					m_bPositionManualOverride;
 	static INT					m_internalX, m_internalY;
 
-	//RTSS Configs
+	//RTSS Configs - can't these be moved??
 	DWORD						m_dwSharedMemoryVersion;
 	DWORD						m_dwMaxTextSize;
 	BOOL						m_bFormatTagsSupported;
@@ -133,7 +136,6 @@ protected:
 
 	static CString				m_strStatus;
 	CString						m_strInstallPath;
-
 
 	//for dark mode
 	COLORREF m_color;

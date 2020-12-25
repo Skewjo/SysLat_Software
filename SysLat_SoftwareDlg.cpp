@@ -133,19 +133,25 @@ CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
 CString	CSysLat_SoftwareDlg::m_updateString = "";
-CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
 CString CSysLat_SoftwareDlg::m_strError = "";
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
 
+CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
+CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
+DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
+
+
+
+
+CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
 DWORD CSysLat_SoftwareDlg::m_positionX = 0;
 DWORD CSysLat_SoftwareDlg::m_positionY = 0;
 BOOL CSysLat_SoftwareDlg::m_bPositionManualOverride = false;
 INT CSysLat_SoftwareDlg::m_internalX = 0;
 INT CSysLat_SoftwareDlg::m_internalY = 0;
 
-CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
-CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
-DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
+
+
 
 
 
@@ -606,6 +612,7 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 		}
 	}
 }
+
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
 	m_strError.Append("\n");
@@ -783,7 +790,6 @@ void CSysLat_SoftwareDlg::UploadData()
 				for (const Json::Value* src : sources)
 					for (auto srcIt = src->begin(); srcIt != src->end(); ++srcIt)
 						newJSON[srcIt.name()] = *srcIt;
-
 
 				if (m_bTestUploadMode) {
 					int uploadStatus = upload_data(newJSON, APItarget);
