@@ -1,0 +1,32 @@
+{
+	"DebugOptions" : 
+	{
+		"DebugMode" : false,
+		"SysLatInOSD" : false,
+		"TestUploadMode" : false
+	},
+	"PrivacyOptions" : 
+	{
+		"AutoCheckUpdates" : true,
+		"AutoExportLogs" : true,
+		"AutoUploadLogs" : true,
+		"AutoUploadMachineID" : true,
+		"AutoUploadMachineInfo" : true
+	},
+	"RTSSOptions" : 
+	{
+		"PositionManualOverride" : false,
+		"internalX" : 0,
+		"internalY" : 0,
+		"positionX" : 0,
+		"positionY" : 0
+	},
+	"SysLatOptions" : 
+	{
+		"DarkMode" : false,
+		"LogDir" : ".//SysLat_Logs/",
+		"MaxLogs" : 10,
+		"MaxTestDuration" : 0,
+		"PortSpecifier" : "COM4"
+	}
+}

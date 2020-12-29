@@ -1,12 +1,9 @@
 // TestCtrl.cpp : implementation file
-//
 
-//#include "pch.h"
 #include "StdAfx.h"
 #include "SysLat_Software.h"
 #include "TestCtrl.h"
 #include "afxdialogex.h"
-
 
 // TestCtrl dialog
 
@@ -30,7 +27,7 @@ BOOL TestCtrl::OnInitDialog() {
 
 	int nItem;
 
-	for (int i = 0; i < m_pPreviousSLD->size(); i++) {
+	for (unsigned int i = 0; i < m_pPreviousSLD->size(); i++) {
 		int testCount = (*m_pPreviousSLD)[i]->GetCounterEVR();
 		int sysLatAverage = (*m_pPreviousSLD)[i]->GetAverageEVR();
 		bool exported = (*m_pPreviousSLD)[i]->dataExported;

@@ -5,7 +5,8 @@
 #include <Assert.h>
 #include<json/json.h>
 #include<process.h>
-#include<uuids.h>>
+#include<uuids.h>
+
 #pragma comment(lib, "iphlpapi.lib")
 
 #define MAX_NAME 256
@@ -15,7 +16,6 @@ class HardwareID
     bool dataExported = false;
     //Need to pull this out and put it in it's own hardware retrieval class
     //LPHW_PROFILE_INFOA lpHwProfileInfo = { 0 }; // why did this work??
-
 
     char                userName[UNLEN + 1] = { 0 };
     DWORD               userNameSize;

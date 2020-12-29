@@ -21,7 +21,7 @@
 
 #include "HardwareID.h"
 #include "MachineInfo.h"
-#include "SysLatPreferences.h"
+
 
 
 
@@ -83,8 +83,7 @@ protected:
 	//Members
 	HardwareID					m_hardwareID;
 	MachineInfo					m_machineInfo;
-	SysLatPreferences			m_sysLatPreferences;
-
+	
 	HANDLE						drawingThreadHandle;
 
 	static CSysLatData*			m_pOperatingSLD; //Does this need to be a "const" pointer?  It changes if the thread is re-initialized, so I'm thinking no...
@@ -97,6 +96,7 @@ protected:
 	static CString				m_strBlack;
 	static CString				m_strWhite;
 
+
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
 
 	//the names and uses of the following 3 vars is stupid... Need to fix it
@@ -105,15 +105,9 @@ protected:
 	static unsigned int			m_LoopCounterRefresh;
 	static CString				m_strError;
 
-
-	static CString				m_PortSpecifier;
 	BOOL						m_bDebugMode = false; //save to config
 	BOOL						m_bTestUploadMode = false; //change name?
-	BOOL						m_bSysLatInOSD = true;
-	static DWORD				m_positionX;
-	static DWORD				m_positionY;
-	static BOOL					m_bPositionManualOverride;
-	static INT					m_internalX, m_internalY;
+	BOOL						m_bSysLatInOSD = false;
 
 	//RTSS Configs - can't these be moved??
 	DWORD						m_dwSharedMemoryVersion;

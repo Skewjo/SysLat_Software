@@ -23,6 +23,7 @@
 #include "USBController.h"
 #include "HTTP_Client_Async.h"
 #include "HTTP_Client_Async_SSL.h"
+#include "SysLatPreferences.h"
 
 //Child dialog boxes
 #include "AboutDlg.h"
@@ -134,26 +135,16 @@ unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
 CString	CSysLat_SoftwareDlg::m_updateString = "";
 CString CSysLat_SoftwareDlg::m_strError = "";
+//need to turn the following into a unique_ptr or at least delete it in the (currently non-existent) dtor...
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
-
+//The following 2 vars should definitely be constants...
 CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
 CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
 DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 
 
-
-
-CString CSysLat_SoftwareDlg::m_PortSpecifier = "COM3";
-DWORD CSysLat_SoftwareDlg::m_positionX = 0;
-DWORD CSysLat_SoftwareDlg::m_positionY = 0;
-BOOL CSysLat_SoftwareDlg::m_bPositionManualOverride = false;
-INT CSysLat_SoftwareDlg::m_internalX = 0;
-INT CSysLat_SoftwareDlg::m_internalY = 0;
-
-
-
-
-
+//As a non-static variable? Is this a good idea? Need to at least remove the "m_" from the var name... Does this make it local or global??
+SysLatPreferences	m_sysLatPreferences;
 
 //Windows Dialog inherited function overrides
 /////////////////////////////////////////////////////////////////////////////
@@ -272,6 +263,26 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	m_machineInfo.ExportData();
 	m_hardwareID.ExportData();
 
+	// WritePreferences needs to be moved into the currently non-existent destructor.
+	//m_sysLatPreferences.WritePreferences();
+
+	CMenu* settingsMenu = GetMenu();
+	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
+	if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM1") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
+	}
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM2") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_CHECKED);
+	}
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM3") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_CHECKED);
+	}
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM4") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
+	}
 
 
 
@@ -419,29 +430,29 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 			return TRUE;
 		//these next 4 keybinds are "optimized out" or something?? WTF???
 		case VK_UP:
-			if (m_internalY > 0) {
-				m_internalY--;
+			if (m_sysLatPreferences.m_RTSSOptions.m_internalY > 0) {
+				m_sysLatPreferences.m_RTSSOptions.m_internalY--;
 			}
 			//else appendError ??
-			m_bPositionManualOverride = true;
+			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_DOWN:
-			if (m_internalY < 255) {
-				m_internalY++;
+			if (m_sysLatPreferences.m_RTSSOptions.m_internalY < 255) {
+				m_sysLatPreferences.m_RTSSOptions.m_internalY++;
 			}
-			m_bPositionManualOverride = true;
+			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_LEFT:
-			if (m_internalX > 0) {
-				m_internalX--;
+			if (m_sysLatPreferences.m_RTSSOptions.m_internalX > 0) {
+				m_sysLatPreferences.m_RTSSOptions.m_internalX--;
 			}
-			m_bPositionManualOverride = true;
+			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_RIGHT:
-			if (m_internalX < 255) {
-				m_internalX++;
+			if (m_sysLatPreferences.m_RTSSOptions.m_internalX < 255) {
+				m_sysLatPreferences.m_RTSSOptions.m_internalX++;
 			}
-			m_bPositionManualOverride = true;
+			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
 			return TRUE;
 		case 'R':
 			CRTSSClient::SetProfileProperty("", "BaseColor", 0xFF0000);
@@ -473,22 +484,23 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 }
 void CSysLat_SoftwareDlg::Refresh()
 {
-	CHARFORMAT cf;
-	cf.dwEffects &= ~CFE_AUTOCOLOR;
-	cf.cbSize = sizeof(CHARFORMAT);
-	m_richEditCtrl.GetSelectionCharFormat(cf);
-	cf.dwMask = CFM_COLOR | CFM_BOLD;
-	cf.dwEffects = CFE_BOLD;
-	cf.crTextColor = RGB(255, 0, 0);
-	m_richEditCtrl.SetSelectionCharFormat(cf);
-	m_richEditCtrl.Invalidate();
+	// I'M NOT SURE WHAT THIS CODE IS FOR. I'M SURE I PUT IT HERE WHEN I WAS ATTEMPTING TO GET DARK MODE WORKING
+	//CHARFORMAT cf;
+	//cf.dwEffects &= ~CFE_AUTOCOLOR;
+	//cf.cbSize = sizeof(CHARFORMAT);
+	//m_richEditCtrl.GetSelectionCharFormat(cf);
+	//cf.dwMask = CFM_COLOR | CFM_BOLD;
+	//cf.dwEffects = CFE_BOLD;
+	//cf.crTextColor = RGB(255, 0, 0);
+	//m_richEditCtrl.SetSelectionCharFormat(cf);
+	//m_richEditCtrl.Invalidate();
 
 
 	if (!(CRTSSClient::m_profileInterface.IsInitialized())) {
 		CRTSSClient::InitRTSSInterface();
 	}
-	m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
-	m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
+	m_sysLatPreferences.m_RTSSOptions.m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
+	m_sysLatPreferences.m_RTSSOptions.m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
 	if (m_bConnected && !m_bRTSSInitConfig) {
 		R_GetRTSSConfigs();
 	}
@@ -560,8 +572,8 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 void CSysLat_SoftwareDlg::R_Position() {
 	m_strStatus.AppendFormat("\n\nClients num: %d", CRTSSClient::clientsNum);
 	m_strStatus.AppendFormat("\nSysLat Owned Slot: %d", m_sysLatOwnedSlot);
-	m_strStatus.AppendFormat("\nPositionX: %d", m_positionX);
-	m_strStatus.AppendFormat("\nPositionY: %d", m_positionY);
+	m_strStatus.AppendFormat("\nPositionX: %d", m_sysLatPreferences.m_RTSSOptions.m_positionX);
+	m_strStatus.AppendFormat("\nPositionY: %d", m_sysLatPreferences.m_RTSSOptions.m_positionY);
 }
 void CSysLat_SoftwareDlg::R_ProcessNames() {
 	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
@@ -663,12 +675,13 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	m_sysLatOwnedSlot = sysLatClient.ownedSlot;
 
 	CUSBController usbController;
-	HANDLE hPort = usbController.OpenComPort(m_PortSpecifier);
+	HANDLE hPort = usbController.OpenComPort(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
 
 	while (!usbController.IsComPortOpened(hPort) && m_loopSize > 0)
 	{
-		hPort = usbController.OpenComPort(m_PortSpecifier);
-		AppendError("Failed to open COM port: " + m_PortSpecifier);
+		hPort = usbController.OpenComPort(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
+		AppendError("Failed to open COM port: ");
+		AppendError(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
 		//poll the device once per second
 		Sleep(1000);
 	}
@@ -717,20 +730,20 @@ void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorStr
 {
 	m_updateString = "";
 	//The following conditional is FAR from perfect... In order for it to work properly I may need to count the number of rows and columns(in zoomed pixel units?) and use that value. 
-	if (sysLatClient.ownedSlot == 0 && !m_bPositionManualOverride) {
-		if ((int)m_positionX < 0) {
-			m_internalX = 0;
+	if (sysLatClient.ownedSlot == 0 && !m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride) {
+		if ((int)m_sysLatPreferences.m_RTSSOptions.m_positionX < 0) {
+			m_sysLatPreferences.m_RTSSOptions.m_internalX = 0;
 		}
-		if ((int)m_positionY < 0) {
+		if ((int)m_sysLatPreferences.m_RTSSOptions.m_positionY < 0) {
 			//y = CRTSSClient::clientsNum * 20;
-			m_internalY = 20;
+			m_sysLatPreferences.m_RTSSOptions.m_internalY = 20;
 		}
-		m_updateString.AppendFormat("<P=%d,%d>", m_internalX, m_internalY);
+		m_updateString.AppendFormat("<P=%d,%d>", m_sysLatPreferences.m_RTSSOptions.m_internalX, m_sysLatPreferences.m_RTSSOptions.m_internalY);
 		m_updateString += colorString;
 		m_updateString += "<P=0,0>";
 	}
-	else if (m_bPositionManualOverride) {
-		m_updateString.AppendFormat("<P=%d,%d>", m_internalX, m_internalY);
+	else if (m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride) {
+		m_updateString.AppendFormat("<P=%d,%d>", m_sysLatPreferences.m_RTSSOptions.m_internalX, m_sysLatPreferences.m_RTSSOptions.m_internalY);
 		m_updateString += colorString;
 		m_updateString += "<P=0,0>";
 	}
@@ -818,7 +831,7 @@ void CSysLat_SoftwareDlg::SetPortCom1()
 
 	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
 
-	m_PortSpecifier = "COM1";
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM1";
 }
 void CSysLat_SoftwareDlg::SetPortCom2()
 {
@@ -826,7 +839,7 @@ void CSysLat_SoftwareDlg::SetPortCom2()
 
 	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_CHECKED);
 
-	m_PortSpecifier = "COM2";
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM2";
 }
 void CSysLat_SoftwareDlg::SetPortCom3()
 {
@@ -834,7 +847,7 @@ void CSysLat_SoftwareDlg::SetPortCom3()
 
 	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_CHECKED);
 
-	m_PortSpecifier = "COM3";
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM3";
 }
 void CSysLat_SoftwareDlg::SetPortCom4()
 {
@@ -842,7 +855,7 @@ void CSysLat_SoftwareDlg::SetPortCom4()
 
 	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
 
-	m_PortSpecifier = "COM4";
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM4";
 }
 CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 {
@@ -921,11 +934,6 @@ HBRUSH CSysLat_SoftwareDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	pDC->SetTextColor(RGB(255, 0, 0));
 	return m_brush;
 }
-
-
-
-
-
 
 void CSysLat_SoftwareDlg::ExportData(Json::Value stuffToExport) {
 	std::ofstream exportData;

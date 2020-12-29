@@ -40,8 +40,6 @@ protected:
 	time_t				m_startTime, m_endTime;
 	char				m_startDate[26], m_endDate[26];
 
-	
-	
 public:
 	CSysLatData(); //this constructor only opens a mutex... does the destructor need to close the mutex? Also, do I need to init the struct in the constructor? It should init to all 0's off the bat...
 	

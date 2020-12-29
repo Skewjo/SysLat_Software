@@ -157,7 +157,7 @@ void CSysLatData::CreateJSONSLD() {
 	//	resultsArray.append(subResultsArray);
 	//}
 
-	//Add elapsed time at some point
+	//Add elapsed time(duration?) at some point
 	
 	struct tm* startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
 	char* startDateUTC = asctime(startTimeUTC);
