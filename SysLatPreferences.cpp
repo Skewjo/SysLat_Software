@@ -43,8 +43,12 @@ void SysLatPreferences::WriteDebugOptions() {
 	m_JSONPreferences["DebugOptions"]["SysLatInOSD"] = m_DebugOptions.m_bSysLatInOSD;
 }
 void SysLatPreferences::WriteRTSSOptions() {
-	m_JSONPreferences["RTSSOptions"]["positionX"] = static_cast<unsigned int>(m_RTSSOptions.m_positionX);
-	m_JSONPreferences["RTSSOptions"]["positionY"] = static_cast<unsigned int>(m_RTSSOptions.m_positionY);
+	//the following 2 keep getting written as int or unsigned int max value for some reason...
+	//Changed cast from "unsigned int" to "int", but now it's showing as "-1" for each when I think they should be 0 or 1... may need to flip the negative bit before writing or something?
+	//But that seems dumb...
+	//Actually this might be working correctly. Not sure yet.
+	m_JSONPreferences["RTSSOptions"]["positionX"] = static_cast<int>(m_RTSSOptions.m_positionX);
+	m_JSONPreferences["RTSSOptions"]["positionY"] = static_cast<int>(m_RTSSOptions.m_positionY);
 	m_JSONPreferences["RTSSOptions"]["PositionManualOverride"] = m_RTSSOptions.m_bPositionManualOverride;
 	m_JSONPreferences["RTSSOptions"]["internalX"] = m_RTSSOptions.m_internalX;
 	m_JSONPreferences["RTSSOptions"]["internalY"] = m_RTSSOptions.m_internalY;

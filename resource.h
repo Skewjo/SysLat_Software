@@ -23,9 +23,13 @@
 #define IDC_SLIDER2                     1020
 #define IDC_SLIDER_MAX_DURATION         1020
 #define IDC_CHECK3                      1021
+#define IDC_CHECK_DARKMODE              1021
 #define IDC_CHECK_AUTOEXPORT            1024
-#define IDC_LIST1                       1026
 #define IDC_TESTLISTCTRL                1027
+#define IDC_STATIC_GOTYA                1028
+#define IDC_MFCEDITBROWSE               1030
+#define IDC_STATIC_MAX_LOGS             1031
+#define IDC_STATIC_MAX_TEST             1032
 #define ID_SETTINGS_PORT                32771
 #define ID_PORT_COM1                    32772
 #define ID_PORT_COM2                    32773
@@ -47,14 +51,22 @@
 #define ID_SETTINGS_TESTUPLOADMODE      32790
 #define ID_SETTINGS_PREFERENCES         32791
 #define ID_TOOLS_TESTCONTROL            32792
+#define ID_USB_COM5                     32793
+#define ID_USB_COM6                     32794
+#define ID_USB_COM7                     32795
+#define ID_USB_COM8                     32796
+#define ID_PORT_COM5                    32797
+#define ID_PORT_COM6                    32798
+#define ID_PORT_COM7                    32799
+#define ID_PORT_COM8                    32800
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        144
-#define _APS_NEXT_COMMAND_VALUE         32793
-#define _APS_NEXT_CONTROL_VALUE         1028
+#define _APS_NEXT_COMMAND_VALUE         32801
+#define _APS_NEXT_CONTROL_VALUE         1033
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

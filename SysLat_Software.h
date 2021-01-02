@@ -19,7 +19,7 @@
 // See SysLat_Software.cpp for the implementation of this class
 //
 
-class CSysLat_SoftwareApp : public CWinApp
+class CSysLat_SoftwareApp : public CWinAppEx
 {
 public:
 	CSysLat_SoftwareApp();

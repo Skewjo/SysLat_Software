@@ -198,7 +198,7 @@ void MachineInfo::SetMachineInfo() {
 }
 
 void MachineInfo::CreateJSON() {
-        //UserMachineID: UserMachineID @relation(name: "MI_HWID")
+    //UserMachineID: UserMachineID @relation(name: "MI_HWID")
     //BenchmarkDatasets: [BenchmarkDataset!] @relation(name: "dataSetOwnerMI")
     MachineInfoJSON["UserMachineInfo"]["OperatingSystem"] = OSName;
     MachineInfoJSON["UserMachineInfo"]["CPU"] = CPU;
@@ -210,9 +210,9 @@ void MachineInfo::CreateJSON() {
 
 }
 
-void MachineInfo::ExportData() {
+void MachineInfo::ExportData(std::string path) {
     std::ofstream exportData;
-    exportData.open("./logs/machineInfo.json");
+    exportData.open(path + "\\MachineInfo.json");
 
     if (exportData.is_open()) {
         exportData << MachineInfoJSON;

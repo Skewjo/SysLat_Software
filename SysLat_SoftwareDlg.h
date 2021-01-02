@@ -30,7 +30,7 @@ class CSysLat_SoftwareDlg : public CDialogEx
 // Construction
 public:
 	CSysLat_SoftwareDlg(CWnd* pParent = NULL);	// standard constructor
-
+	~CSysLat_SoftwareDlg();
 // Dialog Data
 	//{{AFX_DATA(CSysLat_SoftwareDlg)
 	enum { IDD = IDD_SYSLAT_SOFTWARE_DIALOG };
@@ -72,6 +72,10 @@ protected:
 	void							SetPortCom2();
 	void							SetPortCom3();
 	void							SetPortCom4();
+	void							SetPortCom5();
+	void							SetPortCom6();
+	void							SetPortCom7();
+	void							SetPortCom8();
 	CMenu*							ResetPortsMenuItems();
 	void							DebugMode();
 	void							TestUploadMode();
@@ -86,7 +90,7 @@ protected:
 	
 	HANDLE						drawingThreadHandle;
 
-	static CSysLatData*			m_pOperatingSLD; //Does this need to be a "const" pointer?  It changes if the thread is re-initialized, so I'm thinking no...
+	static CSysLatData*			m_pOperatingSLD; //Does this need to be a pointer... or just an object? I think it needs to be a pointer because I'm creating a new one every time a new thread is created.
 	std::vector<CSysLatData*>	m_previousSLD;
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";

@@ -9,7 +9,7 @@
 	{
 		"AutoCheckUpdates" : true,
 		"AutoExportLogs" : true,
-		"AutoUploadLogs" : true,
+		"AutoUploadLogs" : false,
 		"AutoUploadMachineID" : true,
 		"AutoUploadMachineInfo" : true
 	},
@@ -17,16 +17,16 @@
 	{
 		"PositionManualOverride" : false,
 		"internalX" : 0,
-		"internalY" : 0,
-		"positionX" : 0,
-		"positionY" : 0
+		"internalY" : 20,
+		"positionX" : -1,
+		"positionY" : -1
 	},
 	"SysLatOptions" : 
 	{
-		"DarkMode" : false,
-		"LogDir" : ".//SysLat_Logs/",
-		"MaxLogs" : 10,
-		"MaxTestDuration" : 0,
+		"DarkMode" : true,
+		"LogDir" : "D:\\Users\\Skewb\\Documents\\repos\\SysLat_Software\\Release\\SysLat_Logs",
+		"MaxLogs" : 100,
+		"MaxTestDuration" : 60,
 		"PortSpecifier" : "COM4"
 	}
 }

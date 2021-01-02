@@ -45,7 +45,7 @@ public:
 
         CreateJSON();
     }
-    void            ExportData();
+    void            ExportData(std::string path = ".\\SysLat_Logs");
 
     Json::Value     MachineInfoJSON;
 };

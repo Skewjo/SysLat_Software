@@ -83,9 +83,9 @@ void HardwareID::CreateJSON() {
 
 }
 
-void HardwareID::ExportData() {
+void HardwareID::ExportData(std::string path) {
     std::ofstream exportData;
-    exportData.open("./logs/hardwareID.json");
+    exportData.open(path + "\\HardwareID.json");
 
     if (exportData.is_open()) {
         exportData << HardwareIDJSON;

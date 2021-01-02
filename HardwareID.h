@@ -52,7 +52,7 @@ public:
     ~HardwareID() {
         free(m_pMac);
     }
-    void            ExportData();
+    void            ExportData(std::string path = ".\\SysLat_Logs");
 
     Json::Value     HardwareIDJSON;
 };

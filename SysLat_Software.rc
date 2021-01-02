@@ -102,7 +102,7 @@ BEGIN
     CTEXT           "Placeholder",IDC_PLACEHOLDER,0,0,357,249,SS_CENTERIMAGE | NOT WS_VISIBLE
 END
 
-IDD_PREFERENCES_PROPPAGE DIALOGEX 0, 0, 297, 116
+IDD_PREFERENCES_PROPPAGE DIALOGEX 0, 0, 295, 146
 STYLE DS_SYSMODAL | DS_SETFONT | DS_MODALFRAME | DS_FIXEDSYS | DS_NOFAILCREATE | WS_POPUP | WS_VISIBLE | WS_CAPTION | WS_SYSMENU
 EXSTYLE WS_EX_TOPMOST
 CAPTION "Preferences"
@@ -112,15 +112,17 @@ BEGIN
     CONTROL         "Auto Export Logs",IDC_CHECK_AUTOEXPORT,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,29,71,10
     CONTROL         "Auto Upload Logs to SysLat.com",IDC_CHECK_AUTOUPLOAD,
                     "Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,40,119,10
-    CONTROL         "Dark Mode",IDC_CHECK3,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,58,50,10
-    CONTROL         "",IDC_MFCEDITBROWSE1,"MfcEditBrowse",WS_BORDER | WS_TABSTOP | 0x80,175,15,95,14
-    CONTROL         "",IDC_SLIDER_MAX_LOGS,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,174,57,100,15
-    CONTROL         "",IDC_SLIDER_MAX_DURATION,"msctls_trackbar32",TBS_AUTOTICKS | TBS_BOTH | WS_TABSTOP,174,92,100,15
-    LTEXT           "LOL GOT YA",IDC_STATIC,72,63,40,8,NOT WS_VISIBLE
-    CONTROL         "<a>SysLink2</a>",IDC_SYSLINK2,"SysLink",WS_TABSTOP,20,95,60,14
-    CONTROL         "MfcLink1",IDC_MFCLINK1,"MfcLink",WS_TABSTOP,20,102,60,14
-    LTEXT           "Max Logs",IDC_STATIC,207,47,31,8
-    LTEXT           "Max Test Duration",IDC_STATIC,192,82,60,8
+    CONTROL         "Dark Mode",IDC_CHECK_DARKMODE,"Button",BS_AUTOCHECKBOX | WS_TABSTOP,20,58,50,10
+    CONTROL         "",IDC_SLIDER_MAX_LOGS,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,174,63,96,20
+    CONTROL         "",IDC_SLIDER_MAX_DURATION,"msctls_trackbar32",TBS_AUTOTICKS | TBS_TOP | WS_TABSTOP,174,109,98,20
+    LTEXT           "LOL GOT YA\nComing soon",IDC_STATIC_GOTYA,80,58,48,21,NOT WS_VISIBLE
+    CONTROL         "https://syslat.com",IDC_MFCLINK1,"MfcLink",WS_TABSTOP,20,94,60,14
+    LTEXT           "Max Logs:",IDC_STATIC,174,53,34,8
+    LTEXT           "Max Duration(minutes):",IDC_STATIC,174,101,76,8
+    CONTROL         "",IDC_MFCEDITBROWSE,"MfcEditBrowse",WS_BORDER | WS_TABSTOP | 0x80,182,18,80,14
+    CTEXT           "Static",IDC_STATIC_MAX_LOGS,205,81,34,8
+    CTEXT           "Static",IDC_STATIC_MAX_TEST,198,130,48,8
+    LTEXT           "Log Directory:",IDC_STATIC,174,8,46,8
 END
 
 IDD_TESTCTRL_DIALOG DIALOGEX 0, 0, 285, 203
@@ -195,13 +197,13 @@ BEGIN
 
     IDD_PREFERENCES_PROPPAGE, DIALOG
     BEGIN
-        RIGHTMARGIN, 296
+        RIGHTMARGIN, 294
         VERTGUIDE, 20
         VERTGUIDE, 112
         VERTGUIDE, 174
         VERTGUIDE, 222
         VERTGUIDE, 270
-        BOTTOMMARGIN, 115
+        BOTTOMMARGIN, 138
         HORZGUIDE, 18
         HORZGUIDE, 29
         HORZGUIDE, 40
@@ -265,11 +267,15 @@ BEGIN
             MENUITEM "Serial Ports",                ID_PORT_SERIALPORTS, INACTIVE
             MENUITEM "COM1",                        ID_PORT_COM1
             MENUITEM "COM2",                        ID_PORT_COM2
-            MENUITEM "COM3",                        ID_PORT_COM3, CHECKED
+            MENUITEM "COM3",                        ID_PORT_COM3
             MENUITEM "COM4",                        ID_PORT_COM4
+            MENUITEM "COM5",                        ID_PORT_COM5
+            MENUITEM "COM6",                        ID_PORT_COM6
+            MENUITEM "COM7",                        ID_PORT_COM7
+            MENUITEM "COM8",                        ID_PORT_COM8
         END
         MENUITEM "Debug Mode",                  ID_SETTINGS_DEBUGMODE
-        MENUITEM "Display SysLat in OSD",       ID_SETTINGS_DISPLAYSYSLATINOSD, CHECKED
+        MENUITEM "Display SysLat in OSD",       ID_SETTINGS_DISPLAYSYSLATINOSD
         MENUITEM "Test Upload Mode",            ID_SETTINGS_TESTUPLOADMODE
         MENUITEM "Preferences",                 ID_SETTINGS_PREFERENCES
     END
@@ -283,20 +289,21 @@ END
 
 IDD_PREFERENCES_PROPPAGE DLGINIT
 BEGIN
-    IDC_MFCEDITBROWSE1, 0x37c, 42, 0
-0x4d3c, 0x4346, 0x6445, 0x7469, 0x7242, 0x776f, 0x6573, 0x4d5f, 0x646f, 
-0x3e65, 0x3c31, 0x4d2f, 0x4346, 0x6445, 0x7469, 0x7242, 0x776f, 0x6573, 
-0x4d5f, 0x646f, 0x3e65, 
-    IDC_MFCLINK1, 0x37c, 157, 0
-0x4d3c, 0x4346, 0x694c, 0x6b6e, 0x555f, 0x6c72, 0x3c3e, 0x4d2f, 0x4346, 
-0x694c, 0x6b6e, 0x555f, 0x6c72, 0x3c3e, 0x464d, 0x4c43, 0x6e69, 0x5f6b, 
-0x7255, 0x506c, 0x6572, 0x6966, 0x3e78, 0x2f3c, 0x464d, 0x4c43, 0x6e69, 
+    IDC_MFCLINK1, 0x37c, 175, 0
+0x4d3c, 0x4346, 0x694c, 0x6b6e, 0x555f, 0x6c72, 0x733e, 0x7379, 0x616c, 
+0x2e74, 0x6f63, 0x3c6d, 0x4d2f, 0x4346, 0x694c, 0x6b6e, 0x555f, 0x6c72, 
+0x3c3e, 0x464d, 0x4c43, 0x6e69, 0x5f6b, 0x7255, 0x506c, 0x6572, 0x6966, 
+0x3e78, 0x7468, 0x7074, 0x3a73, 0x2f2f, 0x2f3c, 0x464d, 0x4c43, 0x6e69, 
 0x5f6b, 0x7255, 0x506c, 0x6572, 0x6966, 0x3e78, 0x4d3c, 0x4346, 0x694c, 
 0x6b6e, 0x545f, 0x6f6f, 0x746c, 0x7069, 0x3c3e, 0x4d2f, 0x4346, 0x694c, 
 0x6b6e, 0x545f, 0x6f6f, 0x746c, 0x7069, 0x3c3e, 0x464d, 0x4c43, 0x6e69, 
 0x5f6b, 0x7546, 0x6c6c, 0x6554, 0x7478, 0x6f54, 0x6c6f, 0x6974, 0x3e70, 
 0x4146, 0x534c, 0x3c45, 0x4d2f, 0x4346, 0x694c, 0x6b6e, 0x465f, 0x6c75, 
 0x546c, 0x7865, 0x5474, 0x6f6f, 0x746c, 0x7069, "\076" 
+    IDC_MFCEDITBROWSE, 0x37c, 42, 0
+0x4d3c, 0x4346, 0x6445, 0x7469, 0x7242, 0x776f, 0x6573, 0x4d5f, 0x646f, 
+0x3e65, 0x3c32, 0x4d2f, 0x4346, 0x6445, 0x7469, 0x7242, 0x776f, 0x6573, 
+0x4d5f, 0x646f, 0x3e65, 
     0
 END
 

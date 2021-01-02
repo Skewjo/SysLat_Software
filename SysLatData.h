@@ -64,6 +64,8 @@ public:
 	int					GetMinEVR();
 	//int*				GetMovingAverage(); //????
 
+	struct tm*			startTimeUTC;
+
 	//double			CalculateMovingAverage(); //this function would be for calculating it from scratch...
 	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
 	void				SetEndTime();
@@ -80,7 +82,7 @@ public:
 
 	// I think I need to make the following 2 functions return BOOLs or INTs based on whether or not they failed.
 	void				CreateJSONSLD();
-	void				ExportData(int testNumber); 
+	void				ExportData(int testNumber, std::string path = ".\\SysLat_Logs", int totalLogs = 10000);
 
 	bool				dataExported = false;
 	bool				dataUploaded = false;

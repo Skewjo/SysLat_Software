@@ -1,6 +1,8 @@
 #include "stdafx.h"
 #include "SysLatData.h"
 #include<fstream>
+#include<filesystem>
+#include<regex>
 
 CSysLatData::CSysLatData() {
 	//sld = { 0 }; //this does not 0 out the values in the "m_allResults" array...also, I can't initialize a struct this way when it contains a vector??
@@ -135,15 +137,16 @@ void CSysLatData::CreateJSONSLD() {
 	resultsSize.append(sld.m_v_strActiveWindow.size());
 
 	//This block of code would keep the 3 arrays of data found in the SYSLAT_DATA struct seperate in the JSON. They are currently formatted to be an array of arrays to make the data easier to read.
-	for (int i = 0; i < sld.m_counter; i++ ) {
+	//MAJOR ERROR HERE - NOT SURE WHY, BUT IT'S OCCURRED IN BOTH THE FIRST AND SECOND LOOPS SO FAR FOR ME
+	for (int i = 0; i < sld.m_allResults.size(); i++ ) {
 		resultsArray.append(Json::Value(sld.m_allResults[i]));
 	}
 	Json::Value RTSSArray(Json::arrayValue);
-	for (int i = 0; i < sld.m_counter; i++) {
+	for (int i = 0; i < sld.m_v_strRTSSWindow.size(); i++) {
 		RTSSArray.append(Json::Value(sld.m_v_strRTSSWindow[i]));
 	}
 	Json::Value activeArray(Json::arrayValue);
-	for (int i = 0; i < sld.m_counter; i++) {
+	for (int i = 0; i < sld.m_v_strActiveWindow.size(); i++) {
 		activeArray.append(Json::Value(sld.m_v_strActiveWindow[i]));
 	}
 
@@ -159,7 +162,7 @@ void CSysLatData::CreateJSONSLD() {
 
 	//Add elapsed time(duration?) at some point
 	
-	struct tm* startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
+	startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
 	char* startDateUTC = asctime(startTimeUTC);
 
 	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
@@ -167,7 +170,7 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
 	jsonSLD["MetaData"]["TargetApplication"] = "PLACEHOLDER";
 	jsonSLD["MetaData"]["StartTimeUTC"] = startDateUTC;
-	//THIS NEEDS TO BE MOVED!! WHY DID I PUT IT HERE??
+	//THIS NEEDS TO BE MOVED!! WHY DID I PUT IT HERE?? Currently not that bad because the JSON is created right as the test ends...
 	struct tm* endTimeUTC = gmtime(&m_endTime);
 	char *endDateUTC = asctime(endTimeUTC);
 	jsonSLD["MetaData"]["EndTimeUTC"] = endDateUTC;
@@ -195,9 +198,41 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["SysLatData"]["ActiveWindow"] = activeArray;
 }
 
-void CSysLatData::ExportData(int testNumber) {
+void CSysLatData::ExportData(int testNumber, std::string path, int totalLogs) {
 	std::ofstream exportData;
-	exportData.open("./logs/sld_export" + std::to_string(testNumber) + ".json");
+
+	std::string startDateUTC = asctime(startTimeUTC);
+
+	//COUNT NUMBER OF LOGS HERE
+	//std::string path = "/path/to/directory";
+	int count = 0;
+	std::filesystem::directory_entry oldest_file;
+	std::regex rx("SL_Log_.*");
+
+	for (const auto& entry : std::filesystem::directory_iterator(path)) {
+		std::filesystem::path filename = std::filesystem::path(entry).filename();
+		if (count == 0) {
+			oldest_file = entry;
+		}
+		if (std::regex_match(filename.string(), rx)) {
+			if (entry.last_write_time() > oldest_file.last_write_time()) {
+				oldest_file = entry;
+			}
+			count++;
+		}
+	}
+
+	OutputDebugString("\nTotalLogs: ");
+	OutputDebugString(std::to_string(totalLogs).c_str());
+	OutputDebugString("\n");
+	//TODO delete more than 1 at a time
+	if (count > totalLogs && oldest_file.exists()) {
+		std::filesystem::remove(oldest_file);
+	}
+
+	//TODO add date to file name
+	//+startDateUTC + had to remove this because it gives date in form of "Fri Jan 1 00:00:00 2021" or something... need it formatted differently
+	exportData.open( path + "\\SL_Log_" + std::to_string(testNumber) + ".json");
 
 	if (exportData.is_open()) {
 		exportData << jsonSLD;

@@ -17,12 +17,12 @@ static char THIS_FILE[] = __FILE__;
 /////////////////////////////////////////////////////////////////////////////
 // CSysLat_SoftwareApp
 /////////////////////////////////////////////////////////////////////////////
-BEGIN_MESSAGE_MAP(CSysLat_SoftwareApp, CWinApp)
+BEGIN_MESSAGE_MAP(CSysLat_SoftwareApp, CWinAppEx)
 	//{{AFX_MSG_MAP(CSysLat_SoftwareApp)
 		// NOTE - the ClassWizard will add and remove mapping macros here.
 		//    DO NOT EDIT what you see in these blocks of generated code!
 	//}}AFX_MSG
-	ON_COMMAND(ID_HELP, CWinApp::OnHelp)
+	ON_COMMAND(ID_HELP, CWinAppEx::OnHelp)
 END_MESSAGE_MAP()
 /////////////////////////////////////////////////////////////////////////////
 // CSysLat_SoftwareApp construction

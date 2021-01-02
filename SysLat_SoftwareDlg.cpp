@@ -28,7 +28,7 @@
 //Child dialog boxes
 #include "AboutDlg.h"
 #include "PreferencesDlg.h"
-#include "TestCtrl.h"
+#include "TestCtrl.h" //this one probably needs to end in dlg...
 
 
 //TODO:
@@ -106,8 +106,12 @@
 //Organizational Issues:
 //  Clean up(or get rid of) static vars in SysLat_SoftwareDlg class
 //  Clean up the refresh function a bit more by making some init functionality conditional
-//
-//
+//  Attempt to get rid of most Windows type names like CString, BOOL, and INT(DWORD?)
+//	Attempt to use a single style of string instead of "string", "char*", and "CString".
+//	Look further into Windows style guides & straighten out all member var names with "m_" and the type, or do away with it completely
+//  Look into file organization for .h and .cpp files because the repo is a mess(though it's fine in VS because of "filters")
+//	Look into class naming schemes and organization - make sure dialog classes end in "dlg"(?)
+//  Check whether or not my void "initialization" methods need to return ints or bools for success/failure or if I can just leave them as void
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //Major Bugs:
@@ -166,14 +170,18 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 	m_bFillGraphs				= FALSE;
 	m_bConnected				= FALSE;
 }
+CSysLat_SoftwareDlg::~CSysLat_SoftwareDlg() {
+	m_sysLatPreferences.WritePreferences();
+}
 void CSysLat_SoftwareDlg::DoDataExchange(CDataExchange* pDX)
 {
 	CDialogEx::DoDataExchange(pDX);
 	//{{AFX_DATA_MAP(CSysLat_SoftwareDlg)
 	//}}AFX_DATA_MAP
 }
-
-
+/////////////////////////////////////////////////////////////////////////////
+// CSysLat_SoftwareDlg message handlers
+/////////////////////////////////////////////////////////////////////////////
 BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	//{{AFX_MSG_MAP(CSysLat_SoftwareDlg)
 	ON_WM_SYSCOMMAND()
@@ -185,6 +193,10 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_COMMAND(ID_PORT_COM2, CSysLat_SoftwareDlg::SetPortCom2)
 	ON_COMMAND(ID_PORT_COM3, CSysLat_SoftwareDlg::SetPortCom3)
 	ON_COMMAND(ID_PORT_COM4, CSysLat_SoftwareDlg::SetPortCom4)
+	ON_COMMAND(ID_PORT_COM5, CSysLat_SoftwareDlg::SetPortCom5)
+	ON_COMMAND(ID_PORT_COM6, CSysLat_SoftwareDlg::SetPortCom6)
+	ON_COMMAND(ID_PORT_COM7, CSysLat_SoftwareDlg::SetPortCom7)
+	ON_COMMAND(ID_PORT_COM8, CSysLat_SoftwareDlg::SetPortCom8)
 	ON_COMMAND(ID_TOOLS_EXPORTDATA, CSysLat_SoftwareDlg::ExportData)
 	ON_COMMAND(ID_TOOLS_UPLOADDATA, CSysLat_SoftwareDlg::UploadData)
 	ON_COMMAND(ID_SETTINGS_DEBUGMODE, CSysLat_SoftwareDlg::DebugMode)
@@ -193,12 +205,11 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_COMMAND(ID_TOOLS_NEWTEST, CSysLat_SoftwareDlg::ReInitThread)
 	ON_COMMAND(ID_SETTINGS_PREFERENCES, CSysLat_SoftwareDlg::OpenPreferences)
 	ON_COMMAND(ID_TOOLS_TESTCONTROL, CSysLat_SoftwareDlg::OpenTestCtrl)
+	//ON_WM_CTLCOLOR()
 	//}}AFX_MSG_MAP
-	ON_WM_CTLCOLOR()
 END_MESSAGE_MAP()
-/////////////////////////////////////////////////////////////////////////////
-// CSysLat_SoftwareDlg message handlers
-/////////////////////////////////////////////////////////////////////////////
+
+
 BOOL CSysLat_SoftwareDlg::OnInitDialog()
 {
 	m_color = RGB(136, 217, 242);
@@ -260,17 +271,21 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 
 
 	//need to make these run again at the start of each test or something so that if the user changes hardware(??) while the program is running, I can update it(??) - seems dumb
-	m_machineInfo.ExportData();
-	m_hardwareID.ExportData();
+	m_hardwareID.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
+	m_machineInfo.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
+	
 
-	// WritePreferences needs to be moved into the currently non-existent destructor.
-	//m_sysLatPreferences.WritePreferences();
 
+	//There has GOT to be a better way for me to do this.
 	CMenu* settingsMenu = GetMenu();
 	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_UNCHECKED);
 	if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM1") {
 		settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
 	}
@@ -283,7 +298,18 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM4") {
 		settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
 	}
-
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM5") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_CHECKED);
+	}
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM6") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_CHECKED);
+	}
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM7") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_CHECKED);
+	}
+	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM8") {
+		settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_CHECKED);
+	}
 
 
 	Refresh();
@@ -635,17 +661,17 @@ void CSysLat_SoftwareDlg::AppendError(const CString& error)
 
 
 //SysLat thread functions
-void CSysLat_SoftwareDlg::ReInitThread() { 
+void CSysLat_SoftwareDlg::ReInitThread() {
 	//since implementing the the RTSS and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
 	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread - THIS PROBLEM GOES AWAY IF I PUT *ANY* BREAKPOINTS IN THIS FUNCTION???
 	m_loopSize = 0;
 	//DWORD waitForThread;
 	//do {
 	//waitForThread = 
-		WaitForSingleObjectEx(drawingThreadHandle, INFINITE, false); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
-	//} while (waitForThread != WAIT_OBJECT_0);
-	//CloseHandle(drawingThreadHandle);
-	
+	WaitForSingleObjectEx(drawingThreadHandle, INFINITE, false); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
+//} while (waitForThread != WAIT_OBJECT_0);
+//CloseHandle(drawingThreadHandle);
+
 	m_pOperatingSLD->SetEndTime();
 	m_loopSize = 0xFFFFFFFF;
 
@@ -656,16 +682,21 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 	//"save" the data from the test that just completed
 	m_previousSLD.push_back(m_pOperatingSLD);
 	m_pOperatingSLD = new CSysLatData;
-	
+
 	//restart the thread
 	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
 	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
 
 	//convert the previous data to JSON
 	m_previousSLD.back()->CreateJSONSLD();
-	//then export it
-	//then upload it
+	if (m_sysLatPreferences.m_PrivacyOptions.m_bAutoExportLogs && m_sysLatPreferences.m_SysLatOptions.m_maxLogs > 0) {
+		ExportData();
+	}
+	if (m_sysLatPreferences.m_PrivacyOptions.m_bAutoUploadLogs) {
+		UploadData();
+	}
 }
+
 unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //this is probably dangerous, right?
 {
 	int TIMEOUT = 5; //this should probably be a defined constant
@@ -682,7 +713,6 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 		hPort = usbController.OpenComPort(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
 		AppendError("Failed to open COM port: ");
 		AppendError(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
-		//poll the device once per second
 		Sleep(1000);
 	}
 
@@ -726,6 +756,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 
 	return 0;
 }
+
 void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorString)
 {
 	m_updateString = "";
@@ -773,12 +804,14 @@ void CSysLat_SoftwareDlg::ExportData()
 			//ExportData(newJSON);
 
 			if (!m_previousSLD[i]->dataExported) {
-				m_previousSLD[i]->ExportData(i);
+				m_previousSLD[i]->ExportData(i, m_sysLatPreferences.m_SysLatOptions.m_LogDir, m_sysLatPreferences.m_SysLatOptions.m_maxLogs);
 			}
-			else {
-				std::string error = "Data from test " + std::to_string(i) + " already exported."; //this error message is garbage in every way
-				AppendError(error.c_str());
-			}
+
+			//else {
+			//	std::string error = "Data from test " + std::to_string(i) + " already exported."; //this error message is garbage in every way
+			//	AppendError(error.c_str());
+			//}
+
 		}
 	}
 	else {
@@ -812,10 +845,12 @@ void CSysLat_SoftwareDlg::UploadData()
 				}
 				m_previousSLD[i]->dataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
 			}
-			else {
+
+			/*else {
 				std::string error = "Data from test " + std::to_string(i) + " already uploaded.";
 				AppendError(error.c_str());
-			}
+			}*/
+
 		}
 	}
 	else {
@@ -857,6 +892,38 @@ void CSysLat_SoftwareDlg::SetPortCom4()
 
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM4";
 }
+void CSysLat_SoftwareDlg::SetPortCom5()
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
+	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_CHECKED);
+
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM5";
+}
+void CSysLat_SoftwareDlg::SetPortCom6()
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
+	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_CHECKED);
+
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM6";
+}
+void CSysLat_SoftwareDlg::SetPortCom7()
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
+	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_CHECKED);
+
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM7";
+}
+void CSysLat_SoftwareDlg::SetPortCom8()
+{
+	CMenu* settingsMenu = ResetPortsMenuItems();
+
+	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_CHECKED);
+
+	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM8";
+}
 CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 {
 	CMenu* settingsMenu = GetMenu();
@@ -864,6 +931,10 @@ CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
 	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_UNCHECKED);
+	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_UNCHECKED);
 	ReInitThread();
 	return settingsMenu;
 }
@@ -904,7 +975,7 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 }
 
 void CSysLat_SoftwareDlg::OpenPreferences() {
-	PreferencesDlg preferencesDlg;
+	PreferencesDlg preferencesDlg(&m_sysLatPreferences);
 	preferencesDlg.DoModal();
 }
 
