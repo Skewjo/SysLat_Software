@@ -7,7 +7,7 @@ struct SysLatOptions {
 	std::string					m_PortSpecifier = "COM3";
 	time_t						m_maxTestDuration = 0;
 	int							m_maxLogs = 10;
-	std::string					m_LogDir = ".//SysLat_Logs/";
+	std::string					m_LogDir = ".\\";
 	bool						m_bDarkMode = false;
 };
 

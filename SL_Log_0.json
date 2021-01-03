@@ -1,0 +1,33 @@
+{
+	"AggregateData" : 
+	{
+		"EVRCounter" : 0,
+		"EVRSystemLatencyTotal" : 0,
+		"EVRsystemLatencyAverage" : 0.0,
+		"SysLatTestCount" : 0,
+		"SystemLatencyAverage" : 0.0,
+		"SystemLatencyTotal" : 0
+	},
+	"MetaData" : 
+	{
+		"EndTimeLocal" : "Fri Jan  1 20:37:06 2021\n",
+		"EndTimeUTC" : "Sat Jan  2 02:37:06 2021\n",
+		"RTSSVersion" : "vPLACEHOLDER",
+		"StartTimeLocal" : "Fri Jan  1 20:37:03 2021\n",
+		"StartTimeUTC" : "Sat Jan  2 02:37:03 2021\n",
+		"SysLatVersion" : "v0.0.1",
+		"TargetApplication" : "PLACEHOLDER"
+	},
+	"SysLatData" : 
+	{
+		"ActiveWindow" : [],
+		"RTSSWindow" : [],
+		"SysLatResultSize" : 
+		[
+			0,
+			0,
+			0
+		],
+		"SysLatResults" : []
+	}
+}

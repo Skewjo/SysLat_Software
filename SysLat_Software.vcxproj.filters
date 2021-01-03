@@ -43,7 +43,9 @@
     <ClCompile Include="TestCtrl.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="SysLatPreferences.cpp" />
+    <ClCompile Include="SysLatPreferences.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="GroupedString.h">
@@ -94,7 +96,9 @@
     <ClInclude Include="TestCtrl.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="SysLatPreferences.h" />
+    <ClInclude Include="SysLatPreferences.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Filter Include="Header Files">

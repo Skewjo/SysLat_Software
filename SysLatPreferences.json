@@ -9,7 +9,7 @@
 	{
 		"AutoCheckUpdates" : true,
 		"AutoExportLogs" : true,
-		"AutoUploadLogs" : false,
+		"AutoUploadLogs" : true,
 		"AutoUploadMachineID" : true,
 		"AutoUploadMachineInfo" : true
 	},
@@ -23,9 +23,9 @@
 	},
 	"SysLatOptions" : 
 	{
-		"DarkMode" : true,
-		"LogDir" : "D:\\Users\\Skewb\\Documents\\repos\\SysLat_Software\\Release\\SysLat_Logs",
-		"MaxLogs" : 100,
+		"DarkMode" : false,
+		"LogDir" : ".\\",
+		"MaxLogs" : 15,
 		"MaxTestDuration" : 60,
 		"PortSpecifier" : "COM4"
 	}

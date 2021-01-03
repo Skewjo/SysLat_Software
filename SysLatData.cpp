@@ -214,14 +214,14 @@ void CSysLatData::ExportData(int testNumber, std::string path, int totalLogs) {
 		if (count == 0) {
 			oldest_file = entry;
 		}
-		if (std::regex_match(filename.string(), rx)) {
+		if (entry.exists() && std::regex_match(filename.string(), rx)) {
 			if (entry.last_write_time() > oldest_file.last_write_time()) {
 				oldest_file = entry;
 			}
 			count++;
 		}
 	}
-
+	
 	OutputDebugString("\nTotalLogs: ");
 	OutputDebugString(std::to_string(totalLogs).c_str());
 	OutputDebugString("\n");
