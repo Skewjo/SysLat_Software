@@ -70,7 +70,7 @@ public:
 	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
 	void				SetEndTime();
 	
-	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow);
+	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow, DWORD fgPID, DWORD rtssPID);
 	
 	//mutex functions
 	void				CheckSLDMutex();

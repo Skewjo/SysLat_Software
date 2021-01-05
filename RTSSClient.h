@@ -1,6 +1,9 @@
 #pragma once
 #ifndef RTSSCLIENT_H
 #define RTSSCLIENT_H
+#include <map>
+#include <vector>
+#include <string>
 #include "GroupedString.h"
 #include "RTSSProfileInterface.h"
 
@@ -20,7 +23,13 @@ public:
 	static DWORD					clientsNum;
 	static CRTSSProfileInterface	m_profileInterface;
 	static CString					m_strInstallPath;
-	
+	static DWORD					dwAppEntries;	
+	static std::vector<std::string>	m_vszAppArr;
+	static std::vector<DWORD>		m_vszAppPIDArr;
+
+	//to replace the 2 vectors above
+	static std::map<DWORD, std::string> m_mapRTSSApps;
+
 	
 	CRTSSClient(const char* setSlotOwner = "RTSSSharedMemorySample", int setClientPriority = 1);
 	static void						InitRTSSInterface();
@@ -34,6 +43,7 @@ public:
 	static DWORD					GetSharedMemoryVersion();
 	static DWORD					GetLastForegroundApp();
 	static DWORD					GetLastForegroundAppID();
+	static DWORD					GetAppArray();
 
 	BOOL							UpdateOSD(LPCSTR lpText);
 	void							ReleaseOSD();

@@ -2,13 +2,18 @@
 #include "RTSSClient.h"
 #include "RTSSSharedMemory.h"
 #include "io.h"
+#include <string>
+#include <algorithm>
 
 //static member initializations
 DWORD CRTSSClient::sharedMemoryVersion = 0;
 CRTSSProfileInterface CRTSSClient::m_profileInterface;
 CString CRTSSClient::m_strInstallPath = "";
 DWORD CRTSSClient::clientsNum = 0;
-
+DWORD CRTSSClient::dwAppEntries = 0;
+std::vector<std::string> CRTSSClient::m_vszAppArr = {};
+std::vector<DWORD> CRTSSClient::m_vszAppPIDArr = {};
+std::map<DWORD, std::string> CRTSSClient::m_mapRTSSApps = {};
 
 CRTSSClient::CRTSSClient(const char* setSlotOwner, int setClientPriority) {
 	slotOwnerOSD = setSlotOwner;
@@ -206,6 +211,95 @@ DWORD CRTSSClient::GetLastForegroundAppID()
 	}
 
 	return dwResult;
+}
+DWORD CRTSSClient::GetAppArray() {
+	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
+
+	if (hMapFile)
+	{
+		LPVOID pMapAddr = MapViewOfFile(hMapFile, FILE_MAP_ALL_ACCESS, 0, 0, 0);
+		LPRTSS_SHARED_MEMORY pMem = (LPRTSS_SHARED_MEMORY)pMapAddr;
+
+		if (pMem)
+		{
+			if ((pMem->dwSignature == 'RTSS') && (pMem->dwVersion >= 0x00020000)) {
+				if (dwAppEntries != pMem->dwAppArrSize) {
+					dwAppEntries = 0;
+					m_vszAppArr.clear();
+
+					m_mapRTSSApps.clear();
+					
+					
+					for (DWORD dwEntry = 0; dwEntry < pMem->dwAppArrSize; dwEntry++)
+					{
+						RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_APP_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_APP_ENTRY)((LPBYTE)pMem + pMem->dwAppArrOffset + dwEntry * pMem->dwAppEntrySize);
+
+						if (strlen(pEntry->szName)) {
+							dwAppEntries++;
+							m_vszAppPIDArr.push_back(pEntry->dwProcessID);
+							
+							
+							std::string entryName = pEntry->szName;
+							//Need to throw the following in some global function(or 5) somewhere I think...
+							//Remove .exe file extension
+							size_t pos = entryName.find(".exe");
+							if (pos != std::string::npos) {
+								entryName.replace(pos, entryName.size(), "");
+							}
+							//Remove file path and leave only file name
+							pos = entryName.rfind("\\");
+							entryName.replace(0, pos+1, "");
+							
+							//Remove spaces(?)
+							/*
+							while ((pos = entryName.find(" ")) != std::string::npos) {
+								entryName.replace(pos, 1, "");
+							}
+							*/
+
+							m_vszAppArr.push_back(entryName);
+
+							OutputDebugString("PID: ");
+							OutputDebugString((std::to_string(m_vszAppPIDArr[dwEntry])).c_str());
+							OutputDebugString(" Name: ");
+							OutputDebugString(m_vszAppArr[dwEntry].c_str());
+							OutputDebugString("\n");
+							//does this function need to create/maintain a processID array(vector) too?
+							//DWORD	dwProcessID;//process ID
+							//char	szName[MAX_PATH];//process executable name
+
+
+							
+
+							m_mapRTSSApps.insert(std::pair<DWORD, std::string>(pEntry->dwProcessID, entryName));
+						}
+					}
+					//std::map<DWORD, std::string>::iterator it = m_mapRTSSApps.begin(); //not sure I need this iterator...
+					//auto it = m_mapRTSSApps.begin();
+					for (auto const& [pid, pName] : m_mapRTSSApps) {
+						OutputDebugString("From map!! PID: ");
+						OutputDebugString((std::to_string(pid)).c_str());
+						OutputDebugString(" Name: ");
+						OutputDebugString(pName.c_str());
+						OutputDebugString("\n");
+					}
+
+
+					// this is going to leave the PID vector order out of wack...
+					// This gets rid of duplicates... but I need to be using a map that holds the PID and process name instead of a vector, 
+					// so that I can sort them on the name and not have to worry about sorting 2 discrete vectors.
+					//std::sort(m_vszAppArr.begin(), m_vszAppArr.end());
+					//m_vszAppArr.erase(unique(m_vszAppArr.begin(), m_vszAppArr.end()), m_vszAppArr.end());
+				}
+			}
+			//else return version error?
+			UnmapViewOfFile(pMapAddr);
+		}
+
+		CloseHandle(hMapFile);
+	}
+
+	return dwAppEntries;
 }
 
 BOOL CRTSSClient::UpdateOSD(LPCSTR lpText) {

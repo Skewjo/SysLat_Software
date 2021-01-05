@@ -58,7 +58,7 @@ void CSysLatData::SetEndTime() {
 	ctime_s(m_endDate, sizeof(m_endDate), &m_endTime);
 }
 
-void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow)
+void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow, DWORD fgPID, DWORD rtssPID)
 {
 	BOOL success = AcquireSLDMutex();		// begin the sync access to fields
 	if (!success)
@@ -77,7 +77,9 @@ void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResul
 		sld.m_systemLatencyTotal += systemLatency;
 		sld.m_systemLatencyAverage = static_cast<double>(sld.m_systemLatencyTotal) / sld.m_counter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit... - working now?
 
-		if (systemLatency > 3 && systemLatency < 100 && RTSSWindow == activeWindow) {
+		
+		//if (systemLatency > 3 && systemLatency < 100 && RTSSWindow == activeWindow) {
+		if (systemLatency > 3 && systemLatency < 100 && fgPID == rtssPID) {
 			sld.m_counterEVR++;
 			sld.m_systemLatencyTotalEVR += systemLatency;
 			sld.m_systemLatencyAverageEVR = static_cast<double>(sld.m_systemLatencyTotalEVR) / sld.m_counterEVR;

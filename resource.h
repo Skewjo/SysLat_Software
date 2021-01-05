@@ -59,13 +59,15 @@
 #define ID_PORT_COM6                    32798
 #define ID_PORT_COM7                    32799
 #define ID_PORT_COM8                    32800
+#define ID_SETTINGS_TARGETWINDOW        32801
+#define ID_TARGETWINDOW_PLACEHOLDER     32802
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        144
-#define _APS_NEXT_COMMAND_VALUE         32801
+#define _APS_NEXT_COMMAND_VALUE         32803
 #define _APS_NEXT_CONTROL_VALUE         1033
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

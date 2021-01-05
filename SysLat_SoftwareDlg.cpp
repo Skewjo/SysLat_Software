@@ -28,8 +28,10 @@
 //Child dialog boxes
 #include "AboutDlg.h"
 #include "PreferencesDlg.h"
-#include "TestCtrl.h" //this one probably needs to end in dlg...
+#include "TestCtrl.h" //this one should probably have a suffix of "dlg"...
 
+//stupid macro for outputting a debug line because I wanted to try out macros and I didn't know where a wrapper function for the "OutPutDebugString" function would belong.
+#define	DBL OutputDebugString("\n");
 
 //TODO:
 // Transfer TODO to GitHub Issues...
@@ -145,6 +147,7 @@ CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
 CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
 CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
 DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
+DWORD CSysLat_SoftwareDlg::m_AppArraySize = 0;
 
 
 //As a non-static variable? Is this a good idea? Need to at least remove the "m_" from the var name... Does this make it local or global??
@@ -312,6 +315,9 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	}
 
 
+
+
+
 	Refresh();
 
 	unsigned threadID;
@@ -399,13 +405,13 @@ std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
 	{
 		DWORD buffSize = 1024;
 		CHAR Buffer[1024];
-		if (QueryFullProcessImageNameA(Handle, 0, Buffer, &buffSize))
+		if (QueryFullProcessImageName(Handle, 0, Buffer, &buffSize))
 		{
 			ret = strrchr(Buffer, '\\') + 1; // I can't believe this works
 		}
 		else
 		{
-			printf("Error GetModuleBaseNameA : %lu", GetLastError());
+			printf("Error GetModuleBaseName : %lu", GetLastError());
 		}
 		CloseHandle(Handle);
 	}
@@ -414,7 +420,6 @@ std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
 		printf("Error OpenProcess : %lu", GetLastError());
 	}
 	return ret;
-
 }
 std::string CSysLat_SoftwareDlg::GetActiveWindowTitle()
 {
@@ -454,7 +459,6 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 					ShellExecute(GetSafeHwnd(), "open", CRTSSClient::m_strInstallPath, NULL, NULL, SW_SHOWNORMAL);
 			}
 			return TRUE;
-		//these next 4 keybinds are "optimized out" or something?? WTF???
 		case VK_UP:
 			if (m_sysLatPreferences.m_RTSSOptions.m_internalY > 0) {
 				m_sysLatPreferences.m_RTSSOptions.m_internalY--;
@@ -521,6 +525,15 @@ void CSysLat_SoftwareDlg::Refresh()
 	//m_richEditCtrl.SetSelectionCharFormat(cf);
 	//m_richEditCtrl.Invalidate();
 
+	//if (m_bConnected) {//m_bConnected is never set to true??
+		DWORD AppArraySize = CRTSSClient::GetAppArray();
+		if (m_AppArraySize != AppArraySize) {
+			R_DynamicAppMenu();
+			m_AppArraySize = AppArraySize;
+			OutputDebugString(("AppArraySize: " + std::to_string(AppArraySize)).c_str());
+			DBL
+		}
+	//}
 
 	if (!(CRTSSClient::m_profileInterface.IsInitialized())) {
 		CRTSSClient::InitRTSSInterface();
@@ -651,6 +664,42 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 	}
 }
 
+//Need to use "ON_COMMAND_RANGE" or something for these...
+#define ID_RTSSAPP0 14000
+#define ID_RTSSAPP1 14001
+#define ID_RTSSAPP2 14002
+#define ID_RTSSAPP3 14003
+#define ID_RTSSAPP4 14004
+#define ID_RTSSAPP5 14005
+#define ID_RTSSAPP6 14006
+#define ID_RTSSAPP7 14007
+
+void CSysLat_SoftwareDlg::R_DynamicAppMenu()
+{
+	CMenu* MainMenu = GetMenu();
+	CMenu* SettingsMenu = MainMenu->GetSubMenu(1);
+	CMenu* TargetAppMenu = SettingsMenu->GetSubMenu(5);
+	
+	if (TargetAppMenu)
+	{
+		BOOL appended = false;
+		BOOL deleted = false;
+
+		//having 8 in the following loop is dangerous if I'm not checking m_vszAppArr[i]
+		for (auto i = 0; i < 8 && CRTSSClient::m_vszAppArr.size(); i++)
+		{
+			appended = TargetAppMenu->AppendMenu(MF_STRING, 14000+i, CRTSSClient::m_vszAppArr[i].c_str());
+		}
+		deleted = TargetAppMenu->DeleteMenu(ID_TARGETWINDOW_PLACEHOLDER, MF_BYCOMMAND);
+		
+		OutputDebugString(("String appended: " + std::to_string(appended)).c_str());
+		DBL
+		OutputDebugString(("Placeholder deleted: " + std::to_string(deleted)).c_str());
+		DBL
+	}
+	//DrawMenuBar();
+}
+
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
 	m_strError.Append("\n");
@@ -697,6 +746,9 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 	}
 }
 
+
+//move this later maybe?
+//#include<WinUser.h>
 unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //this is probably dangerous, right?
 {
 	int TIMEOUT = 5; //this should probably be a defined constant
@@ -737,10 +789,11 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 			}
 		}
 
-		//I think everything below should be happening in a different thread so that the serial reads can continue uninterrupted - could the following be a coroutine?
+		//I think everything below(ESPECIALLY the "UpdateSLD" method) should be happening in a different thread so that the serial reads can continue uninterrupted - could the following be a coroutine?
+		// 1-3-2021 thinking on this more, I need the following work to be "queued" up for the main thread... Not sure what the best way to accomplish that is.
 		std::string processName = GetProcessNameFromPID(CRTSSClient::GetLastForegroundAppID());
 		std::string activeWindowTitle;
-		if (loopCounter < m_loopSize) { //this was for a really strange issue
+		if (loopCounter < m_loopSize) { //this was for a really strange issue when trying to end the thread.
 			activeWindowTitle = GetActiveWindowTitle();
 		}
 		else {
@@ -748,7 +801,30 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 		}
 		ProcessNameTrim(processName, activeWindowTitle);
 
-		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults, processName, activeWindowTitle);
+
+		//This does the same as the block above, but uses PID instead of a bunch of unnecessary string editing.
+		//Both of the following work? I bet there's another(probably better way) to use the class name instead of the macro-definition(?) "_WINUSER_".
+		//HWND hWnd = ::GetForegroundWindow();
+		HWND hWnd = _WINUSER_::GetForegroundWindow();
+		DWORD PID;
+		GetWindowThreadProcessId(hWnd, &PID);
+		/*OutputDebugString(("Current foregound PID: " + std::to_string(PID)).c_str());
+		DBL*/
+		DWORD RTSS_Pid = CRTSSClient::GetLastForegroundAppID();
+		//OutputDebugString(("RTSS foregound PID: " + std::to_string(RTSS_Pid)).c_str());
+		//DBL
+		//	if (PID == RTSS_Pid) {
+		//		OutputDebugString("SUCCESS");
+		//	}
+		//	else {
+		//		OutputDebugString("FAIL");
+		//	}
+		//DBL
+
+		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults, processName, activeWindowTitle, PID, RTSS_Pid);
+
+
+
 	}
 
 	usbController.CloseComPort(hPort);
@@ -791,7 +867,7 @@ void CSysLat_SoftwareDlg::ExportData()
 {
 	if (m_previousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
-			//The following code is for testing file export changes
+			//The following code is for testing file export changes - maybe I should make it run only in debugMode?
 			//Json::Value newJSON;
 			//const Json::Value* const sources[] = {
 			//	&m_previousSLD[i]->jsonSLD,
@@ -863,65 +939,49 @@ void CSysLat_SoftwareDlg::UploadData()
 void CSysLat_SoftwareDlg::SetPortCom1()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM1";
 }
 void CSysLat_SoftwareDlg::SetPortCom2()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM2";
 }
 void CSysLat_SoftwareDlg::SetPortCom3()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM3";
 }
 void CSysLat_SoftwareDlg::SetPortCom4()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM4";
 }
 void CSysLat_SoftwareDlg::SetPortCom5()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM5";
 }
 void CSysLat_SoftwareDlg::SetPortCom6()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM6";
 }
 void CSysLat_SoftwareDlg::SetPortCom7()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM7";
 }
 void CSysLat_SoftwareDlg::SetPortCom8()
 {
 	CMenu* settingsMenu = ResetPortsMenuItems();
-
 	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_CHECKED);
-
 	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM8";
 }
 CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()

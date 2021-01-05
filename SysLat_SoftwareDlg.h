@@ -23,8 +23,6 @@
 #include "MachineInfo.h"
 
 
-
-
 class CSysLat_SoftwareDlg : public CDialogEx
 {
 // Construction
@@ -52,6 +50,7 @@ protected:
 	void							R_Position();
 	void							R_ProcessNames();
 	void							R_StrOSD();
+	void							R_DynamicAppMenu();
 	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData - need to make this not used by the thread and then I can make it non-static like the other refresh functions
 
 	//Drawing thread functions
@@ -89,6 +88,7 @@ protected:
 	MachineInfo					m_machineInfo;
 	
 	HANDLE						drawingThreadHandle;
+	
 
 	static CSysLatData*			m_pOperatingSLD; //Does this need to be a pointer... or just an object? I think it needs to be a pointer because I'm creating a new one every time a new thread is created.
 	std::vector<CSysLatData*>	m_previousSLD;
@@ -99,7 +99,7 @@ protected:
 	static CString				m_updateString;
 	static CString				m_strBlack;
 	static CString				m_strWhite;
-
+	static DWORD				m_AppArraySize;
 
 	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
 

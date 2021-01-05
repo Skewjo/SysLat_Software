@@ -278,6 +278,10 @@ BEGIN
         MENUITEM "Display SysLat in OSD",       ID_SETTINGS_DISPLAYSYSLATINOSD
         MENUITEM "Test Upload Mode",            ID_SETTINGS_TESTUPLOADMODE
         MENUITEM "Preferences",                 ID_SETTINGS_PREFERENCES
+        POPUP "Target Window"
+        BEGIN
+            MENUITEM "Placeholder",                 ID_TARGETWINDOW_PLACEHOLDER
+        END
     END
 END
 
