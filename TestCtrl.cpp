@@ -26,16 +26,23 @@ BOOL TestCtrl::OnInitDialog() {
 	int nItem;
 
 	for (unsigned int i = 0; i < m_pPreviousSLD->size(); i++) {
-		int testCount = (*m_pPreviousSLD)[i]->GetCounterEVR();
+		string targetApp = (*m_pPreviousSLD)[i]->m_targetApp;
+		double dif = (*m_pPreviousSLD)[i]->m_testDuration;
+		int minutes = static_cast<int>(dif) / 60;
+		int seconds = static_cast<int>(dif) % 60;
+		CString duration = "";
+		duration.AppendFormat("%02d:%02d", minutes, seconds);
+
 		int sysLatAverage = (*m_pPreviousSLD)[i]->GetAverageEVR();
+		int testCount = (*m_pPreviousSLD)[i]->GetCounterEVR();
 		bool exported = (*m_pPreviousSLD)[i]->dataExported;
 		bool uploaded = (*m_pPreviousSLD)[i]->dataUploaded;
 		//int stuff = *m_pPreviousSLD[i]->GetCounterEVR();
 		char buffer[256];
 
 		nItem = m_TestListCtrl.InsertItem(i, "1");
-		m_TestListCtrl.SetItemText(nItem, 1, "PLACEHOLDER");
-		m_TestListCtrl.SetItemText(nItem, 2, "PLACEHOLDER");
+		m_TestListCtrl.SetItemText(nItem, 1, targetApp.c_str());
+		m_TestListCtrl.SetItemText(nItem, 2, duration);
 		m_TestListCtrl.SetItemText(nItem, 3, _itoa(sysLatAverage, buffer, 10));
 		m_TestListCtrl.SetItemText(nItem, 4, _itoa(testCount, buffer, 10));
 
@@ -47,7 +54,7 @@ BOOL TestCtrl::OnInitDialog() {
 			m_TestListCtrl.SetItemText(nItem, 5, "Yes");
 		}
 		else {
-			m_TestListCtrl.SetItemText(nItem, 5, "X");
+			m_TestListCtrl.SetItemText(nItem, 5, "No");
 		}
 
 		if (testCount == 0) {
@@ -57,7 +64,7 @@ BOOL TestCtrl::OnInitDialog() {
 			m_TestListCtrl.SetItemText(nItem, 6, "Yes");
 		}
 		else {
-			m_TestListCtrl.SetItemText(nItem, 6, "X");
+			m_TestListCtrl.SetItemText(nItem, 6, "No");
 		}
 	}
 	return TRUE; // return TRUE unless you set the focus to a control

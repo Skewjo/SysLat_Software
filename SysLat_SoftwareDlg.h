@@ -17,6 +17,7 @@
 #include "SysLatData.h"
 #include "HardwareID.h"
 #include "MachineInfo.h"
+#include "USBController.h"
 
 class CSysLat_SoftwareDlg : public CDialogEx
 {
@@ -52,8 +53,8 @@ protected:
 	//Drawing thread functions
 	static unsigned int __stdcall	CreateDrawingThread(void* data);
 	static void						DrawSquare(CRTSSClient sysLatClient, CString& colorString);
-	static string				GetProcessNameFromPID(DWORD processID);
-	static string				GetActiveWindowTitle();
+	static string					GetProcessNameFromPID(DWORD processID);
+	static string					GetActiveWindowTitle();
 	static void						ProcessNameTrim(string&, string&);
 
 	//Dialog menu related functions
@@ -63,15 +64,6 @@ protected:
 	void							UploadData();
 
 	//Settings
-	void							SetPortCom1();
-	void							SetPortCom2();
-	void							SetPortCom3();
-	void							SetPortCom4();
-	void							SetPortCom5();
-	void							SetPortCom6();
-	void							SetPortCom7();
-	void							SetPortCom8();
-	CMenu*							ResetPortsMenuItems();
 	void							DebugMode();
 	void							TestUploadMode();
 	void							DisplaySysLatInOSD();
@@ -86,10 +78,11 @@ protected:
 	MachineInfo					m_machineInfo;
 	
 	HANDLE						drawingThreadHandle;
-	
+	CArray<SSerInfo, SSerInfo&> COMPortInfo;
+	int							COMPortCount;
 
 	static CSysLatData*			m_pOperatingSLD; //Does this need to be a pointer... or just an object? I think it needs to be a pointer because I'm creating a new one every time a new thread is created.
-	vector<CSysLatData*>	m_previousSLD;
+	vector<CSysLatData*>		m_previousSLD;
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
 	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other

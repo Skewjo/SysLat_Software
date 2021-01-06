@@ -8,7 +8,7 @@ void SysLatPreferences::WritePreferences() {
 	WriteRTSSOptions();
 
 	std::ofstream exportPreferences;
-	exportPreferences.open("./SysLatPreferences.json");
+	exportPreferences.open("./SysLat_Logs/SysLatPreferences.json");
 
 	if (exportPreferences.is_open()) {
 		exportPreferences << m_JSONPreferences;
@@ -21,6 +21,7 @@ void SysLatPreferences::WritePreferences() {
 	exportPreferences.close();
 }
 void SysLatPreferences::WriteSysLatOptions() {
+	m_JSONPreferences["SysLatOptions"]["LastSelectedTargetApp"] = m_SysLatOptions.m_targetApp;
 	m_JSONPreferences["SysLatOptions"]["PortSpecifier"] = m_SysLatOptions.m_PortSpecifier;
 	m_JSONPreferences["SysLatOptions"]["MaxTestDuration"] = m_SysLatOptions.m_maxTestDuration;
 	m_JSONPreferences["SysLatOptions"]["MaxLogs"] = m_SysLatOptions.m_maxLogs;
@@ -51,9 +52,11 @@ void SysLatPreferences::WriteRTSSOptions() {
 	m_JSONPreferences["RTSSOptions"]["internalY"] = m_RTSSOptions.m_internalY;
 }
 
+
 void SysLatPreferences::ReadPreferences() {
 	std::ifstream importPreferences;
-	importPreferences.open("./SysLatPreferences.json");
+	bool check = CreateDirectory("SysLat_Logs", NULL);
+	importPreferences.open("./SysLat_Logs/SysLatPreferences.json");
 
 	if (importPreferences.is_open()) {
 		importPreferences >> m_JSONPreferences;
@@ -73,10 +76,11 @@ void SysLatPreferences::ReadPreferences() {
 
 //All these values are being set by default when they're instantiated AND when they're read... seems like overkill?
 void SysLatPreferences::ReadSysLatOptions() {
+	m_SysLatOptions.m_targetApp = m_JSONPreferences["SysLatOptions"].get("LastSelectedTargetApp", "dota2").asString();
 	m_SysLatOptions.m_PortSpecifier = m_JSONPreferences["SysLatOptions"].get("PortSpecifier", "COM3").asString();
 	m_SysLatOptions.m_maxTestDuration = m_JSONPreferences["SysLatOptions"].get("MaxTestDuration", 60).asInt();
 	m_SysLatOptions.m_maxLogs = m_JSONPreferences["SysLatOptions"].get("MaxLogs", 15).asInt();
-	m_SysLatOptions.m_LogDir = m_JSONPreferences["SysLatOptions"].get("LogDir", ".\\").asString();
+	m_SysLatOptions.m_LogDir = m_JSONPreferences["SysLatOptions"].get("LogDir", ".\\SysLat_Logs\\").asString();
 	m_SysLatOptions.m_bDarkMode = m_JSONPreferences["SysLatOptions"].get("DarkMode", false).asBool();
 }
 void SysLatPreferences::ReadPrivacyOptions() {

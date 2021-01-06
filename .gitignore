@@ -341,3 +341,4 @@ healthchecksdb
 
 # Local logs
 /Logs
+/SysLat_Logs

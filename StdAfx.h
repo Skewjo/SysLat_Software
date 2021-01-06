@@ -23,7 +23,6 @@
 #define ATLTRACE6 m_DebugFile.Dump
 #define USE_DEBUGDUMP extern CDebugDump m_DebugFile;
 
-
 #include "afxdialogex.h"
 #include "afxeditbrowsectrl.h"
 #include <algorithm>
@@ -42,31 +41,11 @@
 #include <time.h>
 #include <vector>
 #include <WinBase.h>
-
 #include <winternl.h>
 #include <wrl/client.h> //graphics card info for MachineInfo.cpp
 
 #pragma comment(lib, "DXGI.lib") //graphics card info
 #pragma comment (lib, "OneCore.lib") //Used to enumerate COM ports
-
-//unused/no longer used libraries?
-//#include <array>
-//#include <debugapi.h>
-//#include <dxgi.h>
-//#include <exception>
-//#include <float.h>
-//#include <intrin.h>
-//#include <stdio.h>
-//#include <WinUser.h>
-//#include <Windows.h> //started getting a weird error message in "HTTP_Client_Async.h" that said "MFC apps must not declare <Windows.h> or something like that...
-// The following 3 were from HardwareID.h... not sure when I deleted the functionality that was using them.
-//#include <Iphlpapi.h>
-//#include <uuids.h> 
-//#pragma comment(lib, "iphlpapi.lib")
-//#pragma comment(lib, "user32.lib") //Was previously used in MachineInfo.h
-
-
-
 
 using std::string;
 using std::vector;
@@ -80,27 +59,20 @@ namespace SL
 		OutputDebugString(OutputString.c_str());
 		OutputDebugString("\n");
 	}
-	/*inline void OutputDebugString(string_view sv) {
-		OutputDebugString(sv);
-		OutputDebugString("\n");
-	}*/
 
 	//file name string cleaner helper functions
 	inline void RemoveExtension(string& inputString) {
 		size_t pos = inputString.find(".exe");
-		pos = inputString.rfind("\\");
-		inputString.replace(0, pos + 1, "");
+		inputString.replace(pos, inputString.size(), "");
 	}
 	
 	inline void RemovePath(string& inputString) {
-		size_t pos = inputString.find(".exe");
-		while ((pos = inputString.find(" ")) != string::npos) {
-			inputString.replace(pos, 1, "");
-		}
+		size_t pos = inputString.rfind("\\");
+		inputString.replace(0, pos + 1, "");
 	}
 
 	inline void RemoveSpaces(string& inputString) {
-		size_t pos = inputString.find(".exe");
+		size_t pos;
 		while ((pos = inputString.find(" ")) != string::npos) {
 			inputString.replace(pos, 1, "");
 		}

@@ -1,4 +1,3 @@
-#pragma once
 //{{NO_DEPENDENCIES}}
 // Microsoft Visual C++ generated include file.
 // Used by SysLat_Software.rc
@@ -62,13 +61,16 @@
 #define ID_PORT_COM8                    32800
 #define ID_SETTINGS_TARGETWINDOW        32801
 #define ID_TARGETWINDOW_PLACEHOLDER     32802
+#define ID_USB_PLACEHOLDER              32803
+#define ID_SETTINGS_USBPORT             32804
+#define ID_USBPORT_PLACEHOLDER          32805
 
 // Next default values for new objects
 // 
 #ifdef APSTUDIO_INVOKED
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        144
-#define _APS_NEXT_COMMAND_VALUE         32803
+#define _APS_NEXT_COMMAND_VALUE         32806
 #define _APS_NEXT_CONTROL_VALUE         1033
 #define _APS_NEXT_SYMED_VALUE           101
 #endif

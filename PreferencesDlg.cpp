@@ -209,5 +209,3 @@ void PreferencesDlg::OnBnClickedCheckAutoupload()
 		m_pPreferences->m_PrivacyOptions.m_bAutoUploadLogs = false;
 	}
 }
-
-

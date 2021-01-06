@@ -22,11 +22,7 @@ public:
 	static CRTSSProfileInterface	m_profileInterface;
 	static CString					m_strInstallPath;
 	static DWORD					dwAppEntries;	
-	static vector<string>			m_vszAppArr;
-	static vector<DWORD>			m_vszAppPIDArr;
-	//to replace the 2 vectors above
-	static map<DWORD, string> m_mapRTSSApps;
-
+	static vector< std::pair<DWORD, string>>	m_vszAppArr;
 	
 	CRTSSClient(const char* setSlotOwner = "RTSSSharedMemorySample", int setClientPriority = 1);
 	static void						InitRTSSInterface();

@@ -256,32 +256,22 @@ BEGIN
     POPUP "Tools"
     BEGIN
         MENUITEM "New Test                  F11", ID_TOOLS_NEWTEST
-        MENUITEM "Export Data",                 ID_TOOLS_EXPORTDATA
-        MENUITEM "Upload Data",                 ID_TOOLS_UPLOADDATA
         MENUITEM "Test Control",                ID_TOOLS_TESTCONTROL
     END
     POPUP "Settings"
     BEGIN
-        POPUP "USB_PORT"
+        POPUP "USB Port"
         BEGIN
-            MENUITEM "Serial Ports",                ID_PORT_SERIALPORTS, INACTIVE
-            MENUITEM "COM1",                        ID_PORT_COM1
-            MENUITEM "COM2",                        ID_PORT_COM2
-            MENUITEM "COM3",                        ID_PORT_COM3
-            MENUITEM "COM4",                        ID_PORT_COM4
-            MENUITEM "COM5",                        ID_PORT_COM5
-            MENUITEM "COM6",                        ID_PORT_COM6
-            MENUITEM "COM7",                        ID_PORT_COM7
-            MENUITEM "COM8",                        ID_PORT_COM8
+            MENUITEM "Placeholder",                 ID_USBPORT_PLACEHOLDER
+        END
+        POPUP "Target Window"
+        BEGIN
+            MENUITEM "Please Open RTSS",            ID_TARGETWINDOW_PLACEHOLDER
         END
         MENUITEM "Debug Mode",                  ID_SETTINGS_DEBUGMODE
         MENUITEM "Display SysLat in OSD",       ID_SETTINGS_DISPLAYSYSLATINOSD
         MENUITEM "Test Upload Mode",            ID_SETTINGS_TESTUPLOADMODE
         MENUITEM "Preferences",                 ID_SETTINGS_PREFERENCES
-        POPUP "Target Window"
-        BEGIN
-            MENUITEM "Placeholder",                 ID_TARGETWINDOW_PLACEHOLDER
-        END
     END
 END
 

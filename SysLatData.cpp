@@ -75,8 +75,6 @@ void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResul
 		sld.m_systemLatencyTotal += systemLatency;
 		sld.m_systemLatencyAverage = static_cast<double>(sld.m_systemLatencyTotal) / sld.m_counter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit... - working now?
 
-		
-		//if (systemLatency > 3 && systemLatency < 100 && RTSSWindow == activeWindow) {
 		if (systemLatency > 3 && systemLatency < 100 && fgPID == rtssPID) {
 			sld.m_counterEVR++;
 			sld.m_systemLatencyTotalEVR += systemLatency;
@@ -167,8 +165,7 @@ void CSysLatData::CreateJSONSLD() {
 
 	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
 	jsonSLD["MetaData"]["RTSSVersion"] = "vPLACEHOLDER";
-	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
-	jsonSLD["MetaData"]["TargetApplication"] = "PLACEHOLDER";
+	jsonSLD["MetaData"]["TargetApplication"] = m_targetApp;
 	jsonSLD["MetaData"]["StartTimeUTC"] = startDateUTC;
 	//THIS NEEDS TO BE MOVED!! WHY DID I PUT IT HERE?? Currently not that bad because the JSON is created right as the test ends...
 	struct tm* endTimeUTC = gmtime(&m_endTime);
@@ -176,6 +173,13 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["MetaData"]["EndTimeUTC"] = endDateUTC;
 	jsonSLD["MetaData"]["StartTimeLocal"] = m_startDate;
 	jsonSLD["MetaData"]["EndTimeLocal"] = m_endDate;
+	m_testDuration = difftime(m_endTime, m_startTime);
+	int minutes = static_cast<int>(m_testDuration) / 60;
+	int seconds = static_cast<int>(m_testDuration) % 60;
+	CString durationCString = "";
+	durationCString.AppendFormat("%02d:%02d", minutes, seconds);
+	string durationString = durationCString;
+	jsonSLD["MetaData"]["Duration"] = durationString;
 	//NumProcBegin: Int
 	//NumProcEnd : Int
 	//ProcListBegin : [String]

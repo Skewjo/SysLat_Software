@@ -8,9 +8,9 @@
 #define EVR_MAX											100
 
 typedef struct SYSLAT_DATA {
-	vector<int>	m_allResults;
-	vector<string>	m_v_strRTSSWindow;
-	vector<string>	m_v_strActiveWindow;
+	vector<int>			m_allResults;
+	vector<string>		m_v_strRTSSWindow;
+	vector<string>		m_v_strActiveWindow;
 	int					m_counter = 0;
 	int					m_systemLatencyTotal = 0;
 	double				m_systemLatencyAverage = 0;
@@ -60,7 +60,9 @@ public:
 	int					GetMinEVR();
 	//int*				GetMovingAverage(); //????
 
+	string				m_targetApp = "";
 	struct tm*			startTimeUTC;
+	double				m_testDuration;
 
 	//double			CalculateMovingAverage(); //this function would be for calculating it from scratch...
 	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value

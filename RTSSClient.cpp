@@ -8,9 +8,8 @@ CRTSSProfileInterface CRTSSClient::m_profileInterface;
 CString CRTSSClient::m_strInstallPath = "";
 DWORD CRTSSClient::clientsNum = 0;
 DWORD CRTSSClient::dwAppEntries = 0;
-vector<string> CRTSSClient::m_vszAppArr = {};
-vector<DWORD> CRTSSClient::m_vszAppPIDArr = {};
-map<DWORD, string> CRTSSClient::m_mapRTSSApps = {};
+vector<std::pair<DWORD, string>> CRTSSClient::m_vszAppArr = {};
+
 
 CRTSSClient::CRTSSClient(const char* setSlotOwner, int setClientPriority) {
 	slotOwnerOSD = setSlotOwner;
@@ -222,28 +221,46 @@ DWORD CRTSSClient::GetAppArray() {
 		if (pMem)
 		{
 			if ((pMem->dwSignature == 'RTSS') && (pMem->dwVersion >= 0x00020000)) {
-				if (dwAppEntries != pMem->dwAppArrSize) {
+
+				//Check if RTSS detected or removed any programs....
+				int count = 0;
+				for (DWORD dwEntry = 0; dwEntry < pMem->dwAppArrSize; dwEntry++) {
+					RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_APP_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_APP_ENTRY)((LPBYTE)pMem + pMem->dwAppArrOffset + dwEntry * pMem->dwAppEntrySize);
+					if (strlen(pEntry->szName) && pEntry->dwProcessID != 0) {
+						count++;
+					}
+					else if(strlen(pEntry->szName) == 0){
+						break;
+					}
+				}
+
+				//If so, add them to the map we'll use to populate the menu
+				if (dwAppEntries != count) {
 					dwAppEntries = 0;
 					m_vszAppArr.clear();
-					m_mapRTSSApps.clear();
 					
 					for (DWORD dwEntry = 0; dwEntry < pMem->dwAppArrSize; dwEntry++)
 					{
 						RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_APP_ENTRY pEntry = (RTSS_SHARED_MEMORY::LPRTSS_SHARED_MEMORY_APP_ENTRY)((LPBYTE)pMem + pMem->dwAppArrOffset + dwEntry * pMem->dwAppEntrySize);
-
-						if (strlen(pEntry->szName)) {
+						DEBUG_PRINT("PID: " + to_string(pEntry->dwProcessID) + " Name: " + pEntry->szName)
+						if (strlen(pEntry->szName) && pEntry->dwProcessID != 0) {
+							
 							dwAppEntries++;
-
 							string entryName = pEntry->szName;
 							SL::RemoveExtension(entryName);
 							SL::RemovePath(entryName);
 
-							m_mapRTSSApps.insert(std::pair<DWORD, string>(pEntry->dwProcessID, entryName));
+							m_vszAppArr.push_back(std::pair(pEntry->dwProcessID, entryName));
+						}
+						else if (strlen(pEntry->szName) == 0) {
+							break;
 						}
 					}
-					for (auto const& [pid, pName] : m_mapRTSSApps) {
+					
+					for (auto const& [pid, pName] : m_vszAppArr) {
 						DEBUG_PRINT("PID: " + to_string(pid) + " Name: " + pName)
 					}
+					
 				}
 			}
 			//else return version error?

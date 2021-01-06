@@ -2,10 +2,12 @@
 // 12-28-2020
 // The default values in the following 4 structures get overwritten when ReadPreferences() is called
 struct SysLatOptions {
-	string					m_PortSpecifier = "COM3";
-	time_t						m_maxTestDuration = 0;
+	string						m_targetApp = "dota2";
+	//vector<string>			m_favoriteTargets;
+	string						m_PortSpecifier = "COM3";
+	time_t						m_maxTestDuration = 60;
 	int							m_maxLogs = 10;
-	string					m_LogDir = ".\\";
+	string						m_LogDir = ".\\SysLat_Logs\\";
 	bool						m_bDarkMode = false;
 };
 

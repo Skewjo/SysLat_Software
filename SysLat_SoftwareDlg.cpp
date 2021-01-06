@@ -39,7 +39,7 @@
 //  DONE(well... it half-ass works) - Make System Latency appear in OSD
 //  DONE - Save results to a table - using an array
 //  DONE - Determine active window vs window that RTSS is operating in?
-//  DONE - Launch RTSS automatically in the background if it's not running
+//  DONE(mostly) - Launch RTSS automatically in the background if it's not running
 //  DONE - Add hotkey to restart readings (F11?)
 //  DONE - Seperate some initialization that happens in "Refresh" function into a different "Refresh-like" function?? - partially done?
 //  DONE - Re-org this file into 3-4 new classes - Dialog related functions, RTSS related, DrawingThread related, and USB related
@@ -52,10 +52,10 @@
 //
 //Core Functionality:
 //  DONE - Add HTTP post function for uploading logs to website - use boost.beast library?
-//  Errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
+//  Some errors currently appear very briefly and are overwritten when the refresh function runs - Clean up the refresh function, then come up with new error scheme.
 //		Either use error codes, or check all errors  again in the refresh function(that doesn't make sense though, right?)... or maybe do dialog error pop-ups when errors occur outside of "refresh"?
 //  Move ExportData function out of SysLatData? Or just use it to retrieve a jsoncpp object & combine it with other jsoncpp objects
-//  Make executable/window names mesh better together?  Need a map/lookup table or something? - JUST USE PID YA IDIOT
+//  DONE - Make executable/window names mesh better together?  Need a map/lookup table or something? - JUST USE PID YA IDIOT
 //
 //
 //Data Issues:
@@ -85,6 +85,7 @@
 //Optimization:
 //  Move data update at the end of the CreateDrawingThread function into a different thread(or co-routine?)
 //  Calculating the position of the box before we draw it adds unnecessary delay(?)
+//  Make flashing square resizeable
 //
 //
 //Organizational Issues:
@@ -99,9 +100,9 @@
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //Major Bugs:
-//  The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD - slot when restarting a test
+//  DONE - (hid the error)The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD - slot when restarting a test - I thought I fixed this... I did not...
 //	Issue when switching COM ports to an existing device that isn't SysLat and back
-//  Arrow key functionality has been optimized away somehow
+//	DONE - Arrow key functionality has been optimized away somehow
 //  
 //
 //Minor Bugs:
@@ -121,23 +122,23 @@ const int ID_RTSSAPP_END = 2199;
 static char THIS_FILE[] = __FILE__;
 #endif
 
+//As a non-static non-member variable? Is this a good idea? Need to at least remove the "m_" from the var name... Does this make it global??
+SysLatPreferences	m_sysLatPreferences;
+
 //Define static variables - these should probably be done as inline or something... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
 CString	CSysLat_SoftwareDlg::m_updateString = "";
 CString CSysLat_SoftwareDlg::m_strError = "";
-//need to turn the following into a unique_ptr or at least delete it in the (currently non-existent) dtor...
+//need to turn the following into a unique_ptr(maybe?) or at least delete it in the (currently non-existent) dtor...
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
-//The following 2 vars should definitely be constants...
 CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
 CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
 DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 DWORD CSysLat_SoftwareDlg::m_AppArraySize = 0;
 
 
-//As a non-static variable? Is this a good idea? Need to at least remove the "m_" from the var name... Does this make it local or global??
-SysLatPreferences	m_sysLatPreferences;
 
 //Windows Dialog inherited function overrides
 /////////////////////////////////////////////////////////////////////////////
@@ -178,14 +179,6 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_WM_QUERYDRAGICON()
 	ON_WM_TIMER()
 	ON_WM_DESTROY()
-	ON_COMMAND(ID_PORT_COM1, CSysLat_SoftwareDlg::SetPortCom1)
-	ON_COMMAND(ID_PORT_COM2, CSysLat_SoftwareDlg::SetPortCom2)
-	ON_COMMAND(ID_PORT_COM3, CSysLat_SoftwareDlg::SetPortCom3)
-	ON_COMMAND(ID_PORT_COM4, CSysLat_SoftwareDlg::SetPortCom4)
-	ON_COMMAND(ID_PORT_COM5, CSysLat_SoftwareDlg::SetPortCom5)
-	ON_COMMAND(ID_PORT_COM6, CSysLat_SoftwareDlg::SetPortCom6)
-	ON_COMMAND(ID_PORT_COM7, CSysLat_SoftwareDlg::SetPortCom7)
-	ON_COMMAND(ID_PORT_COM8, CSysLat_SoftwareDlg::SetPortCom8)
 	ON_COMMAND(ID_TOOLS_EXPORTDATA, CSysLat_SoftwareDlg::ExportData)
 	ON_COMMAND(ID_TOOLS_UPLOADDATA, CSysLat_SoftwareDlg::UploadData)
 	ON_COMMAND(ID_SETTINGS_DEBUGMODE, CSysLat_SoftwareDlg::DebugMode)
@@ -208,18 +201,13 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 
 	CDialogEx::OnInitDialog();
 
-	//CDialogEx::SetBackgroundColor(RGB(136, 217, 242), 1);
-
 	CWnd* pMainDlg = GetDlgItem(IDD_SYSLAT_SOFTWARE_DIALOG);
 
 	if (pMainDlg)
 	{
 		pMainDlg->GetClientRect(&clientRect);
 	}
-	
-	// Add "About..." menu item to system menu.
 
-	// IDM_ABOUTBOX must be in the system command range.
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
 	ASSERT(IDM_ABOUTBOX < 0xF000);
 
@@ -235,9 +223,7 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		}
 	}
 
-	// Set the icon for this dialog.  The framework does this automatically
-	//  when the application's main window is not a dialog
-	SetIcon(m_hIcon, TRUE);			// Set big icon
+	SetIcon(m_hIcon, TRUE);
 
 	CWnd* pPlaceholder = GetDlgItem(IDC_PLACEHOLDER);
 
@@ -249,66 +235,16 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		if (!m_richEditCtrl.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, this, 0))
 			return FALSE;
 
-		//m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_richEditCtrl.SetFont(&m_font);
-		//m_richEditCtrl.SetBackgroundColor(FALSE, m_color);
 	}
 
-	
-	//init timers
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
 
-
-	//need to make these run again at the start of each test or something so that if the user changes hardware(??) while the program is running, I can update it(??) - seems dumb
 	m_hardwareID.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
 	m_machineInfo.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
 	
-	//////////////////////////////////////////////////////////////////////////////////
-	//move this soon
-	R_DynamicComPortMenu();
-	//////////////////////////////////////////////////////////////////////////////////
-	
-	//There has GOT to be a better way for me to do this.
-	CMenu* settingsMenu = GetMenu();
-	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_UNCHECKED);
-	if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM1") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM2") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM3") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM4") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM5") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM6") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM7") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_CHECKED);
-	}
-	else if (m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier == "COM8") {
-		settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_CHECKED);
-	}
-
-
-
-
-
 	Refresh();
 
 	unsigned threadID;
@@ -329,11 +265,6 @@ void CSysLat_SoftwareDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		CDialogEx::OnSysCommand(nID, lParam);
 	}
 }
-/////////////////////////////////////////////////////////////////////////////
-// If you add a minimize button to your dialog, you will need the code below
-//  to draw the icon.  For MFC applications using the document/view model,
-//  this is automatically done for you by the framework.
-/////////////////////////////////////////////////////////////////////////////
 void CSysLat_SoftwareDlg::OnPaint()
 {
 	if (IsIconic())
@@ -384,7 +315,7 @@ void CSysLat_SoftwareDlg::OnDestroy()
 	CDialogEx::OnDestroy();
 }
 
-//Skewjo's Dialog functions
+//Dialog functions
 string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
 	string ret;
 	HANDLE Handle = OpenProcess(
@@ -433,7 +364,6 @@ void CSysLat_SoftwareDlg::ProcessNameTrim(string& processName, string& activeWin
 	}
 	std::transform(activeWindowTitle.begin(), activeWindowTitle.end(), activeWindowTitle.begin(), [](unsigned char c) { return std::tolower(c); });
 }
-
 BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 {
 	if (pMsg->message == WM_KEYDOWN)
@@ -503,28 +433,34 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 
 	return CDialogEx::PreTranslateMessage(pMsg);
 }
+
 void CSysLat_SoftwareDlg::Refresh()
 {
-	// I'M NOT SURE WHAT THIS CODE IS FOR. I'M SURE I PUT IT HERE WHEN I WAS ATTEMPTING TO GET DARK MODE WORKING
-	//CHARFORMAT cf;
-	//cf.dwEffects &= ~CFE_AUTOCOLOR;
-	//cf.cbSize = sizeof(CHARFORMAT);
-	//m_richEditCtrl.GetSelectionCharFormat(cf);
-	//cf.dwMask = CFM_COLOR | CFM_BOLD;
-	//cf.dwEffects = CFE_BOLD;
-	//cf.crTextColor = RGB(255, 0, 0);
-	//m_richEditCtrl.SetSelectionCharFormat(cf);
-	//m_richEditCtrl.Invalidate();
+	//Had to add this section because it was initializing fine in debug mode, but then initializing COMPortCount too fast in release mode??? Probably some stupid issue with my debug macros...
+	CMenu* MainMenu = GetMenu();
+	CMenu* SettingsMenu = MainMenu->GetSubMenu(1);
+	CMenu* ComPortMenu = SettingsMenu->GetSubMenu(0);
+	char menuCString[256];
+	MainMenu->GetMenuString(ID_USBPORT_PLACEHOLDER, (LPSTR)menuCString, 256, (UINT)MF_BYCOMMAND);
+	
+	if (strcmp(menuCString, "Placeholder") == 0) {
+		COMPortCount = 0;
+	}
 
-	//if (m_bConnected) {//m_bConnected is never set to true??
+	CUSBController usbController;
+	usbController.EnumSerialPorts(COMPortInfo, FALSE);
+	if (COMPortInfo.GetSize() != COMPortCount) {
+		R_DynamicComPortMenu();
+	}
+
+	if (m_bConnected) {//m_bConnected is never set to true??
 		DWORD AppArraySize = CRTSSClient::GetAppArray();
 		if (m_AppArraySize != AppArraySize) {
 			R_DynamicAppMenu();
 			m_AppArraySize = AppArraySize;
-			DEBUG_PRINT(("AppArraySize: " + to_string(AppArraySize)).c_str())
-			
+			DEBUG_PRINT("AppArraySize: " + to_string(AppArraySize))
 		}
-	//}
+	}
 
 	if (!(CRTSSClient::m_profileInterface.IsInitialized())) {
 		CRTSSClient::InitRTSSInterface();
@@ -544,10 +480,10 @@ void CSysLat_SoftwareDlg::Refresh()
 		R_Position();
 		R_ProcessNames();
 	}
-	if (m_bSysLatInOSD) {
-		R_StrOSD();
-	}
-	else if (!m_bSysLatInOSD) { //need to add another condition to make this only happen once so that it will clear whatever exists in the buffer... or maybe use the releaseOSD function properly? IDK
+	
+	R_StrOSD();
+	
+	if (!m_bSysLatInOSD) { //need to add another condition to make this only happen once so that it will clear whatever exists in the buffer... or maybe use the releaseOSD function properly? IDK
 		sysLatStatsClient.UpdateOSD("");
 	}
 
@@ -581,6 +517,11 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
 	int minutes = static_cast<int>(dif) / 60;
 	int seconds = static_cast<int>(dif) % 60;
+
+	if (minutes >= m_sysLatPreferences.m_SysLatOptions.m_maxTestDuration) {
+		ReInitThread();
+	}
+
 	double measurementsPerSecond = m_pOperatingSLD->GetCounter() / dif;
 
 	BOOL success = m_pOperatingSLD->AcquireSLDMutex();		// begin the sync access to fields
@@ -636,13 +577,18 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 
 		if (bResult)
 		{
+			m_strStatus += "\nTarget Window: ";
+			m_strStatus += (m_sysLatPreferences.m_SysLatOptions.m_targetApp).c_str();
+			/*
 			m_strStatus += "\n\nThe following text is being forwarded to OSD:\nFrom SysLat client: " + m_updateString + "\nFrom SysLatStats client: " + strOSD;
 
+			
 			if (m_bFormatTagsSupported)
 				m_strStatus += "\n-Press <F> to toggle OSD text formatting tags";
 
 			if (m_bFormatTagsSupported)
 				m_strStatus += "\n-Press <I> to toggle graphs fill mode";
+			*/
 			//if (bTruncated)
 			//	AppendError("Warning: The text is too long to be displayed in OSD, some info has been truncated!");
 		}
@@ -653,68 +599,77 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 			else
 				AppendError("Error: Failed to connect to RTSS shared memory!\nHints:\n-Press <Space> to start RivaTuner Statistics Server");
 		}
-
-		if (m_sysLatOwnedSlot != 0) {
-			AppendError("The SysLat client is unable to occupy RTSS client slot 0.\nThis may cause issues with the blinking square appearing in the corner.\nTo resolve this error try one of the following:\n\t1. Close other applications that use RTSS(such as MSI Afterburner)\n\t2. Restart RTSS\n\t3. Restart the testing phase(by pressing <F11>).");
+		//TODO: 1-6-21 - I THOUGHT I FREAKING FIXED THIS??
+		if (m_sysLatOwnedSlot != 0) { 
+			//AppendError("The SysLat client is unable to occupy RTSS client slot 0.\nThis may cause issues with the blinking square appearing in the corner.\nTo resolve this error try one of the following:\n\t1. Close other applications that use RTSS(such as MSI Afterburner)\n\t2. Restart RTSS\n\t3. Restart the testing phase(by pressing <F11>).");
 		}
 	}
 }
-
 void CSysLat_SoftwareDlg::R_DynamicComPortMenu()
 {
-	ULONG portNumbers[100];
-	ULONG portsFound;
-	ULONG CommPorts = _WINBASE_::GetCommPorts(portNumbers, 100, &portsFound);
+	CMenu* MainMenu = GetMenu();
+	CMenu* SettingsMenu = MainMenu->GetSubMenu(1);
+	CMenu* ComPortMenu = SettingsMenu->GetSubMenu(0);
 
-
-
-	if (CommPorts == ERROR_SUCCESS) {
-		DEBUG_PRINT("COM Ports retrieved successfully.")
+	if (ComPortMenu)
+	{
+		BOOL appended = false;
+		BOOL deleted = false;
+		COMPortCount = 0;
 		
-		DEBUG_PRINT(("Found " + to_string(portsFound) + " ports.").c_str())
-		
-		for (auto i = 0; i < portsFound; i++) {
-			DEBUG_PRINT(("\t" + to_string(portNumbers[i])).c_str())
-			
+		for(auto i = 0; i < COMPortInfo.GetSize(); i++) {
+			ComPortMenu->DeleteMenu(ID_COMPORT_START + COMPortCount, MF_BYCOMMAND);
+			if (COMPortCount < ID_COMPORT_END - ID_COMPORT_START) {
+				string usb_info = COMPortInfo[i].strFriendlyName;
+				DEBUG_PRINT("Friendly Name: " + usb_info)
+
+				appended = ComPortMenu->AppendMenu(MF_STRING, ID_COMPORT_START + COMPortCount, COMPortInfo[i].strFriendlyName);
+				string menuString = COMPortInfo[i].strFriendlyName;
+				size_t pos = menuString.rfind("(");
+				menuString.replace(0, pos + 1, "");
+				pos = menuString.rfind(")");
+				menuString.replace(pos, menuString.size(), "");
+
+				if (strcmp(menuString.c_str(), m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str()) == 0) {
+					MainMenu->CheckMenuItem(ID_COMPORT_START + COMPortCount, MF_CHECKED);
+				}
+
+				COMPortCount++;
+			}
+			else { //catch or throw errors here maybe?
+				break;
+			}
 		}
+		deleted = ComPortMenu->DeleteMenu(ID_USBPORT_PLACEHOLDER, MF_BYCOMMAND);
+
+		DEBUG_PRINT(("String appended: " + to_string(appended)).c_str())
+		DEBUG_PRINT(("Placeholder deleted: " + to_string(deleted)).c_str())
+
 	}
-	else if (CommPorts == ERROR_MORE_DATA) {
-		DEBUG_PRINT("Array to small to retrieve all port numbers.")
-		
-	}
-	else if (CommPorts == ERROR_FILE_NOT_FOUND) {
-		DEBUG_PRINT("No COM ports found.")
-		
-	}
-	else {
-		DEBUG_PRINT("CommPorts function not equal to any of the standard error codes...")
-		
-	}
+	DrawMenuBar();
 
 }
-
 void CSysLat_SoftwareDlg::R_DynamicAppMenu()
 {
 	CMenu* MainMenu = GetMenu();
 	CMenu* SettingsMenu = MainMenu->GetSubMenu(1);
-	CMenu* TargetAppMenu = SettingsMenu->GetSubMenu(5);
+	CMenu* TargetAppMenu = SettingsMenu->GetSubMenu(1);
 	
 	if (TargetAppMenu)
 	{
 		BOOL appended = false;
 		BOOL deleted = false;
 		int count = 0;
-		for (auto const& [pid, pName] : CRTSSClient::m_mapRTSSApps) {
-			//Adding any of the 3 statements below to the conditional below made it not work at all???
-			//&& pid > 0
-			//&& pid != 0 //IF THIS MAKES IT FAIL EVERY TIME, PID IS ALWAYS EVALUATING TO 0???? BUT IT SHOWS THE PROCESS ID CORRECTLY ALL THE TIME???
-			//&& static_cast<unsigned int>(pid) > 0
-			//&& to_string(pid) != "0" //OMG THIS DOESN'T WORK EITHER???
-			//I ended up having to create a seperate if statement for it for some reason????
+		for (auto const& [pid, pName] : CRTSSClient::m_vszAppArr) {
+			SettingsMenu->DeleteMenu(ID_RTSSAPP_START + count, MF_BYCOMMAND); 
 			if (count < ID_RTSSAPP_END - ID_RTSSAPP_START) {
-				if (pName != "SysLat_Software") { //pid != 0 &&  - this was a part of this conditional, but it changes all of the time?? At one point DotA showed PID 0??
+				if (pName != "SysLat_Software") {
 					string id_name =  pName + " (" + to_string(pid) + ")";
 					appended = TargetAppMenu->AppendMenu(MF_STRING, ID_RTSSAPP_START + count, id_name.c_str());
+
+					if (strcmp(pName.c_str(), m_sysLatPreferences.m_SysLatOptions.m_targetApp.c_str()) == 0) {
+						MainMenu->CheckMenuItem(ID_RTSSAPP_START + count, MF_CHECKED);
+					}
 					count++;
 				}
 			}
@@ -723,23 +678,18 @@ void CSysLat_SoftwareDlg::R_DynamicAppMenu()
 			}
 		}
 		deleted = TargetAppMenu->DeleteMenu(ID_TARGETWINDOW_PLACEHOLDER, MF_BYCOMMAND);
-		
+
 		DEBUG_PRINT(("String appended: " + to_string(appended)).c_str())
-		
 		DEBUG_PRINT(("Placeholder deleted: " + to_string(deleted)).c_str())
-		
 	}
 	DrawMenuBar();
 }
-
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
 {
 	m_strError.Append("\n");
 	m_strError.Append(error);
 	m_strError.Append("\n");
 }
-
-
 
 //SysLat thread functions
 void CSysLat_SoftwareDlg::ReInitThread() {
@@ -752,8 +702,10 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 	WaitForSingleObjectEx(drawingThreadHandle, INFINITE, false); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
 //} while (waitForThread != WAIT_OBJECT_0);
 //CloseHandle(drawingThreadHandle);
+	m_pOperatingSLD->m_targetApp = m_sysLatPreferences.m_SysLatOptions.m_targetApp;
 
 	m_pOperatingSLD->SetEndTime();
+	
 	m_loopSize = 0xFFFFFFFF;
 
 	//resets the timer 
@@ -836,23 +788,18 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 		HWND hWnd = _WINUSER_::GetForegroundWindow();
 		DWORD PID;
 		GetWindowThreadProcessId(hWnd, &PID);
-		/*DEBUG_PRINT(("Current foregound PID: " + to_string(PID)).c_str())
-		*/
+		//DEBUG_PRINT("Current foregound PID: " + to_string(PID))
+		
 		DWORD RTSS_Pid = CRTSSClient::GetLastForegroundAppID();
-		//DEBUG_PRINT(("RTSS foregound PID: " + to_string(RTSS_Pid)).c_str())
-		//
-		//	if (PID == RTSS_Pid) {
-		//		DEBUG_PRINT("SUCCESS")
-		//	}
-		//	else {
-		//		DEBUG_PRINT("FAIL")
-		//	}
-		//
-
+		/*DEBUG_PRINT("RTSS foregound PID: " + to_string(RTSS_Pid))
+		if (PID == RTSS_Pid) {
+			DEBUG_PRINT("SUCCESS")
+		}
+		else {
+			DEBUG_PRINT("FAIL")
+		}*/
+		
 		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults, processName, activeWindowTitle, PID, RTSS_Pid);
-
-
-
 	}
 
 	usbController.CloseComPort(hPort);
@@ -963,90 +910,35 @@ void CSysLat_SoftwareDlg::UploadData()
 }
 
 //Settings - need to look into GetCommPorts function to enumerate COM ports https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getcommports
-void CSysLat_SoftwareDlg::SetPortCom1()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM1";
-}
-void CSysLat_SoftwareDlg::SetPortCom2()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM2";
-}
-void CSysLat_SoftwareDlg::SetPortCom3()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM3";
-}
-void CSysLat_SoftwareDlg::SetPortCom4()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM4";
-}
-void CSysLat_SoftwareDlg::SetPortCom5()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM5";
-}
-void CSysLat_SoftwareDlg::SetPortCom6()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM6";
-}
-void CSysLat_SoftwareDlg::SetPortCom7()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM7";
-}
-void CSysLat_SoftwareDlg::SetPortCom8()
-{
-	CMenu* settingsMenu = ResetPortsMenuItems();
-	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_CHECKED);
-	m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM8";
-}
-CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
-{
-	CMenu* settingsMenu = GetMenu();
-	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM2, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM3, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM4, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM5, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM6, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM7, MF_UNCHECKED);
-	settingsMenu->CheckMenuItem(ID_PORT_COM8, MF_UNCHECKED);
-	ReInitThread();
-	return settingsMenu;
-}
-
-//not yet in use
 void CSysLat_SoftwareDlg::OnComPortChanged(UINT nID)
 {
-	int nButton = nID - ID_RTSSAPP_START;
+	int nButton = nID - ID_COMPORT_START;
 	ASSERT(nButton >= 0 && nButton < 100);
 
 	CMenu* MainMenu = GetMenu();
 
 	int count = 0;
-	for (auto const& [pid, pName] : CRTSSClient::m_mapRTSSApps) {
+	for (auto i = 0; i < COMPortInfo.GetSize(); i++) {
 		if (count == nButton) {
 			MainMenu->CheckMenuItem(nID, MF_CHECKED);
-			//set USB port from preferences & other vars here...
-			m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM" + to_string(nButton+1);
+
+			char menuCString[256];
+			MainMenu->GetMenuString(nID, (LPSTR)menuCString, 256, (UINT)MF_BYCOMMAND);
+			string menuString = menuCString;
+			size_t pos = menuString.rfind("(");
+			menuString.replace(0, pos + 1, "");
+			pos = menuString.rfind(")");
+			menuString.replace(pos, menuString.size(), "");
+
+			m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = menuString;
 		}
 		else {
-			MainMenu->CheckMenuItem(count + 1000, MF_UNCHECKED);
+			MainMenu->CheckMenuItem(count + ID_COMPORT_START, MF_UNCHECKED);
 		}
 		count++;
 	}
 
+	//1-6-21: getting an error on my machine when going from COM1 to COM4(they are currently 2 different devices) & it's clearly being caused by recreating the thread(and therefore the USB connection)
 	ReInitThread();
 }
 
@@ -1140,10 +1032,17 @@ void CSysLat_SoftwareDlg::OnTargetWindowChanged(UINT nID)
 	CMenu* MainMenu = GetMenu();
 
 	int count = 0;
-	for (auto const& [pid, pName] : CRTSSClient::m_mapRTSSApps) {
+	for (auto const& [pid, pName] : CRTSSClient::m_vszAppArr) {
 		if (count == nButton) {
 			MainMenu->CheckMenuItem(nID, MF_CHECKED);
-			//set jsonSLD something to pid & something else to pName HERE
+
+			char menuCString[256];
+			MainMenu->GetMenuString(nID, (LPSTR)menuCString, 256, (UINT)MF_BYCOMMAND);
+			string menuString = menuCString;
+			size_t pos = menuString.rfind(" ");
+			menuString.replace(pos, menuString.size(), "");
+
+			m_sysLatPreferences.m_SysLatOptions.m_targetApp = menuString;
 		}
 		else {
 			MainMenu->CheckMenuItem(count + 1100, MF_UNCHECKED);
