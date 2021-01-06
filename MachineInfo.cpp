@@ -32,7 +32,6 @@ namespace DX
     }
 }
 
-
 void MachineInfo::SetOSInfo() {
     int osver = 0.0;
 
@@ -53,18 +52,18 @@ void MachineInfo::SetOSInfo() {
     stream <<  osInfo.dwMajorVersion << "." << osInfo.dwMinorVersion  << " Build: " << osInfo.dwBuildNumber;
 
     OSName.append(stream.str());
-    /*
+    
     DEBUG_PRINT("\n")
     DEBUG_PRINT("Major Version: " + osInfo.dwMajorVersion)
     DEBUG_PRINT("Minor Version: " + osInfo.dwMinorVersion)
     DEBUG_PRINT("Build Number: " + osInfo.dwBuildNumber)
-    */
+    
 
 }
 
 void MachineInfo::SetCPUInfo() {
     // 4 is essentially hardcoded due to the __cpuid function requirements.
-// NOTE: Results are limited to whatever the sizeof(int) * 4 is...
+    // NOTE: Results are limited to whatever the sizeof(int) * 4 is...
     std::array<int, 4> integerBuffer = {};
     constexpr size_t sizeofIntegerBuffer = sizeof(int) * integerBuffer.size();
 
@@ -87,20 +86,12 @@ void MachineInfo::SetCPUInfo() {
 
     for (int id : functionIds)
     {
-        // Get the data for the current ID.
         __cpuid(integerBuffer.data(), id);
-
-        // Copy the raw data from the integer buffer into the character buffer
         std::memcpy(charBuffer.data(), integerBuffer.data(), sizeofIntegerBuffer);
-
-        // Copy that data into a string
         CPU += string(charBuffer.data());
     }
 
 }
-
-
-
 
 void MachineInfo::SetVideoCardInfo() {
     ComPtr<IDXGIFactory1> dxgiFactory;
@@ -133,7 +124,6 @@ void MachineInfo::SetVideoCardInfo() {
         // desc.Description: name string seen above
     }
 }
-
 
 void MachineInfo::SetMOBOInfo() {
     std::wstring regSubKey;
@@ -210,7 +200,6 @@ void MachineInfo::ExportData(string path) {
 
     exportData.close();
 }
-
 
 std::wstring MachineInfo::GetStringValueFromHKLM(const std::wstring& regSubKey, const std::wstring& regValue)
 {

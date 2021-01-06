@@ -590,7 +590,12 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
 	m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
 	m_strStatus.AppendFormat("\nLoop Counter : %d", m_pOperatingSLD->GetCounter());
-	m_strStatus.AppendFormat("\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
+	if (isnan(measurementsPerSecond)) {
+		m_strStatus.AppendFormat("\nMeasurements Per Second: 0.00");
+	}
+	else {
+		m_strStatus.AppendFormat("\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
+	}
 	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
 	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_pOperatingSLD->GetCounterEVR());
 	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());

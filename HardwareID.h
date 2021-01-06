@@ -1,6 +1,6 @@
 #pragma once
-//   I could've sworn I was still using these?????
 
+#include "StdAfx.h"
 
 #define MAX_NAME 256
 
@@ -14,7 +14,7 @@ class HardwareID
     DWORD               userNameSize;
     char                computerName[UNLEN + 1] = { 0 };
     DWORD               computerNameSize;
-    HW_PROFILE_INFOA	hwProfileInfo{ 0 };
+    HW_PROFILE_INFO 	hwProfileInfo{ 0 };
     char*               m_pMac;
 
     //all of the following are used for the SID
@@ -37,7 +37,7 @@ public:
     //HardwareID() : m_pMac("") {};
     HardwareID() {
         GetUserAndComputerName();
-        ::GetCurrentHwProfileA(&hwProfileInfo);
+        ::GetCurrentHwProfile(&hwProfileInfo);
         m_pMac = GetMAC();
         GetMachineSID();
         CreateJSON();
