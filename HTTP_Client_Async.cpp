@@ -1,10 +1,5 @@
 #include "stdafx.h"
 #include "HTTP_Client_Async.h"
-#include <fstream>
-#include<iostream>
-#include <string>
-#include <debugapi.h>
-
 
 void session::run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version)
 {
@@ -17,12 +12,12 @@ void session::run(Json::Value dataToSend, char const* host, char const* port, ch
     req_.set(beast::http::field::content_type, "application/json");
     
     Json::FastWriter fastWriter;
-    std::string output = fastWriter.write(dataToSend);
+    string output = fastWriter.write(dataToSend);
     req_.body() = output;
 
     std::ostringstream debugOut;
     debugOut << req_ << std::endl;
-    OutputDebugStringA(debugOut.str().c_str());
+    DEBUG_PRINT(debugOut.str().c_str())
     req_.prepare_payload();
 
     // Look up the domain name
@@ -86,11 +81,11 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     if (ec)
         return boostFail(ec, "read");
 
-    // Write the message to standard out - OutputDebugStringA for Windows...
+    // Write the message to standard out - DEBUG_PRINT for Windows...
     //std::cout << res_ << std::endl;
     std::ostringstream debugOut;
     debugOut << res_ << std::endl;
-    OutputDebugStringA(debugOut.str().c_str());
+    DEBUG_PRINT(debugOut.str().c_str())
 
 
     // Gracefully close the socket
@@ -102,4 +97,3 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
 
     // If we get here then the connection is closed gracefully
 }
-

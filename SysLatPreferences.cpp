@@ -1,8 +1,5 @@
-//#include <iostream>
-
 #include "stdafx.h"
 #include "SysLatPreferences.h"
-#include <fstream>
 
 void SysLatPreferences::WritePreferences() {
 	WriteSysLatOptions();

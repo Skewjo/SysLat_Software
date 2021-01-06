@@ -1,16 +1,6 @@
 #include "stdafx.h"
 #include "MachineInfo.h"
-#include<winternl.h>
-#include<sstream>
-#include<fstream>
-#include <intrin.h>
-#include <array>
-#include <exception>
 
-//The following 2 headers are for graphics card info
-#include <wrl/client.h>
-#include <dxgi.h>
-#pragma comment(lib, "DXGI.lib")
 using Microsoft::WRL::ComPtr;
 
 namespace DX
@@ -63,18 +53,12 @@ void MachineInfo::SetOSInfo() {
     stream <<  osInfo.dwMajorVersion << "." << osInfo.dwMinorVersion  << " Build: " << osInfo.dwBuildNumber;
 
     OSName.append(stream.str());
-
-    OutputDebugString("\n");
-    CString MyString;
-    MyString.Format("Major Version: %d", osInfo.dwMajorVersion);
-    OutputDebugString(MyString);
-    OutputDebugString("\n");
-    MyString.Format("Minor Version: %d", osInfo.dwMinorVersion);
-    OutputDebugString(MyString);
-    OutputDebugString("\n");
-    MyString.Format("Build Number: %d", osInfo.dwBuildNumber);
-    OutputDebugString(MyString);
-    OutputDebugString("\n");
+    /*
+    DEBUG_PRINT("\n")
+    DEBUG_PRINT("Major Version: " + osInfo.dwMajorVersion)
+    DEBUG_PRINT("Minor Version: " + osInfo.dwMinorVersion)
+    DEBUG_PRINT("Build Number: " + osInfo.dwBuildNumber)
+    */
 
 }
 
@@ -109,8 +93,8 @@ void MachineInfo::SetCPUInfo() {
         // Copy the raw data from the integer buffer into the character buffer
         std::memcpy(charBuffer.data(), integerBuffer.data(), sizeofIntegerBuffer);
 
-        // Copy that data into a std::string
-        CPU += std::string(charBuffer.data());
+        // Copy that data into a string
+        CPU += string(charBuffer.data());
     }
 
 }
@@ -166,11 +150,13 @@ void MachineInfo::SetMOBOInfo() {
     }
     catch (std::exception& e)
     {
-        OutputDebugString(e.what());
+        DEBUG_PRINT(e.what())
     }
-    OutputDebugString("\nMotherboard info: ");
+    #ifdef _DEBUG
+    DEBUG_PRINT("Motherboard info: ")
     OutputDebugStringW(valueFromRegistry.c_str());
     OutputDebugString("\n");
+    #endif
     
     const int bufferSize = 256;
     char temp[bufferSize];
@@ -192,7 +178,7 @@ void MachineInfo::SetMachineInfo() {
     stream << "  Maximum application address: " << siSysInfo.lpMaximumApplicationAddress << "\n";
     stream << "  Active processor mask: " << siSysInfo.dwActiveProcessorMask << "\n";
 
-    OutputDebugString(stream.str().c_str());
+    DEBUG_PRINT(stream.str())
 
     //CPU.append(stream.str());
 }
@@ -210,7 +196,7 @@ void MachineInfo::CreateJSON() {
 
 }
 
-void MachineInfo::ExportData(std::string path) {
+void MachineInfo::ExportData(string path) {
     std::ofstream exportData;
     exportData.open(path + "\\MachineInfo.json");
 
@@ -219,7 +205,7 @@ void MachineInfo::ExportData(std::string path) {
         dataExported = true;
     }
     else {
-        OutputDebugStringA("\nError exporting machineInfo file.\n");
+        DEBUG_PRINT("Error exporting machineInfo file.")
     }
 
     exportData.close();
@@ -273,6 +259,6 @@ std::wstring MachineInfo::GetStringValueFromHKLM(const std::wstring& regSubKey, 
     }
     else
     {
-        throw std::runtime_error("Windows system error code: " + std::to_string(rc));
+        throw std::runtime_error("Windows system error code: " + to_string(rc));
     }
 }

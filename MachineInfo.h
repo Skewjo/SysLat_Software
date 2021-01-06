@@ -1,8 +1,4 @@
 #pragma once
-#include <windows.h>
-#include <stdio.h>
-#pragma comment(lib, "user32.lib")
-#include<json/json.h>
 
 class MachineInfo
 {
@@ -10,22 +6,22 @@ class MachineInfo
 
     SYSTEM_INFO siSysInfo;
     
-    std::string OEMID;
-    std::string OSName = "Windows ";
+    string OEMID;
+    string OSName = "Windows ";
 
-    std::string CPU;
-    std::string Videocard;
-    std::string Drive;
-    std::string Memory;
-    std::string Motherboard;
+    string CPU;
+    string Videocard;
+    string Drive;
+    string Memory;
+    string Motherboard;
 
 
 
     void    SetOSInfo();
     void    SetCPUInfo();
     void    SetVideoCardInfo();
-    //std::string Drive;
-    //std::string Memory;
+    //string Drive;
+    //string Memory;
     void    SetMOBOInfo();
 
     //THIS FUNCTION IS UNUSED ATM - IT'S KIND OF WORTHLESS
@@ -45,7 +41,7 @@ public:
 
         CreateJSON();
     }
-    void            ExportData(std::string path = ".\\SysLat_Logs");
+    void            ExportData(string path = ".\\SysLat_Logs");
 
     Json::Value     MachineInfoJSON;
 };

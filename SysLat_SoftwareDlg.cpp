@@ -5,33 +5,15 @@
 /////////////////////////////////////////////////////////////////////////////
 
 #include "stdafx.h"
-#include <Windows.h>
-#include <process.h>
-#include <shlwapi.h>
-#include <float.h>
-#include <io.h>
-#include <sstream>
-#include <algorithm>
-#include <uuids.h>
-#include <Psapi.h>
-#include <winternl.h>
-#include <fstream>
-
-/////////////////////////////////////////////////////////////////////////////
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
 #include "USBController.h"
 #include "HTTP_Client_Async.h"
 #include "HTTP_Client_Async_SSL.h"
 #include "SysLatPreferences.h"
-
-//Child dialog boxes
 #include "AboutDlg.h"
 #include "PreferencesDlg.h"
 #include "TestCtrl.h" //this one should probably have a suffix of "dlg"...
-
-//stupid macro for outputting a debug line because I wanted to try out macros and I didn't know where a wrapper function for the "OutPutDebugString" function would belong.
-#define	DBL OutputDebugString("\n");
 
 //TODO:
 // Transfer TODO to GitHub Issues...
@@ -127,6 +109,10 @@
 //
 //////////////////////////////////////////////////////////////////////////////////////////////
 
+const int ID_COMPORT_START = 2000;
+const int ID_COMPORT_END = 2099;
+const int ID_RTSSAPP_START = 2100;
+const int ID_RTSSAPP_END = 2199;
 
 /// 
 #ifdef _DEBUG
@@ -208,6 +194,8 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_COMMAND(ID_TOOLS_NEWTEST, CSysLat_SoftwareDlg::ReInitThread)
 	ON_COMMAND(ID_SETTINGS_PREFERENCES, CSysLat_SoftwareDlg::OpenPreferences)
 	ON_COMMAND(ID_TOOLS_TESTCONTROL, CSysLat_SoftwareDlg::OpenTestCtrl)
+	ON_COMMAND_RANGE(ID_COMPORT_START, ID_COMPORT_END, CSysLat_SoftwareDlg::OnComPortChanged)
+	ON_COMMAND_RANGE(ID_RTSSAPP_START, ID_RTSSAPP_END, CSysLat_SoftwareDlg::OnTargetWindowChanged)
 	//ON_WM_CTLCOLOR()
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
@@ -277,8 +265,11 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	m_hardwareID.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
 	m_machineInfo.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
 	
-
-
+	//////////////////////////////////////////////////////////////////////////////////
+	//move this soon
+	R_DynamicComPortMenu();
+	//////////////////////////////////////////////////////////////////////////////////
+	
 	//There has GOT to be a better way for me to do this.
 	CMenu* settingsMenu = GetMenu();
 	settingsMenu->CheckMenuItem(ID_PORT_COM1, MF_UNCHECKED);
@@ -394,8 +385,8 @@ void CSysLat_SoftwareDlg::OnDestroy()
 }
 
 //Skewjo's Dialog functions
-std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
-	std::string ret;
+string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
+	string ret;
 	HANDLE Handle = OpenProcess(
 		PROCESS_QUERY_LIMITED_INFORMATION,
 		FALSE,
@@ -421,23 +412,23 @@ std::string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
 	}
 	return ret;
 }
-std::string CSysLat_SoftwareDlg::GetActiveWindowTitle()
+string CSysLat_SoftwareDlg::GetActiveWindowTitle()
 {
 	char wnd_title[256];
 	CWnd* pWnd = GetForegroundWindow();
 	::GetWindowText((HWND)*pWnd, wnd_title, 256); //Had to use scope resolution because this function is defined in both WinUser.h and afxwin.h
 	return wnd_title;
 }
-void CSysLat_SoftwareDlg::ProcessNameTrim(std::string& processName, std::string& activeWindowTitle){
+void CSysLat_SoftwareDlg::ProcessNameTrim(string& processName, string& activeWindowTitle){
 	size_t pos = processName.find(".exe");
-	if (pos != std::string::npos) {
+	if (pos != string::npos) {
 		processName.replace(pos, processName.size(), "");
 	}
-	while ((pos = processName.find(" ")) != std::string::npos) {
+	while ((pos = processName.find(" ")) != string::npos) {
 		processName.replace(pos, 1, "");
 	}
 	std::transform(processName.begin(), processName.end(), processName.begin(), [](unsigned char c) { return std::tolower(c); });
-	while ((pos = activeWindowTitle.find(" ")) != std::string::npos) {
+	while ((pos = activeWindowTitle.find(" ")) != string::npos) {
 		activeWindowTitle.replace(pos, 1, "");
 	}
 	std::transform(activeWindowTitle.begin(), activeWindowTitle.end(), activeWindowTitle.begin(), [](unsigned char c) { return std::tolower(c); });
@@ -530,8 +521,8 @@ void CSysLat_SoftwareDlg::Refresh()
 		if (m_AppArraySize != AppArraySize) {
 			R_DynamicAppMenu();
 			m_AppArraySize = AppArraySize;
-			OutputDebugString(("AppArraySize: " + std::to_string(AppArraySize)).c_str());
-			DBL
+			DEBUG_PRINT(("AppArraySize: " + to_string(AppArraySize)).c_str())
+			
 		}
 	//}
 
@@ -617,10 +608,10 @@ void CSysLat_SoftwareDlg::R_Position() {
 void CSysLat_SoftwareDlg::R_ProcessNames() {
 	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
 	m_strStatus.Append("\n\nLast RTSS Foreground App Name: ");
-	std::string processName = GetProcessNameFromPID(dwLastForegroundAppProcessID);
+	string processName = GetProcessNameFromPID(dwLastForegroundAppProcessID);
 	m_strStatus += processName.c_str();
 	m_strStatus.Append("\nCurrently active window: ");
-	std::string activeWindowTitle = GetActiveWindowTitle();
+	string activeWindowTitle = GetActiveWindowTitle();
 	m_strStatus += activeWindowTitle.c_str();
 	ProcessNameTrim(processName, activeWindowTitle);
 	m_strStatus.Append("\nTrimmed:");
@@ -664,15 +655,38 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 	}
 }
 
-//Need to use "ON_COMMAND_RANGE" or something for these...
-#define ID_RTSSAPP0 14000
-#define ID_RTSSAPP1 14001
-#define ID_RTSSAPP2 14002
-#define ID_RTSSAPP3 14003
-#define ID_RTSSAPP4 14004
-#define ID_RTSSAPP5 14005
-#define ID_RTSSAPP6 14006
-#define ID_RTSSAPP7 14007
+void CSysLat_SoftwareDlg::R_DynamicComPortMenu()
+{
+	ULONG portNumbers[100];
+	ULONG portsFound;
+	ULONG CommPorts = _WINBASE_::GetCommPorts(portNumbers, 100, &portsFound);
+
+
+
+	if (CommPorts == ERROR_SUCCESS) {
+		DEBUG_PRINT("COM Ports retrieved successfully.")
+		
+		DEBUG_PRINT(("Found " + to_string(portsFound) + " ports.").c_str())
+		
+		for (auto i = 0; i < portsFound; i++) {
+			DEBUG_PRINT(("\t" + to_string(portNumbers[i])).c_str())
+			
+		}
+	}
+	else if (CommPorts == ERROR_MORE_DATA) {
+		DEBUG_PRINT("Array to small to retrieve all port numbers.")
+		
+	}
+	else if (CommPorts == ERROR_FILE_NOT_FOUND) {
+		DEBUG_PRINT("No COM ports found.")
+		
+	}
+	else {
+		DEBUG_PRINT("CommPorts function not equal to any of the standard error codes...")
+		
+	}
+
+}
 
 void CSysLat_SoftwareDlg::R_DynamicAppMenu()
 {
@@ -684,20 +698,33 @@ void CSysLat_SoftwareDlg::R_DynamicAppMenu()
 	{
 		BOOL appended = false;
 		BOOL deleted = false;
-
-		//having 8 in the following loop is dangerous if I'm not checking m_vszAppArr[i]
-		for (auto i = 0; i < 8 && CRTSSClient::m_vszAppArr.size(); i++)
-		{
-			appended = TargetAppMenu->AppendMenu(MF_STRING, 14000+i, CRTSSClient::m_vszAppArr[i].c_str());
+		int count = 0;
+		for (auto const& [pid, pName] : CRTSSClient::m_mapRTSSApps) {
+			//Adding any of the 3 statements below to the conditional below made it not work at all???
+			//&& pid > 0
+			//&& pid != 0 //IF THIS MAKES IT FAIL EVERY TIME, PID IS ALWAYS EVALUATING TO 0???? BUT IT SHOWS THE PROCESS ID CORRECTLY ALL THE TIME???
+			//&& static_cast<unsigned int>(pid) > 0
+			//&& to_string(pid) != "0" //OMG THIS DOESN'T WORK EITHER???
+			//I ended up having to create a seperate if statement for it for some reason????
+			if (count < ID_RTSSAPP_END - ID_RTSSAPP_START) {
+				if (pName != "SysLat_Software") { //pid != 0 &&  - this was a part of this conditional, but it changes all of the time?? At one point DotA showed PID 0??
+					string id_name =  pName + " (" + to_string(pid) + ")";
+					appended = TargetAppMenu->AppendMenu(MF_STRING, ID_RTSSAPP_START + count, id_name.c_str());
+					count++;
+				}
+			}
+			else { //error here?
+				break;
+			}
 		}
 		deleted = TargetAppMenu->DeleteMenu(ID_TARGETWINDOW_PLACEHOLDER, MF_BYCOMMAND);
 		
-		OutputDebugString(("String appended: " + std::to_string(appended)).c_str());
-		DBL
-		OutputDebugString(("Placeholder deleted: " + std::to_string(deleted)).c_str());
-		DBL
+		DEBUG_PRINT(("String appended: " + to_string(appended)).c_str())
+		
+		DEBUG_PRINT(("Placeholder deleted: " + to_string(deleted)).c_str())
+		
 	}
-	//DrawMenuBar();
+	DrawMenuBar();
 }
 
 void CSysLat_SoftwareDlg::AppendError(const CString& error)
@@ -745,10 +772,6 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 		UploadData();
 	}
 }
-
-
-//move this later maybe?
-//#include<WinUser.h>
 unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //this is probably dangerous, right?
 {
 	int TIMEOUT = 5; //this should probably be a defined constant
@@ -791,8 +814,8 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 
 		//I think everything below(ESPECIALLY the "UpdateSLD" method) should be happening in a different thread so that the serial reads can continue uninterrupted - could the following be a coroutine?
 		// 1-3-2021 thinking on this more, I need the following work to be "queued" up for the main thread... Not sure what the best way to accomplish that is.
-		std::string processName = GetProcessNameFromPID(CRTSSClient::GetLastForegroundAppID());
-		std::string activeWindowTitle;
+		string processName = GetProcessNameFromPID(CRTSSClient::GetLastForegroundAppID());
+		string activeWindowTitle;
 		if (loopCounter < m_loopSize) { //this was for a really strange issue when trying to end the thread.
 			activeWindowTitle = GetActiveWindowTitle();
 		}
@@ -808,18 +831,18 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 		HWND hWnd = _WINUSER_::GetForegroundWindow();
 		DWORD PID;
 		GetWindowThreadProcessId(hWnd, &PID);
-		/*OutputDebugString(("Current foregound PID: " + std::to_string(PID)).c_str());
-		DBL*/
+		/*DEBUG_PRINT(("Current foregound PID: " + to_string(PID)).c_str())
+		*/
 		DWORD RTSS_Pid = CRTSSClient::GetLastForegroundAppID();
-		//OutputDebugString(("RTSS foregound PID: " + std::to_string(RTSS_Pid)).c_str());
-		//DBL
+		//DEBUG_PRINT(("RTSS foregound PID: " + to_string(RTSS_Pid)).c_str())
+		//
 		//	if (PID == RTSS_Pid) {
-		//		OutputDebugString("SUCCESS");
+		//		DEBUG_PRINT("SUCCESS")
 		//	}
 		//	else {
-		//		OutputDebugString("FAIL");
+		//		DEBUG_PRINT("FAIL")
 		//	}
-		//DBL
+		//
 
 		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults, processName, activeWindowTitle, PID, RTSS_Pid);
 
@@ -832,7 +855,6 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 
 	return 0;
 }
-
 void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorString)
 {
 	m_updateString = "";
@@ -884,7 +906,7 @@ void CSysLat_SoftwareDlg::ExportData()
 			}
 
 			//else {
-			//	std::string error = "Data from test " + std::to_string(i) + " already exported."; //this error message is garbage in every way
+			//	string error = "Data from test " + to_string(i) + " already exported."; //this error message is garbage in every way
 			//	AppendError(error.c_str());
 			//}
 
@@ -923,7 +945,7 @@ void CSysLat_SoftwareDlg::UploadData()
 			}
 
 			/*else {
-				std::string error = "Data from test " + std::to_string(i) + " already uploaded.";
+				string error = "Data from test " + to_string(i) + " already uploaded.";
 				AppendError(error.c_str());
 			}*/
 
@@ -999,6 +1021,32 @@ CMenu* CSysLat_SoftwareDlg::ResetPortsMenuItems()
 	return settingsMenu;
 }
 
+//not yet in use
+void CSysLat_SoftwareDlg::OnComPortChanged(UINT nID)
+{
+	int nButton = nID - ID_RTSSAPP_START;
+	ASSERT(nButton >= 0 && nButton < 100);
+
+	CMenu* MainMenu = GetMenu();
+
+	int count = 0;
+	for (auto const& [pid, pName] : CRTSSClient::m_mapRTSSApps) {
+		if (count == nButton) {
+			MainMenu->CheckMenuItem(nID, MF_CHECKED);
+			//set USB port from preferences & other vars here...
+			m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = "COM" + to_string(nButton+1);
+		}
+		else {
+			MainMenu->CheckMenuItem(count + 1000, MF_UNCHECKED);
+		}
+		count++;
+	}
+
+	ReInitThread();
+}
+
+
+
 void CSysLat_SoftwareDlg::DebugMode() {
 	CMenu* settingsMenu = GetMenu();
 	if (m_bDebugMode) {
@@ -1033,12 +1081,10 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 		m_bSysLatInOSD = true;
 	}
 }
-
 void CSysLat_SoftwareDlg::OpenPreferences() {
 	PreferencesDlg preferencesDlg(&m_sysLatPreferences);
 	preferencesDlg.DoModal();
 }
-
 void CSysLat_SoftwareDlg::OpenTestCtrl() {
 	TestCtrl testCtrl(&m_previousSLD);
 	testCtrl.DoModal();
@@ -1066,6 +1112,7 @@ HBRUSH CSysLat_SoftwareDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 	return m_brush;
 }
 
+//This is a duplicate function that was only used for testing, but I think it needs to be moved here so I left it for now...
 void CSysLat_SoftwareDlg::ExportData(Json::Value stuffToExport) {
 	std::ofstream exportData;
 	exportData.open("./logs/exportSLD.json");
@@ -1074,8 +1121,28 @@ void CSysLat_SoftwareDlg::ExportData(Json::Value stuffToExport) {
 		exportData << stuffToExport;
 	}
 	else {
-		OutputDebugStringA("\nError exporting JSON SLD file.\n");
+		DEBUG_PRINT("\nError exporting JSON SLD file.\n")
 	}
 
 	exportData.close();
+}
+
+void CSysLat_SoftwareDlg::OnTargetWindowChanged(UINT nID)
+{
+	int nButton = nID - ID_RTSSAPP_START;
+	ASSERT(nButton >= 0 && nButton < 100);
+
+	CMenu* MainMenu = GetMenu();
+
+	int count = 0;
+	for (auto const& [pid, pName] : CRTSSClient::m_mapRTSSApps) {
+		if (count == nButton) {
+			MainMenu->CheckMenuItem(nID, MF_CHECKED);
+			//set jsonSLD something to pid & something else to pName HERE
+		}
+		else {
+			MainMenu->CheckMenuItem(count + 1100, MF_UNCHECKED);
+		}
+		count++;
+	}
 }

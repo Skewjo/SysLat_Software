@@ -1,13 +1,11 @@
 #pragma once
-#include <json/json.h>
-
 // 12-28-2020
 // The default values in the following 4 structures get overwritten when ReadPreferences() is called
 struct SysLatOptions {
-	std::string					m_PortSpecifier = "COM3";
+	string					m_PortSpecifier = "COM3";
 	time_t						m_maxTestDuration = 0;
 	int							m_maxLogs = 10;
-	std::string					m_LogDir = ".\\";
+	string					m_LogDir = ".\\";
 	bool						m_bDarkMode = false;
 };
 
@@ -38,7 +36,7 @@ struct RTSSOptions {
 class SysLatPreferences
 {
 
-	//TestCtrl::TestCtrl(std::vector<CSysLatData*>* p_previousSLD, CWnd* pParent /*=nullptr*/)
+	//TestCtrl::TestCtrl(vector<CSysLatData*>* p_previousSLD, CWnd* pParent /*=nullptr*/)
 	//	: CDialogEx(IDD_TESTCTRL_DIALOG, pParent), m_pPreviousSLD(p_previousSLD)
 	//{
 	//}

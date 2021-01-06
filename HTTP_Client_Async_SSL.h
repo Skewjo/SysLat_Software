@@ -23,13 +23,7 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio/strand.hpp>
-#include <cstdlib>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <string>
-#include <json/json.h>
-
+#include "StdAfx.h"
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
@@ -42,9 +36,9 @@ using tcp = boost::asio::ip::tcp;       // from <boost/asio/ip/tcp.hpp>
 inline void boostFail_secure(beast::error_code ec, char const* what)
 {
     //std::cerr << what << ": " << ec.message() << "\n";
-    std::string error = what;
+    string error = what;
     error += ": " + ec.message() + "\n";
-    OutputDebugStringA(error.c_str());
+    DEBUG_PRINT(error.c_str())
 }
 
 
@@ -83,7 +77,7 @@ inline void load_root_certificates(ssl::context& ctx)
 {
     boost::system::error_code ec;
 
-    std::string const cert =
+    string const cert =
         "-----BEGIN CERTIFICATE-----\n"
         "MIIDSjCCAjKgAwIBAgIQRK+wgNajJ7qJMDmGLvhAazANBgkqhkiG9w0BAQUFADA/\n"
         "MSQwIgYDVQQKExtEaWdpdGFsIFNpZ25hdHVyZSBUcnVzdCBDby4xFzAVBgNVBAMT\n"

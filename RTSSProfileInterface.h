@@ -1,8 +1,9 @@
+#pragma once
 // RTSSProfileInterface.h : implementation file
 //
 // created by Unwinder
 /////////////////////////////////////////////////////////////////////////////
-#pragma once
+
 /////////////////////////////////////////////////////////////////////////////
 typedef DWORD	(*PFNENUMPROFILES		)(LPSTR lpProfilesList, DWORD dwProfilesListSize);
 typedef void	(*PFNLOADPROFILE		)(LPCSTR lpProfile);

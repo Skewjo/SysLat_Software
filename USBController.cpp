@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "USBController.h"
+
 HANDLE CUSBController::OpenComPort(const CString& PortSpecifier)
 {
 	HANDLE hPort = CreateFile(PortSpecifier, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
@@ -30,15 +31,18 @@ HANDLE CUSBController::OpenComPort(const CString& PortSpecifier)
 
 	return hPort;
 }
+
 void CUSBController::CloseComPort(HANDLE hPort)
 {
 	PurgeComm(hPort, PURGE_RXCLEAR);
 	CloseHandle(hPort);
 }
+
 bool CUSBController::IsComPortOpened(HANDLE hPort)
 {
 	return hPort != INVALID_HANDLE_VALUE;
 }
+
 int CUSBController::ReadByte(HANDLE hPort)
 {
 	int retVal;

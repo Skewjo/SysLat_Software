@@ -18,19 +18,13 @@
 //
 //------------------------------------------------------------------------------
 
+
 #include <boost/beast/core.hpp>
 #include <boost/beast/http.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/asio/strand.hpp>
-#include <cstdlib>
-#include <functional>
-#include <iostream>
-#include <memory>
-#include <string>
+#include "StdAfx.h"
 #include "SysLatData.h"
-
-
-
 
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
@@ -44,9 +38,9 @@ inline void
 boostFail(beast::error_code ec, char const* what)
 {
     //std::cerr << what << ": " << ec.message() << "\n";
-    std::string error = what;
+    string error = what;
     error += ": " + ec.message() + "\n";
-    OutputDebugStringA(error.c_str());
+    DEBUG_PRINT(error)
 }
 
 

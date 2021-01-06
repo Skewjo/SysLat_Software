@@ -1,9 +1,7 @@
 #pragma once
 #ifndef RTSSCLIENT_H
 #define RTSSCLIENT_H
-#include <map>
-#include <vector>
-#include <string>
+
 #include "GroupedString.h"
 #include "RTSSProfileInterface.h"
 
@@ -24,11 +22,10 @@ public:
 	static CRTSSProfileInterface	m_profileInterface;
 	static CString					m_strInstallPath;
 	static DWORD					dwAppEntries;	
-	static std::vector<std::string>	m_vszAppArr;
-	static std::vector<DWORD>		m_vszAppPIDArr;
-
+	static vector<string>			m_vszAppArr;
+	static vector<DWORD>			m_vszAppPIDArr;
 	//to replace the 2 vectors above
-	static std::map<DWORD, std::string> m_mapRTSSApps;
+	static map<DWORD, string> m_mapRTSSApps;
 
 	
 	CRTSSClient(const char* setSlotOwner = "RTSSSharedMemorySample", int setClientPriority = 1);

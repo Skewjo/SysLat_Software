@@ -2,7 +2,6 @@
 
 #include "StdAfx.h"
 #include "resource.h"
-#include "afxdialogex.h"
 #include "SysLatPreferences.h"
 // PreferencesDlg dialog
 

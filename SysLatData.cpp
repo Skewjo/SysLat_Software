@@ -1,8 +1,6 @@
-#include "stdafx.h"
+#include "StdAfx.h"
 #include "SysLatData.h"
-#include<fstream>
-#include<filesystem>
-#include<regex>
+
 
 CSysLatData::CSysLatData() {
 	//sld = { 0 }; //this does not 0 out the values in the "m_allResults" array...also, I can't initialize a struct this way when it contains a vector??
@@ -58,7 +56,7 @@ void CSysLatData::SetEndTime() {
 	ctime_s(m_endDate, sizeof(m_endDate), &m_endTime);
 }
 
-void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow, DWORD fgPID, DWORD rtssPID)
+void CSysLatData::UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, string RTSSWindow, string activeWindow, DWORD fgPID, DWORD rtssPID)
 {
 	BOOL success = AcquireSLDMutex();		// begin the sync access to fields
 	if (!success)
@@ -200,13 +198,13 @@ void CSysLatData::CreateJSONSLD() {
 	jsonSLD["SysLatData"]["ActiveWindow"] = activeArray;
 }
 
-void CSysLatData::ExportData(int testNumber, std::string path, int totalLogs) {
+void CSysLatData::ExportData(int testNumber, string path, int totalLogs) {
 	std::ofstream exportData;
 
-	std::string startDateUTC = asctime(startTimeUTC);
+	string startDateUTC = asctime(startTimeUTC);
 
 	//COUNT NUMBER OF LOGS HERE
-	//std::string path = "/path/to/directory";
+	//string path = "/path/to/directory";
 	int count = 0;
 	std::filesystem::directory_entry oldest_file;
 	std::regex rx("SL_Log_.*");
@@ -224,9 +222,8 @@ void CSysLatData::ExportData(int testNumber, std::string path, int totalLogs) {
 		}
 	}
 	
-	OutputDebugString("\nTotalLogs: ");
-	OutputDebugString(std::to_string(totalLogs).c_str());
-	OutputDebugString("\n");
+	DEBUG_PRINT("TotalLogs: " + to_string(totalLogs))
+
 	//TODO delete more than 1 at a time
 	if (count > totalLogs && oldest_file.exists()) {
 		std::filesystem::remove(oldest_file);
@@ -234,7 +231,7 @@ void CSysLatData::ExportData(int testNumber, std::string path, int totalLogs) {
 
 	//TODO add date to file name
 	//+startDateUTC + had to remove this because it gives date in form of "Fri Jan 1 00:00:00 2021" or something... need it formatted differently
-	exportData.open( path + "\\SL_Log_" + std::to_string(testNumber) + ".json");
+	exportData.open( path + "\\SL_Log_" + to_string(testNumber) + ".json");
 
 	if (exportData.is_open()) {
 		exportData << jsonSLD;

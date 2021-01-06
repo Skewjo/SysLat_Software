@@ -1,9 +1,6 @@
 #include "stdafx.h"
 #include "RTSSClient.h"
 #include "RTSSSharedMemory.h"
-#include "io.h"
-#include <string>
-#include <algorithm>
 
 //static member initializations
 DWORD CRTSSClient::sharedMemoryVersion = 0;
@@ -11,16 +8,15 @@ CRTSSProfileInterface CRTSSClient::m_profileInterface;
 CString CRTSSClient::m_strInstallPath = "";
 DWORD CRTSSClient::clientsNum = 0;
 DWORD CRTSSClient::dwAppEntries = 0;
-std::vector<std::string> CRTSSClient::m_vszAppArr = {};
-std::vector<DWORD> CRTSSClient::m_vszAppPIDArr = {};
-std::map<DWORD, std::string> CRTSSClient::m_mapRTSSApps = {};
+vector<string> CRTSSClient::m_vszAppArr = {};
+vector<DWORD> CRTSSClient::m_vszAppPIDArr = {};
+map<DWORD, string> CRTSSClient::m_mapRTSSApps = {};
 
 CRTSSClient::CRTSSClient(const char* setSlotOwner, int setClientPriority) {
 	slotOwnerOSD = setSlotOwner;
 	clientPriority = setClientPriority;
 	
 	InitRTSSInterface();
-	
 }
 
 void CRTSSClient::InitRTSSInterface() {
@@ -79,6 +75,7 @@ void CRTSSClient::InitRTSSInterface() {
 		sharedMemoryVersion = dwResult;
 	}
 }
+
 DWORD CRTSSClient::GetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty)
 {
 	DWORD dwProperty = 0;
@@ -91,6 +88,7 @@ DWORD CRTSSClient::GetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty
 
 	return dwProperty;
 }
+
 void CRTSSClient::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, LONG dwIncrement)
 {
 	if (m_profileInterface.IsInitialized())
@@ -109,6 +107,7 @@ void CRTSSClient::IncProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty,
 		}
 	}
 }
+
 void CRTSSClient::SetProfileProperty(LPCSTR lpProfile, LPCSTR lpProfileProperty, DWORD dwProperty)
 {
 	if (m_profileInterface.IsInitialized())
@@ -226,9 +225,7 @@ DWORD CRTSSClient::GetAppArray() {
 				if (dwAppEntries != pMem->dwAppArrSize) {
 					dwAppEntries = 0;
 					m_vszAppArr.clear();
-
 					m_mapRTSSApps.clear();
-					
 					
 					for (DWORD dwEntry = 0; dwEntry < pMem->dwAppArrSize; dwEntry++)
 					{
@@ -236,60 +233,17 @@ DWORD CRTSSClient::GetAppArray() {
 
 						if (strlen(pEntry->szName)) {
 							dwAppEntries++;
-							m_vszAppPIDArr.push_back(pEntry->dwProcessID);
-							
-							
-							std::string entryName = pEntry->szName;
-							//Need to throw the following in some global function(or 5) somewhere I think...
-							//Remove .exe file extension
-							size_t pos = entryName.find(".exe");
-							if (pos != std::string::npos) {
-								entryName.replace(pos, entryName.size(), "");
-							}
-							//Remove file path and leave only file name
-							pos = entryName.rfind("\\");
-							entryName.replace(0, pos+1, "");
-							
-							//Remove spaces(?)
-							/*
-							while ((pos = entryName.find(" ")) != std::string::npos) {
-								entryName.replace(pos, 1, "");
-							}
-							*/
 
-							m_vszAppArr.push_back(entryName);
+							string entryName = pEntry->szName;
+							SL::RemoveExtension(entryName);
+							SL::RemovePath(entryName);
 
-							OutputDebugString("PID: ");
-							OutputDebugString((std::to_string(m_vszAppPIDArr[dwEntry])).c_str());
-							OutputDebugString(" Name: ");
-							OutputDebugString(m_vszAppArr[dwEntry].c_str());
-							OutputDebugString("\n");
-							//does this function need to create/maintain a processID array(vector) too?
-							//DWORD	dwProcessID;//process ID
-							//char	szName[MAX_PATH];//process executable name
-
-
-							
-
-							m_mapRTSSApps.insert(std::pair<DWORD, std::string>(pEntry->dwProcessID, entryName));
+							m_mapRTSSApps.insert(std::pair<DWORD, string>(pEntry->dwProcessID, entryName));
 						}
 					}
-					//std::map<DWORD, std::string>::iterator it = m_mapRTSSApps.begin(); //not sure I need this iterator...
-					//auto it = m_mapRTSSApps.begin();
 					for (auto const& [pid, pName] : m_mapRTSSApps) {
-						OutputDebugString("From map!! PID: ");
-						OutputDebugString((std::to_string(pid)).c_str());
-						OutputDebugString(" Name: ");
-						OutputDebugString(pName.c_str());
-						OutputDebugString("\n");
+						DEBUG_PRINT("PID: " + to_string(pid) + " Name: " + pName)
 					}
-
-
-					// this is going to leave the PID vector order out of wack...
-					// This gets rid of duplicates... but I need to be using a map that holds the PID and process name instead of a vector, 
-					// so that I can sort them on the name and not have to worry about sorting 2 discrete vectors.
-					//std::sort(m_vszAppArr.begin(), m_vszAppArr.end());
-					//m_vszAppArr.erase(unique(m_vszAppArr.begin(), m_vszAppArr.end()), m_vszAppArr.end());
 				}
 			}
 			//else return version error?
@@ -398,6 +352,7 @@ BOOL CRTSSClient::UpdateOSD(LPCSTR lpText) {
 
 	return bResult;
 }
+
 void CRTSSClient::ReleaseOSD()
 {
 	HANDLE hMapFile = OpenFileMapping(FILE_MAP_ALL_ACCESS, FALSE, "RTSSSharedMemoryV2");
@@ -430,6 +385,7 @@ void CRTSSClient::ReleaseOSD()
 		CloseHandle(hMapFile);
 	}
 }
+
 DWORD CRTSSClient::EmbedGraph(DWORD dwOffset, FLOAT* lpBuffer, DWORD dwBufferPos, DWORD dwBufferSize, LONG dwWidth, LONG dwHeight, LONG dwMargin, FLOAT fltMin, FLOAT fltMax, DWORD dwFlags)
 {
 	DWORD dwResult = 0;

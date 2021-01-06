@@ -6,8 +6,6 @@
 #include "StdAfx.h"
 #include "SysLat_Software.h"
 #include "PreferencesDlg.h"
-#include "afxdialogex.h"
-#include "afxeditbrowsectrl.h"
 
 // PreferencesDlg dialog
 
@@ -39,11 +37,6 @@ BOOL PreferencesDlg::OnInitDialog() {
 	//Log Dir
 	SetDlgItemText(IDC_MFCEDITBROWSE, m_pPreferences->m_SysLatOptions.m_LogDir.c_str()); 
 	ASSERT_KINDOF(CMFCEditBrowseCtrl, GetDlgItem(IDC_MFCEDITBROWSE));
-	/*The following code doesn't "do anything", but I feel like it's a really good example of how to kind of "cast" a resource to a class and convert and enum to strings for output. */
-	pEdit = (CMFCEditBrowseCtrl*)GetDlgItem(IDC_MFCEDITBROWSE);
-	CMFCEditBrowseCtrl::BrowseMode browseMode = pEdit->GetMode();
-	static const char* EnumStrings[] = { "BrowseMode_None", "BrowseMode_Default", "BrowseMode_File", "BrowseMode_Folder"};
-	OutputDebugString(EnumStrings[browseMode]);
 
 	//Max Logs
 	pSCtrl = (CSliderCtrl*)GetDlgItem(IDC_SLIDER_MAX_LOGS);
@@ -51,14 +44,15 @@ BOOL PreferencesDlg::OnInitDialog() {
 	pSCtrl->SetPos(m_pPreferences->m_SysLatOptions.m_maxLogs);
 	pSCtrl->SetTicFreq(10);
 	pSCtrl->SetLineSize(1);
-	SetDlgItemText(IDC_STATIC_MAX_LOGS, std::to_string(m_pPreferences->m_SysLatOptions.m_maxLogs).c_str());
+	SetDlgItemText(IDC_STATIC_MAX_LOGS, to_string(m_pPreferences->m_SysLatOptions.m_maxLogs).c_str());
 	
 	//Max Test Duration
 	pSCtrl = (CSliderCtrl*)GetDlgItem(IDC_SLIDER_MAX_DURATION);
 	pSCtrl->SetRange(0, 61);
 	pSCtrl->SetPos(m_pPreferences->m_SysLatOptions.m_maxTestDuration);
 	pSCtrl->SetTicFreq(5);
-	SetDlgItemText(IDC_STATIC_MAX_TEST, std::to_string(m_pPreferences->m_SysLatOptions.m_maxTestDuration).c_str());
+	//SetDlgItemText(IDC_STATIC_MAX_TEST, to_string(m_pPreferences->m_SysLatOptions.m_maxTestDuration).c_str());
+	SetDlgItemText(IDC_STATIC_MAX_TEST, to_string(m_pPreferences->m_SysLatOptions.m_maxTestDuration).c_str());
 	
 	//Dark Mode
 	if (m_pPreferences->m_SysLatOptions.m_bDarkMode == true) {
@@ -128,7 +122,7 @@ void PreferencesDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 			}
 			else {
 				m_pPreferences->m_SysLatOptions.m_maxLogs = NewPos;
-				SetDlgItemText(IDC_STATIC_MAX_LOGS, std::to_string(NewPos).c_str());
+				SetDlgItemText(IDC_STATIC_MAX_LOGS, to_string(NewPos).c_str());
 			}
 			break;
 		case IDC_SLIDER_MAX_DURATION:
@@ -138,7 +132,7 @@ void PreferencesDlg::OnHScroll(UINT nSBCode, UINT nPos, CScrollBar* pScrollBar)
 			}
 			else {
 				m_pPreferences->m_SysLatOptions.m_maxTestDuration = NewPos;
-				SetDlgItemText(IDC_STATIC_MAX_TEST, std::to_string(NewPos).c_str());
+				SetDlgItemText(IDC_STATIC_MAX_TEST, to_string(NewPos).c_str());
 			}
 			break;
 	}

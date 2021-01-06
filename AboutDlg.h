@@ -2,8 +2,6 @@
 
 #include "stdafx.h"
 #include "resource.h"
-//#include <Windows.h>
-//#include <process.h>
 
 /////////////////////////////////////////////////////////////////////////////
 // CAboutDlg dialog used for App About

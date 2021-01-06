@@ -1,13 +1,6 @@
 #pragma once
-#include <stdio.h>
-#include <Windows.h>
-#include <Iphlpapi.h>
-#include <Assert.h>
-#include<json/json.h>
-#include<process.h>
-#include<uuids.h>
+//   I could've sworn I was still using these?????
 
-#pragma comment(lib, "iphlpapi.lib")
 
 #define MAX_NAME 256
 
@@ -52,11 +45,7 @@ public:
     ~HardwareID() {
         free(m_pMac);
     }
-    void            ExportData(std::string path = ".\\SysLat_Logs");
+    void            ExportData(string path = ".\\SysLat_Logs");
 
     Json::Value     HardwareIDJSON;
 };
-
-
-
-

@@ -11,17 +11,12 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-#include "afxdialogex.h"
-#include <string>
-#include <time.h>
-#include <vector>
+
 #include "RTSSSharedMemory.h"
 #include "RTSSClient.h"
 #include "SysLatData.h"
-
 #include "HardwareID.h"
 #include "MachineInfo.h"
-
 
 class CSysLat_SoftwareDlg : public CDialogEx
 {
@@ -50,15 +45,16 @@ protected:
 	void							R_Position();
 	void							R_ProcessNames();
 	void							R_StrOSD();
+	void							R_DynamicComPortMenu();
 	void							R_DynamicAppMenu();
 	static void						AppendError(const CString& error); //this function is duplicated between this class and SysLatData - need to make this not used by the thread and then I can make it non-static like the other refresh functions
 
 	//Drawing thread functions
 	static unsigned int __stdcall	CreateDrawingThread(void* data);
 	static void						DrawSquare(CRTSSClient sysLatClient, CString& colorString);
-	static std::string				GetProcessNameFromPID(DWORD processID);
-	static std::string				GetActiveWindowTitle();
-	static void						ProcessNameTrim(std::string&, std::string&);
+	static string				GetProcessNameFromPID(DWORD processID);
+	static string				GetActiveWindowTitle();
+	static void						ProcessNameTrim(string&, string&);
 
 	//Dialog menu related functions
 	//Tools
@@ -82,6 +78,8 @@ protected:
 	void							OpenPreferences();
 	void							OpenTestCtrl();
 	void							ExportData(Json::Value stuffToExport);
+	void							OnComPortChanged(UINT nID);
+	void							OnTargetWindowChanged(UINT nID);
 
 	//Members
 	HardwareID					m_hardwareID;
@@ -91,7 +89,7 @@ protected:
 	
 
 	static CSysLatData*			m_pOperatingSLD; //Does this need to be a pointer... or just an object? I think it needs to be a pointer because I'm creating a new one every time a new thread is created.
-	std::vector<CSysLatData*>	m_previousSLD;
+	vector<CSysLatData*>	m_previousSLD;
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static constexpr const char* m_caSysLat = "SysLat";
 	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other

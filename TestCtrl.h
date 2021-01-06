@@ -1,10 +1,7 @@
 #pragma once
 
-#include <vector>
-
 #include "StdAfx.h"
 #include "resource.h"
-#include "afxdialogex.h"
 #include "SysLatData.h"
 
 
@@ -14,10 +11,10 @@ class TestCtrl : public CDialogEx
 {
 	DECLARE_DYNAMIC(TestCtrl)
 
-	std::vector<CSysLatData*>*	m_pPreviousSLD;
+	vector<CSysLatData*>*	m_pPreviousSLD;
 
 public:
-	TestCtrl(std::vector<CSysLatData*>* p_previousSLD, CWnd* pParent = nullptr);   // standard constructor
+	TestCtrl(vector<CSysLatData*>* p_previousSLD, CWnd* pParent = nullptr);   // standard constructor
 	virtual ~TestCtrl();
 
 // Dialog Data

@@ -2,19 +2,15 @@
 #ifndef SYSLATDATA_H
 #define SYSLATDATA_H
 
-#include<vector>
-#include<string>
-#include<json/json.h>
-
 //#define MAX_TESTS										500
 #define MOVING_AVERAGE									100
 #define EVR_MIN											3
 #define EVR_MAX											100
 
 typedef struct SYSLAT_DATA {
-	std::vector<int>	m_allResults;
-	std::vector<std::string>	m_v_strRTSSWindow;
-	std::vector<std::string>	m_v_strActiveWindow;
+	vector<int>	m_allResults;
+	vector<string>	m_v_strRTSSWindow;
+	vector<string>	m_v_strActiveWindow;
 	int					m_counter = 0;
 	int					m_systemLatencyTotal = 0;
 	double				m_systemLatencyAverage = 0;
@@ -70,7 +66,7 @@ public:
 	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
 	void				SetEndTime();
 	
-	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, std::string RTSSWindow, std::string activeWindow, DWORD fgPID, DWORD rtssPID);
+	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, string RTSSWindow, string activeWindow, DWORD fgPID, DWORD rtssPID);
 	
 	//mutex functions
 	void				CheckSLDMutex();
@@ -82,7 +78,7 @@ public:
 
 	// I think I need to make the following 2 functions return BOOLs or INTs based on whether or not they failed.
 	void				CreateJSONSLD();
-	void				ExportData(int testNumber, std::string path = ".\\SysLat_Logs", int totalLogs = 10000);
+	void				ExportData(int testNumber, string path = ".\\SysLat_Logs", int totalLogs = 10000);
 
 	bool				dataExported = false;
 	bool				dataUploaded = false;

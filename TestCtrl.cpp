@@ -1,15 +1,13 @@
 // TestCtrl.cpp : implementation file
 
 #include "StdAfx.h"
-#include "SysLat_Software.h"
 #include "TestCtrl.h"
-#include "afxdialogex.h"
 
 // TestCtrl dialog
 
 IMPLEMENT_DYNAMIC(TestCtrl, CDialogEx)
 
-TestCtrl::TestCtrl(std::vector<CSysLatData*>* p_previousSLD, CWnd* pParent /*=nullptr*/)
+TestCtrl::TestCtrl(vector<CSysLatData*>* p_previousSLD, CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_TESTCTRL_DIALOG, pParent), m_pPreviousSLD(p_previousSLD)
 {
 }
@@ -64,9 +62,6 @@ BOOL TestCtrl::OnInitDialog() {
 	}
 	return TRUE; // return TRUE unless you set the focus to a control
 }
-
-
-
 
 TestCtrl::~TestCtrl()
 {

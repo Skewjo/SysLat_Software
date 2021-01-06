@@ -1,18 +1,14 @@
 #include "stdafx.h"
 #include "HardwareID.h"
-#include<fstream>
 
 void HardwareID::GetUserAndComputerName() {
     userNameSize = UNLEN + 1;
     GetUserName(userName, &userNameSize);
-    OutputDebugStringA("\n");
-    OutputDebugStringA(userName);
+    DEBUG_PRINT(userName)
 
     computerNameSize = UNLEN + 1;
     GetComputerName(computerName, &computerNameSize);
-    OutputDebugStringA("\n");
-    OutputDebugStringA(computerName);
-    OutputDebugStringA("\n");
+    DEBUG_PRINT(computerName)
 }
 
 char* HardwareID::GetMAC() {
@@ -83,7 +79,7 @@ void HardwareID::CreateJSON() {
 
 }
 
-void HardwareID::ExportData(std::string path) {
+void HardwareID::ExportData(string path) {
     std::ofstream exportData;
     exportData.open(path + "\\HardwareID.json");
 
@@ -92,7 +88,7 @@ void HardwareID::ExportData(std::string path) {
         dataExported = true;
     }
     else {
-        OutputDebugStringA("\nError exporting hardwareID file.\n");
+        DEBUG_PRINT("\nError exporting hardwareID file.\n")
     }
 
     exportData.close();
