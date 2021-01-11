@@ -7,6 +7,7 @@
 #define EVR_MIN											3
 #define EVR_MAX											100
 
+//putting all of this in a struct is probably unbelievably stupid
 typedef struct SYSLAT_DATA {
 	vector<int>			m_allResults;
 	vector<string>		m_v_strRTSSWindow;
@@ -41,8 +42,6 @@ public:
 	
 	Json::Value			jsonSLD; //this is basically a second copy of the data... will probably eat up a BOATLOAD of memory for no reason. There's got to be a better way...
 	
-	
-
 	//using getters and setters for all of these seems stupid...
 	int					GetCounter();
 	int					GetTotal();
@@ -60,7 +59,9 @@ public:
 	int					GetMinEVR();
 	//int*				GetMovingAverage(); //????
 
-	string				m_targetApp = "";
+	string				m_targetApp = "Unknown";
+	string				m_RTSSVersion = "0.0.0";
+	string				m_boxAnchor = "Unknown";
 	struct tm*			startTimeUTC;
 	double				m_testDuration;
 

@@ -4,6 +4,7 @@
 // modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 
+
 #include "stdafx.h"
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
@@ -14,6 +15,13 @@
 #include "AboutDlg.h"
 #include "PreferencesDlg.h"
 #include "TestCtrl.h" //this one should probably have a suffix of "dlg"...
+
+#include <shellapi.h>
+#include <wchar.h>
+
+#define WM_STMESSAGE (WM_USER + 1)
+NOTIFYICONDATA nid;
+
 
 //TODO:
 // Transfer TODO to GitHub Issues...
@@ -189,7 +197,7 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_COMMAND(ID_TOOLS_TESTCONTROL, CSysLat_SoftwareDlg::OpenTestCtrl)
 	ON_COMMAND_RANGE(ID_COMPORT_START, ID_COMPORT_END, CSysLat_SoftwareDlg::OnComPortChanged)
 	ON_COMMAND_RANGE(ID_RTSSAPP_START, ID_RTSSAPP_END, CSysLat_SoftwareDlg::OnTargetWindowChanged)
-	//ON_WM_CTLCOLOR()
+	ON_MESSAGE(WM_STMESSAGE, CSysLat_SoftwareDlg::OnSTMessage)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
 
@@ -244,6 +252,11 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 
 	m_hardwareID.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
 	m_machineInfo.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
+
+
+
+
+
 	
 	Refresh();
 
@@ -260,6 +273,37 @@ void CSysLat_SoftwareDlg::OnSysCommand(UINT nID, LPARAM lParam)
 		CAboutDlg dlgAbout;
 		dlgAbout.DoModal();
 	}
+	else if ((nID & 0xFFF0) == SC_MINIMIZE)
+	{
+		nid.cbSize = sizeof(NOTIFYICONDATA);
+		nid.hWnd = m_hWnd;
+		nid.uID = 100;
+		nid.uVersion = NOTIFYICON_VERSION;
+		nid.uCallbackMessage = WM_STMESSAGE;
+		nid.hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+		strcpy_s(nid.szTip, "SysLat");
+		nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+		Shell_NotifyIcon(NIM_ADD, &nid);
+
+		ModifyStyleEx(WS_EX_APPWINDOW, WS_EX_TOOLWINDOW);
+		// Minimizing, post to main dialogue also.
+		AfxGetMainWnd()->ShowWindow(SW_MINIMIZE);
+	}
+	//else if ((nID & 0xFFF0) == SC_CLOSE) {
+	//	nid.cbSize = sizeof(NOTIFYICONDATA);
+	//	nid.hWnd = m_hWnd;
+	//	nid.uID = 100;
+	//	nid.uVersion = NOTIFYICON_VERSION;
+	//	nid.uCallbackMessage = WM_STMESSAGE;
+	//	nid.hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	//	strcpy_s(nid.szTip, "SysLat");
+	//	nid.uFlags = NIF_MESSAGE | NIF_ICON | NIF_TIP;
+	//	Shell_NotifyIcon(NIM_ADD, &nid);
+
+	//	ModifyStyleEx(WS_EX_APPWINDOW, WS_EX_TOOLWINDOW);
+	//	// Minimizing, post to main dialogue also.
+	//	AfxGetMainWnd()->ShowWindow(SW_MINIMIZE);
+	//}
 	else
 	{
 		CDialogEx::OnSysCommand(nID, lParam);
@@ -269,19 +313,19 @@ void CSysLat_SoftwareDlg::OnPaint()
 {
 	if (IsIconic())
 	{
-		CPaintDC dc(this); // device context for painting
+		//CPaintDC dc(this); // device context for painting
 
-		SendMessage(WM_ICONERASEBKGND, (WPARAM)dc.GetSafeHdc(), 0);
+		//SendMessage(WM_ICONERASEBKGND, (WPARAM)dc.GetSafeHdc(), 0);
 
-		// Center icon in client rectangle
-		int cxIcon = GetSystemMetrics(SM_CXICON);
-		int cyIcon = GetSystemMetrics(SM_CYICON);
-		CRect rect;
-		GetClientRect(&rect);
-		int x = (rect.Width() - cxIcon + 1) / 2;
-		int y = (rect.Height() - cyIcon + 1) / 2;
+		//// Center icon in client rectangle
+		//int cxIcon = GetSystemMetrics(SM_CXICON);
+		//int cyIcon = GetSystemMetrics(SM_CYICON);
+		//CRect rect;
+		//GetClientRect(&rect);
+		//int x = (rect.Width() - cxIcon + 1) / 2;
+		//int y = (rect.Height() - cyIcon + 1) / 2;
 
-		dc.DrawIcon(x, y, m_hIcon);
+		//dc.DrawIcon(x, y, m_hIcon);
 	}
 	else
 	{
@@ -314,6 +358,24 @@ void CSysLat_SoftwareDlg::OnDestroy()
 
 	CDialogEx::OnDestroy();
 }
+LRESULT CSysLat_SoftwareDlg::OnSTMessage(WPARAM wParam, LPARAM lParam) {
+	UNREFERENCED_PARAMETER(wParam);
+	UNREFERENCED_PARAMETER(lParam);
+
+	// Handle message here.
+	if (lParam == WM_LBUTTONDBLCLK){
+		if (IsIconic()) {
+			ModifyStyleEx(WS_EX_TOOLWINDOW, WS_EX_APPWINDOW);
+			ShowWindow(SW_SHOWNORMAL);
+			Shell_NotifyIcon(NIM_DELETE, &nid);
+		}
+		//::MessageBox(NULL, "Tray icon double clicked!", "clicked", MB_OK);
+	}
+
+
+	return 0;
+}
+
 
 //Dialog functions
 string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
@@ -736,6 +798,9 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	CString	sysLatResults;
 	CRTSSClient sysLatClient("SysLat", 0);
 	m_sysLatOwnedSlot = sysLatClient.ownedSlot;
+	//the following should not be here because if RTSS isn't running when this is hit, the version is "0"
+	m_pOperatingSLD->m_RTSSVersion = "v" + to_string(sysLatClient.sharedMemoryVersion);
+	
 
 	CUSBController usbController;
 	HANDLE hPort = usbController.OpenComPort(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());

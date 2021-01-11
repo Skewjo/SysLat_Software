@@ -163,8 +163,8 @@ void CSysLatData::CreateJSONSLD() {
 	startTimeUTC = gmtime(&m_startTime); //Apparently(and the documentation doesn't reveal this FYI), gmtime is a static object(???) so if I don't set it right before I output it, I get the wrong thing.
 	char* startDateUTC = asctime(startTimeUTC);
 
-	jsonSLD["MetaData"]["SysLatVersion"] = "v0.0.1";
-	jsonSLD["MetaData"]["RTSSVersion"] = "vPLACEHOLDER";
+	jsonSLD["MetaData"]["SysLatVersion"] = "v1.0.1";
+	jsonSLD["MetaData"]["RTSSVersion"] = m_RTSSVersion;
 	jsonSLD["MetaData"]["TargetApplication"] = m_targetApp;
 	jsonSLD["MetaData"]["StartTimeUTC"] = startDateUTC;
 	//THIS NEEDS TO BE MOVED!! WHY DID I PUT IT HERE?? Currently not that bad because the JSON is created right as the test ends...
@@ -180,6 +180,9 @@ void CSysLatData::CreateJSONSLD() {
 	durationCString.AppendFormat("%02d:%02d", minutes, seconds);
 	string durationString = durationCString;
 	jsonSLD["MetaData"]["Duration"] = durationString;
+
+	
+	jsonSLD["MetaData"]["TestAnchor"] = m_boxAnchor;
 	//NumProcBegin: Int
 	//NumProcEnd : Int
 	//ProcListBegin : [String]

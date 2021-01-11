@@ -12,11 +12,11 @@ class CRTSSClient
 protected:
 	int								clientPriority = 1;//should this be initialized here... or in the constructor? Is this considered a default value?
 	const char*						slotOwnerOSD; //if this is const... it can still be modified once by the constructor, right?
-	static DWORD					sharedMemoryVersion;
 	//DWORD							GetRTSSSimpleProperty(); //I think I need to figure out how to pass a function pointer or something to make this work...
 
 public:
 	//I don't really like the following 2 members are public, but I don't feel like creating getters for them...
+	static DWORD					sharedMemoryVersion;
 	DWORD							ownedSlot;
 	static DWORD					clientsNum;
 	static CRTSSProfileInterface	m_profileInterface;
