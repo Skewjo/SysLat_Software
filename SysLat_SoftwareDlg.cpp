@@ -17,11 +17,6 @@
 #include "TestCtrl.h" //this one should probably have a suffix of "dlg"...
 
 #include <shellapi.h>
-#include <wchar.h>
-
-#define WM_STMESSAGE (WM_USER + 1)
-NOTIFYICONDATA nid;
-
 
 //TODO:
 // Transfer TODO to GitHub Issues...
@@ -108,7 +103,7 @@ NOTIFYICONDATA nid;
 
 //////////////////////////////////////////////////////////////////////////////////////////////
 //Major Bugs:
-//  DONE - (hid the error)The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD - slot when restarting a test - I thought I fixed this... I did not...
+//  DONE - (hid the error)The SysLat RTSSClient object cannot obtain the "0th" RTSS OSD slot when restarting a test
 //	Issue when switching COM ports to an existing device that isn't SysLat and back
 //	DONE - Arrow key functionality has been optimized away somehow
 //  
@@ -122,8 +117,8 @@ const int ID_COMPORT_START = 2000;
 const int ID_COMPORT_END = 2099;
 const int ID_RTSSAPP_START = 2100;
 const int ID_RTSSAPP_END = 2199;
+const int WM_STMESSAGE = WM_USER + 1;
 
-/// 
 #ifdef _DEBUG
 #define new DEBUG_NEW
 #undef THIS_FILE
@@ -131,22 +126,28 @@ static char THIS_FILE[] = __FILE__;
 #endif
 
 //As a non-static non-member variable? Is this a good idea? Need to at least remove the "m_" from the var name... Does this make it global??
-SysLatPreferences	m_sysLatPreferences;
+SysLatPreferences	SLPref;
+#define SysLatOpt SLPref.m_SysLatOptions
+#define PrivacyOpt SLPref.m_PrivacyOptions
+#define DebugOpt SLPref.m_DebugOptions
+#define RTSSOpt	SLPref.m_RTSSOptions
+
+NOTIFYICONDATA		nid;
+int dotCounter = 0;
 
 //Define static variables - these should probably be done as inline or something... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
+//also, I should probably move most of them to NOT be member variables
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
 CString	CSysLat_SoftwareDlg::m_updateString = "";
 CString CSysLat_SoftwareDlg::m_strError = "";
-//need to turn the following into a unique_ptr(maybe?) or at least delete it in the (currently non-existent) dtor...
+//need to turn the following into a unique_ptr(maybe?) or at least delete it in the dtor...
 CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
 CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
 CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
 DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
 DWORD CSysLat_SoftwareDlg::m_AppArraySize = 0;
-
-
 
 //Windows Dialog inherited function overrides
 /////////////////////////////////////////////////////////////////////////////
@@ -169,7 +170,7 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 	m_bConnected				= FALSE;
 }
 CSysLat_SoftwareDlg::~CSysLat_SoftwareDlg() {
-	m_sysLatPreferences.WritePreferences();
+	SLPref.WritePreferences();
 }
 void CSysLat_SoftwareDlg::DoDataExchange(CDataExchange* pDX)
 {
@@ -200,7 +201,6 @@ BEGIN_MESSAGE_MAP(CSysLat_SoftwareDlg, CDialogEx)
 	ON_MESSAGE(WM_STMESSAGE, CSysLat_SoftwareDlg::OnSTMessage)
 	//}}AFX_MSG_MAP
 END_MESSAGE_MAP()
-
 
 BOOL CSysLat_SoftwareDlg::OnInitDialog()
 {
@@ -250,14 +250,12 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
 
-	m_hardwareID.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
-	m_machineInfo.ExportData(m_sysLatPreferences.m_SysLatOptions.m_LogDir);
+	//m_bTestUploadMode = true;
+	//CheckUpdate();
 
+	m_hardwareID.ExportData(SysLatOpt.m_LogDir);
+	m_machineInfo.ExportData(SysLatOpt.m_LogDir);
 
-
-
-
-	
 	Refresh();
 
 	unsigned threadID;
@@ -313,6 +311,7 @@ void CSysLat_SoftwareDlg::OnPaint()
 {
 	if (IsIconic())
 	{
+		//THIS CODE FOR THE MINIMIZE BUTTON IS NO LONGER(NEVER WAS??) NEEDED??
 		//CPaintDC dc(this); // device context for painting
 
 		//SendMessage(WM_ICONERASEBKGND, (WPARAM)dc.GetSafeHdc(), 0);
@@ -375,7 +374,6 @@ LRESULT CSysLat_SoftwareDlg::OnSTMessage(WPARAM wParam, LPARAM lParam) {
 
 	return 0;
 }
-
 
 //Dialog functions
 string CSysLat_SoftwareDlg::GetProcessNameFromPID(DWORD processID) {
@@ -443,29 +441,29 @@ BOOL CSysLat_SoftwareDlg::PreTranslateMessage(MSG* pMsg)
 			}
 			return TRUE;
 		case VK_UP:
-			if (m_sysLatPreferences.m_RTSSOptions.m_internalY > 0) {
-				m_sysLatPreferences.m_RTSSOptions.m_internalY--;
+			if (RTSSOpt.m_internalY > 0) {
+				RTSSOpt.m_internalY--;
 			}
 			//else appendError ??
-			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
+			RTSSOpt.m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_DOWN:
-			if (m_sysLatPreferences.m_RTSSOptions.m_internalY < 255) {
-				m_sysLatPreferences.m_RTSSOptions.m_internalY++;
+			if (RTSSOpt.m_internalY < 255) {
+				RTSSOpt.m_internalY++;
 			}
-			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
+			RTSSOpt.m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_LEFT:
-			if (m_sysLatPreferences.m_RTSSOptions.m_internalX > 0) {
-				m_sysLatPreferences.m_RTSSOptions.m_internalX--;
+			if (RTSSOpt.m_internalX > 0) {
+				RTSSOpt.m_internalX--;
 			}
-			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
+			RTSSOpt.m_bPositionManualOverride = true;
 			return TRUE;
 		case VK_RIGHT:
-			if (m_sysLatPreferences.m_RTSSOptions.m_internalX < 255) {
-				m_sysLatPreferences.m_RTSSOptions.m_internalX++;
+			if (RTSSOpt.m_internalX < 255) {
+				RTSSOpt.m_internalX++;
 			}
-			m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride = true;
+			RTSSOpt.m_bPositionManualOverride = true;
 			return TRUE;
 		case 'R':
 			CRTSSClient::SetProfileProperty("", "BaseColor", 0xFF0000);
@@ -527,8 +525,8 @@ void CSysLat_SoftwareDlg::Refresh()
 	if (!(CRTSSClient::m_profileInterface.IsInitialized())) {
 		CRTSSClient::InitRTSSInterface();
 	}
-	m_sysLatPreferences.m_RTSSOptions.m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
-	m_sysLatPreferences.m_RTSSOptions.m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
+	RTSSOpt.m_positionX = CRTSSClient::GetProfileProperty("", "PositionX");
+	RTSSOpt.m_positionY = CRTSSClient::GetProfileProperty("", "PositionY");
 	if (m_bConnected && !m_bRTSSInitConfig) {
 		R_GetRTSSConfigs();
 	}
@@ -553,7 +551,9 @@ void CSysLat_SoftwareDlg::Refresh()
 	if (CRTSSClient::m_profileInterface.IsInitialized())
 	{
 		m_strStatus += "\n\n-Press <Up>,<Down>,<Left>,<Right> to change OSD position in global profile";
-		m_strStatus += "\n-Press <R>,<G>,<B> to change OSD color in global profile";
+		if (DebugOpt.m_bSysLatInOSD) {
+			m_strStatus += "\n-Press <R>,<G>,<B> to change OSD color in global profile";
+		}
 	}
 	
 	if (!m_strError.IsEmpty())
@@ -572,6 +572,7 @@ void CSysLat_SoftwareDlg::R_GetRTSSConfigs() {
 	m_bObjTagsSupported = (m_dwSharedMemoryVersion >= 0x0002000c);		//embedded object tags are supporoted for shared memory v2.12 and higher
 	m_bRTSSInitConfig = true;
 }
+
 BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 
 	//this timer stuff definitely needs to be in the SLD
@@ -580,7 +581,7 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 	int minutes = static_cast<int>(dif) / 60;
 	int seconds = static_cast<int>(dif) % 60;
 
-	if (minutes >= m_sysLatPreferences.m_SysLatOptions.m_maxTestDuration) {
+	if (minutes >= SysLatOpt.m_maxTestDuration) {
 		ReInitThread();
 	}
 
@@ -591,15 +592,54 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 		return success;
 
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
-	m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
+
+	if (atoi(m_pOperatingSLD->GetStringResult()) < 500) {
+		m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
+	}
+	else {
+		
+		m_strStatus.AppendFormat("\nSystem Latency: Waiting");
+		if (dotCounter == 1) {
+			m_strStatus.AppendFormat(".");
+		}
+		else if (dotCounter == 2) {
+			m_strStatus.AppendFormat("..");
+		}
+		else if (dotCounter == 3) {
+			m_strStatus.AppendFormat("...");
+		}
+	}
+
 	m_strStatus.AppendFormat("\nLoop Counter : %d", m_pOperatingSLD->GetCounter());
+
 	if (isnan(measurementsPerSecond)) {
 		m_strStatus.AppendFormat("\nMeasurements Per Second: 0.00");
 	}
 	else {
 		m_strStatus.AppendFormat("\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
 	}
-	m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
+
+	if (m_pOperatingSLD->GetAverage() < 500) {
+		m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
+	}
+	else {
+		m_strStatus.AppendFormat("\nSystem Latency Average: Waiting");
+		if (dotCounter == 1) {
+			m_strStatus.AppendFormat(".");
+		}
+		else if (dotCounter == 2) {
+			m_strStatus.AppendFormat("..");
+		}
+		else if (dotCounter == 3) {
+			m_strStatus.AppendFormat("...");
+			dotCounter = 0;
+		}
+	}
+	dotCounter++;
+	if (dotCounter >= 4) {
+		dotCounter = 0;
+	}
+
 	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_pOperatingSLD->GetCounterEVR());
 	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());
 
@@ -610,8 +650,8 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 void CSysLat_SoftwareDlg::R_Position() {
 	m_strStatus.AppendFormat("\n\nClients num: %d", CRTSSClient::clientsNum);
 	m_strStatus.AppendFormat("\nSysLat Owned Slot: %d", m_sysLatOwnedSlot);
-	m_strStatus.AppendFormat("\nPositionX: %d", m_sysLatPreferences.m_RTSSOptions.m_positionX);
-	m_strStatus.AppendFormat("\nPositionY: %d", m_sysLatPreferences.m_RTSSOptions.m_positionY);
+	m_strStatus.AppendFormat("\nPositionX: %d", RTSSOpt.m_positionX);
+	m_strStatus.AppendFormat("\nPositionY: %d", RTSSOpt.m_positionY);
 }
 void CSysLat_SoftwareDlg::R_ProcessNames() {
 	DWORD dwLastForegroundAppProcessID = CRTSSClient::GetLastForegroundAppID();
@@ -640,7 +680,7 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 		if (bResult)
 		{
 			m_strStatus += "\nTarget Window: ";
-			m_strStatus += (m_sysLatPreferences.m_SysLatOptions.m_targetApp).c_str();
+			m_strStatus += (SysLatOpt.m_targetApp).c_str();
 			/*
 			m_strStatus += "\n\nThe following text is being forwarded to OSD:\nFrom SysLat client: " + m_updateString + "\nFrom SysLatStats client: " + strOSD;
 
@@ -692,7 +732,7 @@ void CSysLat_SoftwareDlg::R_DynamicComPortMenu()
 				pos = menuString.rfind(")");
 				menuString.replace(pos, menuString.size(), "");
 
-				if (strcmp(menuString.c_str(), m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str()) == 0) {
+				if (strcmp(menuString.c_str(), SysLatOpt.m_PortSpecifier.c_str()) == 0) {
 					MainMenu->CheckMenuItem(ID_COMPORT_START + COMPortCount, MF_CHECKED);
 				}
 
@@ -729,7 +769,7 @@ void CSysLat_SoftwareDlg::R_DynamicAppMenu()
 					string id_name =  pName + " (" + to_string(pid) + ")";
 					appended = TargetAppMenu->AppendMenu(MF_STRING, ID_RTSSAPP_START + count, id_name.c_str());
 
-					if (strcmp(pName.c_str(), m_sysLatPreferences.m_SysLatOptions.m_targetApp.c_str()) == 0) {
+					if (strcmp(pName.c_str(), SysLatOpt.m_targetApp.c_str()) == 0) {
 						MainMenu->CheckMenuItem(ID_RTSSAPP_START + count, MF_CHECKED);
 					}
 					count++;
@@ -764,7 +804,7 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 	WaitForSingleObjectEx(drawingThreadHandle, INFINITE, false); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
 //} while (waitForThread != WAIT_OBJECT_0);
 //CloseHandle(drawingThreadHandle);
-	m_pOperatingSLD->m_targetApp = m_sysLatPreferences.m_SysLatOptions.m_targetApp;
+	m_pOperatingSLD->m_targetApp = SysLatOpt.m_targetApp;
 
 	m_pOperatingSLD->SetEndTime();
 	
@@ -784,10 +824,10 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 
 	//convert the previous data to JSON
 	m_previousSLD.back()->CreateJSONSLD();
-	if (m_sysLatPreferences.m_PrivacyOptions.m_bAutoExportLogs && m_sysLatPreferences.m_SysLatOptions.m_maxLogs > 0) {
+	if (PrivacyOpt.m_bAutoExportLogs && SysLatOpt.m_maxLogs > 0) {
 		ExportData();
 	}
-	if (m_sysLatPreferences.m_PrivacyOptions.m_bAutoUploadLogs) {
+	if (PrivacyOpt.m_bAutoUploadLogs) {
 		UploadData();
 	}
 }
@@ -803,13 +843,13 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	
 
 	CUSBController usbController;
-	HANDLE hPort = usbController.OpenComPort(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
+	HANDLE hPort = usbController.OpenComPort(SysLatOpt.m_PortSpecifier.c_str());
 
 	while (!usbController.IsComPortOpened(hPort) && m_loopSize > 0)
 	{
-		hPort = usbController.OpenComPort(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
+		hPort = usbController.OpenComPort(SysLatOpt.m_PortSpecifier.c_str());
 		AppendError("Failed to open COM port: ");
-		AppendError(m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier.c_str());
+		AppendError(SysLatOpt.m_PortSpecifier.c_str());
 		Sleep(1000);
 	}
 
@@ -876,20 +916,20 @@ void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorStr
 {
 	m_updateString = "";
 	//The following conditional is FAR from perfect... In order for it to work properly I may need to count the number of rows and columns(in zoomed pixel units?) and use that value. 
-	if (sysLatClient.ownedSlot == 0 && !m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride) {
-		if ((int)m_sysLatPreferences.m_RTSSOptions.m_positionX < 0) {
-			m_sysLatPreferences.m_RTSSOptions.m_internalX = 0;
+	if (sysLatClient.ownedSlot == 0 && !RTSSOpt.m_bPositionManualOverride) {
+		if ((int)RTSSOpt.m_positionX < 0) {
+			RTSSOpt.m_internalX = 0;
 		}
-		if ((int)m_sysLatPreferences.m_RTSSOptions.m_positionY < 0) {
+		if ((int)RTSSOpt.m_positionY < 0) {
 			//y = CRTSSClient::clientsNum * 20;
-			m_sysLatPreferences.m_RTSSOptions.m_internalY = 20;
+			RTSSOpt.m_internalY = 20;
 		}
-		m_updateString.AppendFormat("<P=%d,%d>", m_sysLatPreferences.m_RTSSOptions.m_internalX, m_sysLatPreferences.m_RTSSOptions.m_internalY);
+		m_updateString.AppendFormat("<P=%d,%d>", RTSSOpt.m_internalX, RTSSOpt.m_internalY);
 		m_updateString += colorString;
 		m_updateString += "<P=0,0>";
 	}
-	else if (m_sysLatPreferences.m_RTSSOptions.m_bPositionManualOverride) {
-		m_updateString.AppendFormat("<P=%d,%d>", m_sysLatPreferences.m_RTSSOptions.m_internalX, m_sysLatPreferences.m_RTSSOptions.m_internalY);
+	else if (RTSSOpt.m_bPositionManualOverride) {
+		m_updateString.AppendFormat("<P=%d,%d>", RTSSOpt.m_internalX, RTSSOpt.m_internalY);
 		m_updateString += colorString;
 		m_updateString += "<P=0,0>";
 	}
@@ -919,7 +959,7 @@ void CSysLat_SoftwareDlg::ExportData()
 			//ExportData(newJSON);
 
 			if (!m_previousSLD[i]->dataExported) {
-				m_previousSLD[i]->ExportData(i, m_sysLatPreferences.m_SysLatOptions.m_LogDir, m_sysLatPreferences.m_SysLatOptions.m_maxLogs);
+				m_previousSLD[i]->ExportData(i, SysLatOpt.m_LogDir, SysLatOpt.m_maxLogs);
 			}
 
 			//else {
@@ -995,7 +1035,7 @@ void CSysLat_SoftwareDlg::OnComPortChanged(UINT nID)
 			pos = menuString.rfind(")");
 			menuString.replace(pos, menuString.size(), "");
 
-			m_sysLatPreferences.m_SysLatOptions.m_PortSpecifier = menuString;
+			SysLatOpt.m_PortSpecifier = menuString;
 		}
 		else {
 			MainMenu->CheckMenuItem(count + ID_COMPORT_START, MF_UNCHECKED);
@@ -1044,7 +1084,7 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 	}
 }
 void CSysLat_SoftwareDlg::OpenPreferences() {
-	PreferencesDlg preferencesDlg(&m_sysLatPreferences);
+	PreferencesDlg preferencesDlg(&SLPref);
 	preferencesDlg.DoModal();
 }
 void CSysLat_SoftwareDlg::OpenTestCtrl() {
@@ -1107,11 +1147,32 @@ void CSysLat_SoftwareDlg::OnTargetWindowChanged(UINT nID)
 			size_t pos = menuString.rfind(" ");
 			menuString.replace(pos, menuString.size(), "");
 
-			m_sysLatPreferences.m_SysLatOptions.m_targetApp = menuString;
+			SysLatOpt.m_targetApp = menuString;
 		}
 		else {
 			MainMenu->CheckMenuItem(count + 1100, MF_UNCHECKED);
 		}
 		count++;
 	}
+}
+
+#include "version.h"
+
+void CSysLat_SoftwareDlg::CheckUpdate() {
+	const char* APItarget = "/api/updateSysLat";
+	Json::Value versionNumber;
+	versionNumber["version"] = VER_PRODUCT_VERSION_STR;
+
+	DEBUG_PRINT(VER_PRODUCT_VERSION_STR)
+
+	if (m_bTestUploadMode) {
+		int uploadStatus = upload_data(versionNumber, APItarget);
+	}
+	else {
+		int uploadStatus = upload_data_secure(versionNumber, APItarget);
+	}
+}
+
+void CSysLat_SoftwareDlg::DownloadUpdate() {
+
 }

@@ -72,6 +72,8 @@ protected:
 	void							ExportData(Json::Value stuffToExport);
 	void							OnComPortChanged(UINT nID);
 	void							OnTargetWindowChanged(UINT nID);
+	void							CheckUpdate();
+	void							DownloadUpdate();
 
 	//Members
 	HardwareID					m_hardwareID;
