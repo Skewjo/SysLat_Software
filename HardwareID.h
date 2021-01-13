@@ -33,7 +33,6 @@ class HardwareID
     
     
 public:
-    //These 2 constructors are activated at the same time, right? This should fail or only call the first one I guess.
     //HardwareID() : m_pMac("") {};
     HardwareID() {
         GetUserAndComputerName();

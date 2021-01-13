@@ -1,7 +1,7 @@
 #include "stdafx.h"
 #include "HTTP_Client_Async.h"
 
-void session::run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version)
+http::response<http::string_body>* session::run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version)
 {
     // Set up an HTTP POST request message
     req_.version(version);
@@ -27,6 +27,8 @@ void session::run(Json::Value dataToSend, char const* host, char const* port, ch
         beast::bind_front_handler(
             &session::on_resolve,
             shared_from_this()));
+
+    return &res_;
 }
 
 void session::on_resolve(beast::error_code ec, tcp::resolver::results_type results)
@@ -86,7 +88,6 @@ void session::on_read(beast::error_code ec, std::size_t bytes_transferred) {
     std::ostringstream debugOut;
     debugOut << res_ << std::endl;
     DEBUG_PRINT(debugOut.str().c_str())
-
 
     // Gracefully close the socket
     stream_.socket().shutdown(tcp::socket::shutdown_both, ec);

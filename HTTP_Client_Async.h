@@ -67,17 +67,18 @@ public:
     }
 
     // Start the asynchronous operation
-    void    run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version);
+    http::response<http::string_body>*    run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version);
     void    on_resolve(beast::error_code ec, tcp::resolver::results_type results);
     void    on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type);
     void    on_write(beast::error_code ec, std::size_t bytes_transferred);
     void    on_read(beast::error_code ec, std::size_t bytes_transferred);
 
+    inline auto get_response() { return res_;}
 };
 
 
 //char const* host, char const* port, char const* target, int version, char const* method, char const* contentType
-inline int upload_data(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
+inline http::response<http::string_body> upload_data(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
     
     auto const host = "localhost";
     auto const port = "3000";
@@ -87,13 +88,16 @@ inline int upload_data(Json::Value dataToSend, char const* target = "/api/benchm
     net::io_context ioc;
 
     // Launch the asynchronous operation
-    std::make_shared<session>(ioc)->run(dataToSend, host, port, target, version);
+    auto sharedPointer = std::make_shared<session>(ioc); //if you create the shared pointer on the RHS as I was before, then when it goes out of scope, the response will go with it.
+    auto prv = sharedPointer->run(dataToSend, host, port, target, version);
 
     // Run the I/O service. The call will return when
     // the get operation is complete.
+    
     ioc.run();
-
-    return EXIT_SUCCESS;
+    http::response<http::string_body> rv = *prv;
+    
+    return rv;
 }
 
 #endif

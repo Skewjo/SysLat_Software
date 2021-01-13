@@ -24,6 +24,7 @@
 #include <boost/beast/version.hpp>
 #include <boost/asio/strand.hpp>
 #include "StdAfx.h"
+
 namespace beast = boost::beast;         // from <boost/beast.hpp>
 namespace http = beast::http;           // from <boost/beast/http.hpp>
 namespace net = boost::asio;            // from <boost/asio.hpp>
@@ -62,7 +63,7 @@ public:
     }
 
     // Start the asynchronous operation
-    void    run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version);
+    http::response<http::string_body>* run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version);
     void    on_resolve(beast::error_code ec, tcp::resolver::results_type results);
     void    on_connect(beast::error_code ec, tcp::resolver::results_type::endpoint_type);
     void    on_handshake(beast::error_code ec);
@@ -106,7 +107,7 @@ inline void load_root_certificates(ssl::context& ctx)
     if (ec) throw boost::system::system_error{ ec };
 }
 
-inline int upload_data_secure(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
+inline http::response<http::string_body> upload_data_secure(Json::Value dataToSend, char const* target = "/api/benchmarkData") {
 
     char const* host = "syslat.com";
     char const* port = "443";
@@ -126,14 +127,14 @@ inline int upload_data_secure(Json::Value dataToSend, char const* target = "/api
     // Verify the remote server's certificate
     ctx.set_verify_mode(ssl::verify_peer);
 
-    std::make_shared<SSL_session>(
-        net::make_strand(ioc),
-        ctx
-        )->run(dataToSend, host, port, target, version);
+    auto sharedPointer = std::make_shared<SSL_session>(net::make_strand(ioc),ctx);
+    auto prv = sharedPointer->run(dataToSend, host, port, target, version);
 
     ioc.run();
 
-    return EXIT_SUCCESS;
+    http::response<http::string_body> rv = *prv;
+
+    return rv;
 }
 
 #endif

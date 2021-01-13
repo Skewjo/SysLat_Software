@@ -4,7 +4,6 @@
 // modified by Skewjo
 /////////////////////////////////////////////////////////////////////////////
 
-
 #include "stdafx.h"
 #include "SysLat_Software.h"
 #include "SysLat_SoftwareDlg.h"
@@ -15,6 +14,7 @@
 #include "AboutDlg.h"
 #include "PreferencesDlg.h"
 #include "TestCtrl.h" //this one should probably have a suffix of "dlg"...
+#include "version.h"
 
 #include <shellapi.h>
 
@@ -136,7 +136,7 @@ NOTIFYICONDATA		nid;
 int dotCounter = 0;
 
 //Define static variables - these should probably be done as inline or something... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
-//also, I should probably move most of them to NOT be member variables
+//also, I should probably move most of them to be global variables and NOT member variables
 CString CSysLat_SoftwareDlg::m_strStatus = "";
 unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
@@ -204,16 +204,18 @@ END_MESSAGE_MAP()
 
 BOOL CSysLat_SoftwareDlg::OnInitDialog()
 {
+	CDialogEx::OnInitDialog();
+
 	m_color = RGB(136, 217, 242);
 	m_brush.CreateSolidBrush(m_color);
 
-	CDialogEx::OnInitDialog();
+	GetModuleFileName(NULL, pathToSysLat, MAX_PATH);
 
 	CWnd* pMainDlg = GetDlgItem(IDD_SYSLAT_SOFTWARE_DIALOG);
 
 	if (pMainDlg)
 	{
-		pMainDlg->GetClientRect(&clientRect);
+		pMainDlg->GetClientRect(&m_clientRect);
 	}
 
 	ASSERT((IDM_ABOUTBOX & 0xFFF0) == IDM_ABOUTBOX);
@@ -247,11 +249,13 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		m_richEditCtrl.SetFont(&m_font);
 	}
 
+	m_bTestUploadMode = true;
+	CheckUpdate();
+
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
 
-	//m_bTestUploadMode = true;
-	//CheckUpdate();
+	
 
 	m_hardwareID.ExportData(SysLatOpt.m_LogDir);
 	m_machineInfo.ExportData(SysLatOpt.m_LogDir);
@@ -259,8 +263,8 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	Refresh();
 
 	unsigned threadID;
-	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, &threadID);
-	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
+	m_drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, &threadID);
+	SetThreadPriority(m_drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
 
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
@@ -351,8 +355,8 @@ void CSysLat_SoftwareDlg::OnDestroy()
 	MSG msg;
 	while (PeekMessage(&msg, m_hWnd, WM_TIMER, WM_TIMER, PM_REMOVE));
 
-	TerminateThread(drawingThreadHandle, 0); //Does exit code need to be 0 for this?
-	sysLatStatsClient.ReleaseOSD();
+	TerminateThread(m_drawingThreadHandle, 0); //Does exit code need to be 0 for this?
+	m_SysLatStatsClient.ReleaseOSD();
 	m_pOperatingSLD->CloseSLDMutex();
 
 	CDialogEx::OnDestroy();
@@ -504,12 +508,12 @@ void CSysLat_SoftwareDlg::Refresh()
 	MainMenu->GetMenuString(ID_USBPORT_PLACEHOLDER, (LPSTR)menuCString, 256, (UINT)MF_BYCOMMAND);
 	
 	if (strcmp(menuCString, "Placeholder") == 0) {
-		COMPortCount = 0;
+		m_COMPortCount = 0;
 	}
 
 	CUSBController usbController;
-	usbController.EnumSerialPorts(COMPortInfo, FALSE);
-	if (COMPortInfo.GetSize() != COMPortCount) {
+	usbController.EnumSerialPorts(m_COMPortInfo, FALSE);
+	if (m_COMPortInfo.GetSize() != m_COMPortCount) {
 		R_DynamicComPortMenu();
 	}
 
@@ -544,7 +548,7 @@ void CSysLat_SoftwareDlg::Refresh()
 	R_StrOSD();
 	
 	if (!m_bSysLatInOSD) { //need to add another condition to make this only happen once so that it will clear whatever exists in the buffer... or maybe use the releaseOSD function properly? IDK
-		sysLatStatsClient.UpdateOSD("");
+		m_SysLatStatsClient.UpdateOSD("");
 	}
 
 	//Need to make a new function & boolean for displaying controls/hints
@@ -673,7 +677,7 @@ void CSysLat_SoftwareDlg::R_StrOSD() {
 	strOSD += m_pOperatingSLD->GetStringResult();
 	if (!strOSD.IsEmpty())
 	{
-		BOOL bResult = sysLatStatsClient.UpdateOSD(strOSD);
+		BOOL bResult = m_SysLatStatsClient.UpdateOSD(strOSD);
 
 		m_bConnected = bResult;
 
@@ -717,26 +721,26 @@ void CSysLat_SoftwareDlg::R_DynamicComPortMenu()
 	{
 		BOOL appended = false;
 		BOOL deleted = false;
-		COMPortCount = 0;
+		m_COMPortCount = 0;
 		
-		for(auto i = 0; i < COMPortInfo.GetSize(); i++) {
-			ComPortMenu->DeleteMenu(ID_COMPORT_START + COMPortCount, MF_BYCOMMAND);
-			if (COMPortCount < ID_COMPORT_END - ID_COMPORT_START) {
-				string usb_info = COMPortInfo[i].strFriendlyName;
+		for(auto i = 0; i < m_COMPortInfo.GetSize(); i++) {
+			ComPortMenu->DeleteMenu(ID_COMPORT_START + m_COMPortCount, MF_BYCOMMAND);
+			if (m_COMPortCount < ID_COMPORT_END - ID_COMPORT_START) {
+				string usb_info = m_COMPortInfo[i].strFriendlyName;
 				DEBUG_PRINT("Friendly Name: " + usb_info)
 
-				appended = ComPortMenu->AppendMenu(MF_STRING, ID_COMPORT_START + COMPortCount, COMPortInfo[i].strFriendlyName);
-				string menuString = COMPortInfo[i].strFriendlyName;
+				appended = ComPortMenu->AppendMenu(MF_STRING, ID_COMPORT_START + m_COMPortCount, m_COMPortInfo[i].strFriendlyName);
+				string menuString = m_COMPortInfo[i].strFriendlyName;
 				size_t pos = menuString.rfind("(");
 				menuString.replace(0, pos + 1, "");
 				pos = menuString.rfind(")");
 				menuString.replace(pos, menuString.size(), "");
 
 				if (strcmp(menuString.c_str(), SysLatOpt.m_PortSpecifier.c_str()) == 0) {
-					MainMenu->CheckMenuItem(ID_COMPORT_START + COMPortCount, MF_CHECKED);
+					MainMenu->CheckMenuItem(ID_COMPORT_START + m_COMPortCount, MF_CHECKED);
 				}
 
-				COMPortCount++;
+				m_COMPortCount++;
 			}
 			else { //catch or throw errors here maybe?
 				break;
@@ -795,35 +799,28 @@ void CSysLat_SoftwareDlg::AppendError(const CString& error)
 
 //SysLat thread functions
 void CSysLat_SoftwareDlg::ReInitThread() {
-	//since implementing the the RTSS and active window string arrays in the SysLatData class, this function now hangs/freezes (sometimes?) - most likely because it's trying to create a new object with a struct that contains 3 arrays that are  3600 ints, and 2 that are 3600 strings...
-	//Set loop size to 0, wait for thread to finish so that it closes the COM port, then reset loop size before you kick off a new thread - THIS PROBLEM GOES AWAY IF I PUT *ANY* BREAKPOINTS IN THIS FUNCTION???
 	m_loopSize = 0;
-	//DWORD waitForThread;
-	//do {
-	//waitForThread = 
-	WaitForSingleObjectEx(drawingThreadHandle, INFINITE, false); // since this is the thread created by the one and only "beginThreadEx" function... does cleanup of this thread automatically occur when the function ends?
-//} while (waitForThread != WAIT_OBJECT_0);
-//CloseHandle(drawingThreadHandle);
+	WaitForSingleObjectEx(m_drawingThreadHandle, INFINITE, false);
 	m_pOperatingSLD->m_targetApp = SysLatOpt.m_targetApp;
-
 	m_pOperatingSLD->SetEndTime();
-	
 	m_loopSize = 0xFFFFFFFF;
 
-	//resets the timer 
-	time(&m_elapsedTimeStart); //probably need to add a second timer for total run time
+	//Reset the timer 
+	time(&m_elapsedTimeStart); 
 	myCounter = 0;
 
-	//"save" the data from the test that just completed
-	m_previousSLD.push_back(m_pOperatingSLD);
+	//Save the data from the test that just completed in a vector of "SysLatData"s
+	m_vpPreviousSLD.push_back(m_pOperatingSLD);
 	m_pOperatingSLD = new CSysLatData;
 
-	//restart the thread
-	drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
-	SetThreadPriority(drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
+	//Restart the thread
+	m_drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);
+	SetThreadPriority(m_drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);
 
-	//convert the previous data to JSON
-	m_previousSLD.back()->CreateJSONSLD();
+	//Convert the previous data to JSON
+	m_vpPreviousSLD.back()->CreateJSONSLD();
+
+	//Export and upload the data if enabled
 	if (PrivacyOpt.m_bAutoExportLogs && SysLatOpt.m_maxLogs > 0) {
 		ExportData();
 	}
@@ -855,8 +852,15 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 
 	DrawSquare(sysLatClient, m_strBlack);
 
+	LARGE_INTEGER StartingTime, EndingTime, ElapsedMicrosecondsDraw, ElapsedMicrosecondsExtra, Frequency;
+	QueryPerformanceFrequency(&Frequency);
+	vector<long long> timeVectorDraw, timeVectorExtra;
+
 	for (unsigned int loopCounter = 0; loopCounter < m_loopSize; loopCounter++)
 	{
+		QueryPerformanceCounter(&StartingTime);
+
+
 		time_t start = time(NULL);
 		while (serialReadData != 65 && time(NULL) - start < TIMEOUT) {
 			serialReadData = usbController.ReadByte(hPort);
@@ -874,8 +878,22 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 			}
 		}
 
+		QueryPerformanceCounter(&EndingTime);
+		ElapsedMicrosecondsDraw.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
+		ElapsedMicrosecondsDraw.QuadPart *= 1000000;
+		ElapsedMicrosecondsDraw.QuadPart /= Frequency.QuadPart;
+
+		
+		timeVectorDraw.push_back(ElapsedMicrosecondsDraw.QuadPart);
+
+
+
 		//I think everything below(ESPECIALLY the "UpdateSLD" method) should be happening in a different thread so that the serial reads can continue uninterrupted - could the following be a coroutine?
 		// 1-3-2021 thinking on this more, I need the following work to be "queued" up for the main thread... Not sure what the best way to accomplish that is.
+		// 1-13-2021 - After some extensive testing, these functions are taking anywhere from 100-500 microseconds(half of a milllisecond) to complete, and should not be affecting the test accuracy by very much... still needs to be fixed though
+		//push_back() lots of this stuff to a vector and then have the Refresh(?) function handle it?
+		QueryPerformanceCounter(&StartingTime);
+
 		string processName = GetProcessNameFromPID(CRTSSClient::GetLastForegroundAppID());
 		string activeWindowTitle;
 		if (loopCounter < m_loopSize) { //this was for a really strange issue when trying to end the thread.
@@ -886,26 +904,49 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 		}
 		ProcessNameTrim(processName, activeWindowTitle);
 
-
 		//This does the same as the block above, but uses PID instead of a bunch of unnecessary string editing.
 		//Both of the following work? I bet there's another(probably better way) to use the class name instead of the macro-definition(?) "_WINUSER_".
 		//HWND hWnd = ::GetForegroundWindow();
 		HWND hWnd = _WINUSER_::GetForegroundWindow();
 		DWORD PID;
 		GetWindowThreadProcessId(hWnd, &PID);
-		//DEBUG_PRINT("Current foregound PID: " + to_string(PID))
 		
 		DWORD RTSS_Pid = CRTSSClient::GetLastForegroundAppID();
-		/*DEBUG_PRINT("RTSS foregound PID: " + to_string(RTSS_Pid))
-		if (PID == RTSS_Pid) {
-			DEBUG_PRINT("SUCCESS")
-		}
-		else {
-			DEBUG_PRINT("FAIL")
-		}*/
 		
 		m_pOperatingSLD->UpdateSLD(loopCounter, sysLatResults, processName, activeWindowTitle, PID, RTSS_Pid);
+
+		QueryPerformanceCounter(&EndingTime);
+		ElapsedMicrosecondsExtra.QuadPart = EndingTime.QuadPart - StartingTime.QuadPart;
+		ElapsedMicrosecondsExtra.QuadPart *= 1000000;
+		ElapsedMicrosecondsExtra.QuadPart /= Frequency.QuadPart;
+
+		timeVectorExtra.push_back(ElapsedMicrosecondsExtra.QuadPart);
+
+		DEBUG_PRINT("Draw: \t" + to_string(ElapsedMicrosecondsDraw.QuadPart) + "\tExtra: \t" + to_string(ElapsedMicrosecondsExtra.QuadPart))
 	}
+
+	long long totalMicroseconds = 0;
+	long long averageMicroseconds = 0;
+	for (auto i = 0; i < timeVectorDraw.size(); i++) {
+		totalMicroseconds += timeVectorDraw[i];
+	}
+	averageMicroseconds = totalMicroseconds / timeVectorDraw.size();
+	double averageMilliseconds = averageMicroseconds / 1000;
+	DEBUG_PRINT("Draw Total microseconds: " + to_string(totalMicroseconds))
+	DEBUG_PRINT("Draw Average microseconds: " + to_string(averageMicroseconds))
+	DEBUG_PRINT("Draw Average milliseconds: " + to_string(averageMilliseconds))
+
+
+	totalMicroseconds = 0;
+	averageMicroseconds = 0;
+	for (auto i = 0; i < timeVectorExtra.size(); i++) {
+		totalMicroseconds += timeVectorExtra[i];
+	}
+	averageMicroseconds = totalMicroseconds / timeVectorExtra.size();
+	averageMilliseconds = averageMicroseconds / 1000;
+	DEBUG_PRINT("Extra Total microseconds: " + to_string(totalMicroseconds))
+	DEBUG_PRINT("Extra Average microseconds: " + to_string(averageMicroseconds))
+	DEBUG_PRINT("Extra Average milliseconds: " + to_string(averageMilliseconds))
 
 	usbController.CloseComPort(hPort);
 	sysLatClient.ReleaseOSD();
@@ -942,10 +983,11 @@ void CSysLat_SoftwareDlg::DrawSquare(CRTSSClient sysLatClient, CString& colorStr
 
 //Dialog menu functions
 //Tools
+//The version without a parameter uses the other classes "ExportData" functions
 void CSysLat_SoftwareDlg::ExportData()
 {
-	if (m_previousSLD.size() > 0) {
-		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
+	if (m_vpPreviousSLD.size() > 0) {
+		for (unsigned int i = 0; i < m_vpPreviousSLD.size(); i++) {
 			//The following code is for testing file export changes - maybe I should make it run only in debugMode?
 			//Json::Value newJSON;
 			//const Json::Value* const sources[] = {
@@ -958,8 +1000,8 @@ void CSysLat_SoftwareDlg::ExportData()
 			//		newJSON[srcIt.name()] = *srcIt;
 			//ExportData(newJSON);
 
-			if (!m_previousSLD[i]->dataExported) {
-				m_previousSLD[i]->ExportData(i, SysLatOpt.m_LogDir, SysLatOpt.m_maxLogs);
+			if (!m_vpPreviousSLD[i]->dataExported) {
+				m_vpPreviousSLD[i]->ExportData(i, SysLatOpt.m_LogDir, SysLatOpt.m_maxLogs);
 			}
 
 			//else {
@@ -974,17 +1016,33 @@ void CSysLat_SoftwareDlg::ExportData()
 		AppendError("No tests have completed yet. \nPress F11 to begin a new test(ending the current test), or wait for the current test to finish. \nYou can change the test size in the menu."); // (Not yet you can't lol)
 	}
 }
+//This overload with a "Json::Value" as a parameter does the export here using streams
+void CSysLat_SoftwareDlg::ExportData(Json::Value stuffToExport) {
+	std::ofstream exportData;
+	exportData.open("./logs/exportSLD.json");
+
+	if (exportData.is_open()) {
+		exportData << stuffToExport;
+	}
+	else {
+		DEBUG_PRINT("\nError exporting JSON SLD file.\n")
+	}
+
+	exportData.close();
+}
 void CSysLat_SoftwareDlg::UploadData()
 {
 	//I DIDN'T WANT TO SET THE API TARGET LIKE THIS - HAD TO DO IT THIS WAY BECAUSE FUNCTIONS THAT ARE USED BY DIALOG MENU BUTTONS CAN'T HAVE PARAMETERS <.<
 	const char* APItarget = "/api/benchmarkData";
-	if (m_previousSLD.size() > 0) {
-		for (unsigned int i = 0; i < m_previousSLD.size(); i++) {
-			if (!m_previousSLD[i]->dataUploaded) {
+	
+	if (m_vpPreviousSLD.size() > 0) {
+		for (unsigned int i = 0; i < m_vpPreviousSLD.size(); i++) {
+			http::response<http::string_body> uploadStatus;
+			if (!m_vpPreviousSLD[i]->dataUploaded) {
 
 				Json::Value newJSON;
 				const Json::Value* const sources[] = {
-					&m_previousSLD[i]->jsonSLD,
+					&m_vpPreviousSLD[i]->jsonSLD,
 					&m_hardwareID.HardwareIDJSON,
 					&m_machineInfo.MachineInfoJSON
 				};
@@ -993,12 +1051,12 @@ void CSysLat_SoftwareDlg::UploadData()
 						newJSON[srcIt.name()] = *srcIt;
 
 				if (m_bTestUploadMode) {
-					int uploadStatus = upload_data(newJSON, APItarget);
+					uploadStatus = upload_data(newJSON, APItarget);
 				}
 				else {
-					int uploadStatus = upload_data_secure(newJSON, APItarget);
+					uploadStatus = upload_data_secure(newJSON, APItarget);
 				}
-				m_previousSLD[i]->dataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
+				m_vpPreviousSLD[i]->dataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
 			}
 
 			/*else {
@@ -1014,7 +1072,6 @@ void CSysLat_SoftwareDlg::UploadData()
 	}
 }
 
-//Settings - need to look into GetCommPorts function to enumerate COM ports https://docs.microsoft.com/en-us/windows/win32/api/winbase/nf-winbase-getcommports
 void CSysLat_SoftwareDlg::OnComPortChanged(UINT nID)
 {
 	int nButton = nID - ID_COMPORT_START;
@@ -1023,7 +1080,7 @@ void CSysLat_SoftwareDlg::OnComPortChanged(UINT nID)
 	CMenu* MainMenu = GetMenu();
 
 	int count = 0;
-	for (auto i = 0; i < COMPortInfo.GetSize(); i++) {
+	for (auto i = 0; i < m_COMPortInfo.GetSize(); i++) {
 		if (count == nButton) {
 			MainMenu->CheckMenuItem(nID, MF_CHECKED);
 
@@ -1046,9 +1103,32 @@ void CSysLat_SoftwareDlg::OnComPortChanged(UINT nID)
 	//1-6-21: getting an error on my machine when going from COM1 to COM4(they are currently 2 different devices) & it's clearly being caused by recreating the thread(and therefore the USB connection)
 	ReInitThread();
 }
+void CSysLat_SoftwareDlg::OnTargetWindowChanged(UINT nID)
+{
+	int nButton = nID - ID_RTSSAPP_START;
+	ASSERT(nButton >= 0 && nButton < 100);
 
+	CMenu* MainMenu = GetMenu();
 
+	int count = 0;
+	for (auto const& [pid, pName] : CRTSSClient::m_vszAppArr) {
+		if (count == nButton) {
+			MainMenu->CheckMenuItem(nID, MF_CHECKED);
 
+			char menuCString[256];
+			MainMenu->GetMenuString(nID, (LPSTR)menuCString, 256, (UINT)MF_BYCOMMAND);
+			string menuString = menuCString;
+			size_t pos = menuString.rfind(" ");
+			menuString.replace(pos, menuString.size(), "");
+
+			SysLatOpt.m_targetApp = menuString;
+		}
+		else {
+			MainMenu->CheckMenuItem(count + 1100, MF_UNCHECKED);
+		}
+		count++;
+	}
+}
 void CSysLat_SoftwareDlg::DebugMode() {
 	CMenu* settingsMenu = GetMenu();
 	if (m_bDebugMode) {
@@ -1088,7 +1168,7 @@ void CSysLat_SoftwareDlg::OpenPreferences() {
 	preferencesDlg.DoModal();
 }
 void CSysLat_SoftwareDlg::OpenTestCtrl() {
-	TestCtrl testCtrl(&m_previousSLD);
+	TestCtrl testCtrl(&m_vpPreviousSLD);
 	testCtrl.DoModal();
 }
 
@@ -1105,7 +1185,7 @@ void CSysLat_SoftwareDlg::OpenTestCtrl() {
 	//DWORD coordinateSpace = CRTSSClient::GetProfileProperty("", "CoordinateSpace");
 	//CGroupedString strOSDBuilder(dwMaxTextSize - 1); //I have no freaking clue what this CGroupedString class does, so I'm kind of scared to get rid of it.
 
-	//sysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
+	//m_SysLatStatsClient.GetOSDText(strOSDBuilder, bFormatTagsSupported, bObjTagsSupported);	// get OSD text
 */
 							
 HBRUSH CSysLat_SoftwareDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
@@ -1115,64 +1195,43 @@ HBRUSH CSysLat_SoftwareDlg::OnCtlColor(CDC* pDC, CWnd* pWnd, UINT nCtlColor)
 }
 
 //This is a duplicate function that was only used for testing, but I think it needs to be moved here so I left it for now...
-void CSysLat_SoftwareDlg::ExportData(Json::Value stuffToExport) {
-	std::ofstream exportData;
-	exportData.open("./logs/exportSLD.json");
 
-	if (exportData.is_open()) {
-		exportData << stuffToExport;
-	}
-	else {
-		DEBUG_PRINT("\nError exporting JSON SLD file.\n")
-	}
 
-	exportData.close();
-}
 
-void CSysLat_SoftwareDlg::OnTargetWindowChanged(UINT nID)
-{
-	int nButton = nID - ID_RTSSAPP_START;
-	ASSERT(nButton >= 0 && nButton < 100);
-
-	CMenu* MainMenu = GetMenu();
-
-	int count = 0;
-	for (auto const& [pid, pName] : CRTSSClient::m_vszAppArr) {
-		if (count == nButton) {
-			MainMenu->CheckMenuItem(nID, MF_CHECKED);
-
-			char menuCString[256];
-			MainMenu->GetMenuString(nID, (LPSTR)menuCString, 256, (UINT)MF_BYCOMMAND);
-			string menuString = menuCString;
-			size_t pos = menuString.rfind(" ");
-			menuString.replace(pos, menuString.size(), "");
-
-			SysLatOpt.m_targetApp = menuString;
-		}
-		else {
-			MainMenu->CheckMenuItem(count + 1100, MF_UNCHECKED);
-		}
-		count++;
-	}
-}
-
-#include "version.h"
 
 void CSysLat_SoftwareDlg::CheckUpdate() {
 	const char* APItarget = "/api/updateSysLat";
 	Json::Value versionNumber;
 	versionNumber["version"] = VER_PRODUCT_VERSION_STR;
+	versionNumber["versionMajor"] = VERSION_MAJOR;
+	versionNumber["versionMinor"] = VERSION_MINOR;
 
 	DEBUG_PRINT(VER_PRODUCT_VERSION_STR)
 
+	boost::beast::http::response<boost::beast::http::string_body> uploadStatus;
 	if (m_bTestUploadMode) {
-		int uploadStatus = upload_data(versionNumber, APItarget);
+		uploadStatus = upload_data(versionNumber, APItarget);
 	}
 	else {
-		int uploadStatus = upload_data_secure(versionNumber, APItarget);
+		uploadStatus = upload_data_secure(versionNumber, APItarget);
 	}
-}
 
+	DEBUG_PRINT(uploadStatus.body())
+
+	int userUpdateChoice = ::MessageBox(NULL, uploadStatus.body().c_str(), "Update Available", MB_OKCANCEL);
+
+	string newFilePath = pathToSysLat;
+	SL::RemoveFileNameFromPath(newFilePath);
+	newFilePath += "\SysLat.exe";
+	if (userUpdateChoice == 1) {
+		URLDownloadToFile(NULL, uploadStatus.body().c_str(), newFilePath.c_str(), 0, NULL);
+		//if download completed properly...
+		::MessageBox(NULL, ("Download complete. Please close this window and start the new version of SysLat at: " + newFilePath).c_str(), "Update Available", MB_OK);
+		//else {
+			//download failed
+		//}
+	}	
+}
 void CSysLat_SoftwareDlg::DownloadUpdate() {
 
 }

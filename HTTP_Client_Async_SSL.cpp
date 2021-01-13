@@ -4,13 +4,13 @@
 //#include <wincrypt.h> //not necessary when using a "pragma lib" directive??
 //#pragma comment (lib, "crypt32")
 
-void SSL_session::run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version)
+http::response<http::string_body>* SSL_session::run(Json::Value dataToSend, char const* host, char const* port, char const* target, int version)
 {
     if (!SSL_set_tlsext_host_name(stream_.native_handle(), host))
     {
         beast::error_code ec{ static_cast<int>(::ERR_get_error()), net::error::get_ssl_category() };
         std::cerr << ec.message() << "\n";
-        return;
+        return &res_;
     }
 
     // Set up an HTTP POST request message
@@ -37,6 +37,8 @@ void SSL_session::run(Json::Value dataToSend, char const* host, char const* port
         beast::bind_front_handler(
             &SSL_session::on_resolve,
             shared_from_this()));
+
+    return &res_;
 }
 
 void SSL_session::on_resolve(beast::error_code ec, tcp::resolver::results_type results)

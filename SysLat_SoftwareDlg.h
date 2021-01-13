@@ -11,7 +11,6 @@
 #pragma once
 #endif // _MSC_VER > 1000
 
-
 #include "RTSSSharedMemory.h"
 #include "RTSSClient.h"
 #include "SysLatData.h"
@@ -78,18 +77,18 @@ protected:
 	//Members
 	HardwareID					m_hardwareID;
 	MachineInfo					m_machineInfo;
-	
-	HANDLE						drawingThreadHandle;
-	CArray<SSerInfo, SSerInfo&> COMPortInfo;
-	int							COMPortCount;
+	CRTSSClient					m_SysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other
+	CArray<SSerInfo, SSerInfo&> m_COMPortInfo;
 
-	static CSysLatData*			m_pOperatingSLD; //Does this need to be a pointer... or just an object? I think it needs to be a pointer because I'm creating a new one every time a new thread is created.
-	vector<CSysLatData*>		m_previousSLD;
-	static constexpr const char* m_caSysLatStats = "SysLatStats";
+	HANDLE						m_drawingThreadHandle;
+	int							m_COMPortCount;
+	static CSysLatData*			m_pOperatingSLD;
+	vector<CSysLatData*>		m_vpPreviousSLD;
 	static constexpr const char* m_caSysLat = "SysLat";
-	CRTSSClient					sysLatStatsClient; //This RTSS client is "owned" by the dialog box and the "drawing thread" function "owns" the other
+	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static DWORD				m_sysLatOwnedSlot;//UGH - I'm specifcally making the sysLatClient object thread local... but then to get a value from it I need to make a static var in this class to track it.  Seems dumb.
 	static CString				m_updateString;
+	static CString				m_strError;
 	static CString				m_strBlack;
 	static CString				m_strWhite;
 	static DWORD				m_AppArraySize;
@@ -100,8 +99,8 @@ protected:
 	unsigned int				myCounter = 0;
 	static unsigned int			m_loopSize; //really need to change the name of this var to "threadContinue" or something more descriptive
 	static unsigned int			m_LoopCounterRefresh;
-	static CString				m_strError;
-
+	
+	//Debug Options
 	BOOL						m_bDebugMode = false; //save to config
 	BOOL						m_bTestUploadMode = false; //change name?
 	BOOL						m_bSysLatInOSD = false;
@@ -129,9 +128,13 @@ protected:
 	CString						m_strInstallPath;
 
 	//for dark mode
-	COLORREF m_color;
-	CBrush m_brush;
-	CRect clientRect;
+	COLORREF					m_color;
+	CBrush						m_brush;
+	CRect						m_clientRect;
+
+
+	CHAR						pathToSysLat[MAX_PATH];
+	
 
 	// Generated message map functions
 	//{{AFX_MSG(CSysLat_SoftwareDlg)

@@ -71,6 +71,11 @@ namespace SL
 		inputString.replace(0, pos + 1, "");
 	}
 
+	inline void RemoveFileNameFromPath(string& inputString) {
+		size_t pos = inputString.rfind("\\");
+		inputString.replace(pos + 1, inputString.size(), "");
+	}
+
 	inline void RemoveSpaces(string& inputString) {
 		size_t pos;
 		while ((pos = inputString.find(" ")) != string::npos) {
