@@ -5,13 +5,14 @@ struct SysLatOptions {
 	string						m_targetApp = "dota2";
 	//vector<string>			m_favoriteTargets;
 	string						m_PortSpecifier = "COM3";
-	time_t						m_maxTestDuration = 60;
+	time_t						m_maxTestDuration = 15;
 	int							m_maxLogs = 10;
 	string						m_LogDir = ".\\SysLat_Logs\\";
 	bool						m_bDarkMode = false;
 };
 
 struct PrivacyOptions {
+	bool						m_bFirstRun = true;
 	bool						m_bAutoCheckUpdates = true;
 	bool						m_bAutoExportLogs = true;
 	bool						m_bAutoUploadLogs = true;

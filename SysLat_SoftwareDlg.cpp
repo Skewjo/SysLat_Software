@@ -160,14 +160,14 @@ CSysLat_SoftwareDlg::CSysLat_SoftwareDlg(CWnd* pParent /*=NULL*/)
 	//}}AFX_DATA_INIT
 	// Note that LoadIcon does not require a subsequent DestroyIcon in Win32
 
-	m_hIcon						= AfxGetApp()->LoadIcon(IDR_MAINFRAME);
-	m_strStatus					= "";
-	m_strInstallPath			= "";
+	m_hIcon = AfxGetApp()->LoadIcon(IDR_MAINFRAME);
+	m_strStatus = "";
+	m_strInstallPath = "";
 
-	m_bMultiLineOutput			= TRUE;
-	m_bFormatTags				= TRUE;
-	m_bFillGraphs				= FALSE;
-	m_bConnected				= FALSE;
+	m_bMultiLineOutput = TRUE;
+	m_bFormatTags = TRUE;
+	m_bFillGraphs = FALSE;
+	m_bConnected = FALSE;
 }
 CSysLat_SoftwareDlg::~CSysLat_SoftwareDlg() {
 	SLPref.WritePreferences();
@@ -241,7 +241,7 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	{
 		CRect rect;
 		pPlaceholder->GetClientRect(&rect);
-		
+
 		if (!m_richEditCtrl.Create(WS_VISIBLE | ES_READONLY | ES_MULTILINE | ES_AUTOHSCROLL | WS_HSCROLL | ES_AUTOVSCROLL | WS_VSCROLL, rect, this, 0))
 			return FALSE;
 
@@ -249,13 +249,20 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		m_richEditCtrl.SetFont(&m_font);
 	}
 
-	//m_bTestUploadMode = true;
-	//CheckUpdate();
+	
+	if (PrivacyOpt.m_bFirstRun) {
+		::MessageBox(NULL, "This appears to be the first time you've run SysLat from this directory. Please set your privacy options.", "SysLat First Run", MB_OK);
+		OpenPreferences();
+		PrivacyOpt.m_bFirstRun = false;
+	}
+
+	if(PrivacyOpt.m_bAutoCheckUpdates){
+		CheckUpdate();
+	}
+	
 
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
-
-	
 
 	m_hardwareID.ExportData(SysLatOpt.m_LogDir);
 	m_machineInfo.ExportData(SysLatOpt.m_LogDir);
@@ -1215,9 +1222,12 @@ void CSysLat_SoftwareDlg::CheckUpdate() {
 		uploadStatus = upload_data_secure(versionNumber, APItarget);
 	}
 
-	DEBUG_PRINT(uploadStatus.body())
-
-	int userUpdateChoice = ::MessageBox(NULL, uploadStatus.body().c_str(), "Update Available", MB_OKCANCEL);
+	DEBUG_PRINT("uploadStatus.body(): " + uploadStatus.body())
+	int userUpdateChoice = 0;
+	if (uploadStatus.body() != "") {
+		userUpdateChoice = ::MessageBox(NULL, "Click ok to download the newest version of SysLat or cancel to continue", "Update Available", MB_OKCANCEL);
+	}
+	
 
 	string newFilePath = pathToSysLat;
 	SL::RemoveFileNameFromPath(newFilePath);
@@ -1230,7 +1240,4 @@ void CSysLat_SoftwareDlg::CheckUpdate() {
 			//download failed
 		//}
 	}	
-}
-void CSysLat_SoftwareDlg::DownloadUpdate() {
-
 }
