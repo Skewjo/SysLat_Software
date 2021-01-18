@@ -249,8 +249,8 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		m_richEditCtrl.SetFont(&m_font);
 	}
 
-	m_bTestUploadMode = true;
-	CheckUpdate();
+	//m_bTestUploadMode = true;
+	//CheckUpdate();
 
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
 	time(&m_elapsedTimeStart);					//Used to keep track of test length
@@ -636,7 +636,6 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 		}
 		else if (dotCounter == 3) {
 			m_strStatus.AppendFormat("...");
-			dotCounter = 0;
 		}
 	}
 	dotCounter++;
@@ -922,7 +921,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 
 		timeVectorExtra.push_back(ElapsedMicrosecondsExtra.QuadPart);
 
-		DEBUG_PRINT("Draw: \t" + to_string(ElapsedMicrosecondsDraw.QuadPart) + "\tExtra: \t" + to_string(ElapsedMicrosecondsExtra.QuadPart))
+		//DEBUG_PRINT("Draw: \t" + to_string(ElapsedMicrosecondsDraw.QuadPart) + "\tExtra: \t" + to_string(ElapsedMicrosecondsExtra.QuadPart))
 	}
 
 	long long totalMicroseconds = 0;
@@ -932,9 +931,9 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	}
 	averageMicroseconds = totalMicroseconds / timeVectorDraw.size();
 	double averageMilliseconds = averageMicroseconds / 1000;
-	DEBUG_PRINT("Draw Total microseconds: " + to_string(totalMicroseconds))
-	DEBUG_PRINT("Draw Average microseconds: " + to_string(averageMicroseconds))
-	DEBUG_PRINT("Draw Average milliseconds: " + to_string(averageMilliseconds))
+	//DEBUG_PRINT("Draw Total microseconds: " + to_string(totalMicroseconds))
+	//DEBUG_PRINT("Draw Average microseconds: " + to_string(averageMicroseconds))
+	//DEBUG_PRINT("Draw Average milliseconds: " + to_string(averageMilliseconds))
 
 
 	totalMicroseconds = 0;
@@ -944,9 +943,9 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	}
 	averageMicroseconds = totalMicroseconds / timeVectorExtra.size();
 	averageMilliseconds = averageMicroseconds / 1000;
-	DEBUG_PRINT("Extra Total microseconds: " + to_string(totalMicroseconds))
-	DEBUG_PRINT("Extra Average microseconds: " + to_string(averageMicroseconds))
-	DEBUG_PRINT("Extra Average milliseconds: " + to_string(averageMilliseconds))
+	//DEBUG_PRINT("Extra Total microseconds: " + to_string(totalMicroseconds))
+	//DEBUG_PRINT("Extra Average microseconds: " + to_string(averageMicroseconds))
+	//DEBUG_PRINT("Extra Average milliseconds: " + to_string(averageMilliseconds))
 
 	usbController.CloseComPort(hPort);
 	sysLatClient.ReleaseOSD();
@@ -1142,7 +1141,7 @@ void CSysLat_SoftwareDlg::DebugMode() {
 }
 void CSysLat_SoftwareDlg::TestUploadMode() {
 	CMenu* settingsMenu = GetMenu();
-	if (m_bTestUploadMode) {
+	if (m_bTestUploadMode) {	
 		settingsMenu->CheckMenuItem(ID_SETTINGS_TESTUPLOADMODE, MF_UNCHECKED);
 		m_bTestUploadMode = false;
 	}

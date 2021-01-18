@@ -179,10 +179,9 @@ void CSysLatData::CreateJSONSLD() {
 	CString durationCString = "";
 	durationCString.AppendFormat("%02d:%02d", minutes, seconds);
 	string durationString = durationCString;
-	jsonSLD["MetaData"]["Duration"] = durationString;
+	jsonSLD["MetaData"]["Duration"] = durationString;	
+	//jsonSLD["MetaData"]["TestAnchor"] = m_boxAnchor; //Having a value in the in the test data that doesn't exist in the schema is not allowed apparently??? It's really, REALLY stupid.
 
-	
-	jsonSLD["MetaData"]["TestAnchor"] = m_boxAnchor;
 	//NumProcBegin: Int
 	//NumProcEnd : Int
 	//ProcListBegin : [String]
