@@ -1231,18 +1231,18 @@ void CSysLat_SoftwareDlg::CheckUpdate() {
 
 	DEBUG_PRINT("uploadStatus.body(): " + uploadStatus.body())
 	int userUpdateChoice = 0;
-	if (uploadStatus.body() != "") {
+
+	if (uploadStatus.result_int() == 302) {
 		userUpdateChoice = ::MessageBox(NULL, "Click ok to download the newest version of SysLat or cancel to continue", "Update Available", MB_OKCANCEL);
 	}
-	
 
-	string newFilePath = pathToSysLat;
-	SL::RemoveFileNameFromPath(newFilePath);
-	newFilePath += "\SysLat.exe";
 	if (userUpdateChoice == 1) {
+		string newFilePath = pathToSysLat;
+		SL::RemoveFileNameFromPath(newFilePath);
+		newFilePath += "\SysLat.exe";
 		URLDownloadToFile(NULL, uploadStatus.body().c_str(), newFilePath.c_str(), 0, NULL);
 		//if download completed properly...
-		::MessageBox(NULL, ("Download complete. Please close this window and start the new version of SysLat at: " + newFilePath).c_str(), "Update Available", MB_OK);
+		::MessageBox(NULL, ("Download complete. Please close this window and start the new version of SysLat at: " + newFilePath).c_str(), "Update Complete", MB_OK);
 		//else {
 			//download failed
 		//}
