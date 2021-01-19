@@ -7,12 +7,13 @@ struct SysLatOptions {
 	string						m_PortSpecifier = "COM3";
 	time_t						m_maxTestDuration = 15;
 	int							m_maxLogs = 10;
-	string						m_LogDir = ".\\SysLat_Logs\\";
+	string						m_LogDir;// = ".\\SysLat_Logs\\";
 	bool						m_bDarkMode = false;
 };
 
 struct PrivacyOptions {
 	bool						m_bFirstRun = true;
+	bool						m_bRunOnStartup = true;
 	bool						m_bAutoCheckUpdates = true;
 	bool						m_bAutoExportLogs = true;
 	bool						m_bAutoUploadLogs = true;
@@ -50,8 +51,11 @@ class SysLatPreferences
 	//	GetMachineSID();
 	//	CreateJSON();
 	//}
-	Json::Value m_JSONPreferences;
+	Json::Value					m_JSONPreferences;
 
+	CHAR						pathToSysLat[MAX_PATH];
+	string						pathOnly;
+	
 	void						WriteSysLatOptions();
 	void						WritePrivacyOptions();
 	void						WriteDebugOptions();
@@ -64,6 +68,9 @@ class SysLatPreferences
 
 public:
 	SysLatPreferences() {
+		GetModuleFileName(NULL, pathToSysLat, MAX_PATH);
+		pathOnly = pathToSysLat;
+		SL::RemoveFileNameFromPath(pathOnly);
 		ReadPreferences();
 	}
 

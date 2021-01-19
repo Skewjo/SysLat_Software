@@ -8,7 +8,7 @@ void SysLatPreferences::WritePreferences() {
 	WriteRTSSOptions();
 
 	std::ofstream exportPreferences;
-	exportPreferences.open("./SysLat_Logs/SysLatPreferences.json");
+	exportPreferences.open(pathOnly + "\SysLatPreferences.json");
 
 	if (exportPreferences.is_open()) {
 		exportPreferences << m_JSONPreferences;
@@ -30,6 +30,7 @@ void SysLatPreferences::WriteSysLatOptions() {
 }
 void SysLatPreferences::WritePrivacyOptions() {
 	m_JSONPreferences["PrivacyOptions"]["FirstRun"] = m_PrivacyOptions.m_bFirstRun;
+	m_JSONPreferences["PrivacyOptions"]["RunOnStartup"] = m_PrivacyOptions.m_bRunOnStartup;
 	m_JSONPreferences["PrivacyOptions"]["AutoCheckUpdates"] = m_PrivacyOptions.m_bAutoCheckUpdates;
 	m_JSONPreferences["PrivacyOptions"]["AutoExportLogs"] = m_PrivacyOptions.m_bAutoExportLogs;
 	m_JSONPreferences["PrivacyOptions"]["AutoUploadLogs"] = m_PrivacyOptions.m_bAutoUploadLogs;
@@ -56,8 +57,8 @@ void SysLatPreferences::WriteRTSSOptions() {
 
 void SysLatPreferences::ReadPreferences() {
 	std::ifstream importPreferences;
-	bool check = CreateDirectory("SysLat_Logs", NULL);
-	importPreferences.open("./SysLat_Logs/SysLatPreferences.json");
+	bool check = CreateDirectory((pathOnly + "SysLat_Logs").c_str(), NULL);
+	importPreferences.open(pathOnly + "/SysLatPreferences.json");
 
 	if (importPreferences.is_open()) {
 		importPreferences >> m_JSONPreferences;
@@ -81,11 +82,12 @@ void SysLatPreferences::ReadSysLatOptions() {
 	m_SysLatOptions.m_PortSpecifier = m_JSONPreferences["SysLatOptions"].get("PortSpecifier", "COM3").asString();
 	m_SysLatOptions.m_maxTestDuration = m_JSONPreferences["SysLatOptions"].get("MaxTestDuration", 15).asInt();
 	m_SysLatOptions.m_maxLogs = m_JSONPreferences["SysLatOptions"].get("MaxLogs", 15).asInt();
-	m_SysLatOptions.m_LogDir = m_JSONPreferences["SysLatOptions"].get("LogDir", ".\\SysLat_Logs\\").asString();
+	m_SysLatOptions.m_LogDir = m_JSONPreferences["SysLatOptions"].get("LogDir", pathOnly + "\SysLat_Logs").asString();
 	m_SysLatOptions.m_bDarkMode = m_JSONPreferences["SysLatOptions"].get("DarkMode", false).asBool();
 }
 void SysLatPreferences::ReadPrivacyOptions() {
 	m_PrivacyOptions.m_bFirstRun = m_JSONPreferences["PrivacyOptions"].get("FirstRun", true).asBool();
+	m_PrivacyOptions.m_bRunOnStartup = m_JSONPreferences["PrivacyOptions"].get("RunOnStartup", true).asBool();
 	m_PrivacyOptions.m_bAutoCheckUpdates = m_JSONPreferences["PrivacyOptions"].get("AutoCheckUpdates", true).asBool();
 	m_PrivacyOptions.m_bAutoExportLogs = m_JSONPreferences["PrivacyOptions"].get("AutoExportLogs", true).asBool();
 	m_PrivacyOptions.m_bAutoUploadLogs = m_JSONPreferences["PrivacyOptions"].get("AutoUploadLogs", true).asBool();

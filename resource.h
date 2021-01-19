@@ -30,6 +30,9 @@
 #define IDC_MFCEDITBROWSE               1030
 #define IDC_STATIC_MAX_LOGS             1031
 #define IDC_STATIC_MAX_TEST             1032
+#define IDC_BUTTON_PREFOK               1033
+#define IDC_CHECK1                      1034
+#define IDC_CHECK_RUN_STARTUP           1034
 #define ID_SETTINGS_PORT                32771
 #define ID_PORT_COM1                    32772
 #define ID_PORT_COM2                    32773
@@ -71,7 +74,7 @@
 #ifndef APSTUDIO_READONLY_SYMBOLS
 #define _APS_NEXT_RESOURCE_VALUE        145
 #define _APS_NEXT_COMMAND_VALUE         32806
-#define _APS_NEXT_CONTROL_VALUE         1033
+#define _APS_NEXT_CONTROL_VALUE         1035
 #define _APS_NEXT_SYMED_VALUE           101
 #endif
 #endif

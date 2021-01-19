@@ -6,7 +6,7 @@
 #define VERSION_UNSAFE      0   // 0 = TESTED, 1 = UNSAFE / IN DEVELOPMENT
 
 #define VERSION_MAJOR		1
-#define VERSION_MINOR		0
+#define VERSION_MINOR		1
 
 #define VER_COPYRIGHT_STR       "Copyright (C) 2017 - 2021"
 #define VER_TRADEMARK_STR       "Trademark SysLat"

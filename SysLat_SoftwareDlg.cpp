@@ -132,7 +132,7 @@ SysLatPreferences	SLPref;
 #define DebugOpt SLPref.m_DebugOptions
 #define RTSSOpt	SLPref.m_RTSSOptions
 
-NOTIFYICONDATA		nid;
+NOTIFYICONDATA nid;
 int dotCounter = 0;
 
 //Define static variables - these should probably be done as inline or something... inlining is supposed to be available in C++17 and above, but Visual Studio throws a fit when I try to inline these.
@@ -248,14 +248,18 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		m_font.CreateFont(-11, 0, 0, 0, FW_REGULAR, 0, 0, 0, BALTIC_CHARSET, 0, 0, 0, 0, "Courier New");
 		m_richEditCtrl.SetFont(&m_font);
 	}
-
 	
 	if (PrivacyOpt.m_bFirstRun) {
 		::MessageBox(NULL, "This appears to be the first time you've run SysLat from this directory. Please set your privacy options.", "SysLat First Run", MB_OK);
 		OpenPreferences();
 		PrivacyOpt.m_bFirstRun = false;
 	}
-
+	if (PrivacyOpt.m_bRunOnStartup) {
+		SetSURegValue(pathToSysLat);
+	}
+	else{
+		SetSURegValue("");
+	}
 	if(PrivacyOpt.m_bAutoCheckUpdates){
 		CheckUpdate();
 	}
@@ -372,17 +376,13 @@ LRESULT CSysLat_SoftwareDlg::OnSTMessage(WPARAM wParam, LPARAM lParam) {
 	UNREFERENCED_PARAMETER(wParam);
 	UNREFERENCED_PARAMETER(lParam);
 
-	// Handle message here.
 	if (lParam == WM_LBUTTONDBLCLK){
 		if (IsIconic()) {
 			ModifyStyleEx(WS_EX_TOOLWINDOW, WS_EX_APPWINDOW);
 			ShowWindow(SW_SHOWNORMAL);
 			Shell_NotifyIcon(NIM_DELETE, &nid);
 		}
-		//::MessageBox(NULL, "Tray icon double clicked!", "clicked", MB_OK);
 	}
-
-
 	return 0;
 }
 
@@ -608,7 +608,6 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 		m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
 	}
 	else {
-		
 		m_strStatus.AppendFormat("\nSystem Latency: Waiting");
 		if (dotCounter == 1) {
 			m_strStatus.AppendFormat(".");
@@ -1172,6 +1171,14 @@ void CSysLat_SoftwareDlg::DisplaySysLatInOSD() {
 void CSysLat_SoftwareDlg::OpenPreferences() {
 	PreferencesDlg preferencesDlg(&SLPref);
 	preferencesDlg.DoModal();
+
+	//this should probably be set somewhere else...
+	if (PrivacyOpt.m_bRunOnStartup) {
+		SetSURegValue(pathToSysLat);
+	}
+	else {
+		SetSURegValue("");
+	}
 }
 void CSysLat_SoftwareDlg::OpenTestCtrl() {
 	TestCtrl testCtrl(&m_vpPreviousSLD);
@@ -1241,3 +1248,59 @@ void CSysLat_SoftwareDlg::CheckUpdate() {
 		//}
 	}	
 }
+
+void CSysLat_SoftwareDlg::SetSURegValue(string regValue) {
+
+	string regSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\");//SysLat
+	string regValueName = "SysLat";
+	DEBUG_PRINT(regValue)
+		
+	//RegDeleteKeyEx(HKEY  hKey, regValueName.c_str());
+
+	try
+	{
+		size_t bufferSize = 0xFFF; // If too small, will be resized down below.
+		auto cbData = static_cast<DWORD>(regValue.size() * sizeof(char));//leaving off "bufferSize * sizeof(char)" caused Windows defender to think SysLat was a trojan... Maybe? IDK, the problem just went away all of a sudden.
+		HKEY hKey;
+		//auto lResult = RegOpenKeyEx(HKEY_CURRENT_USER, regSubKey.c_str(), 0, KEY_READ,  &hKey); //KEY_READ
+		DWORD position;
+		auto rc = RegCreateKeyEx(HKEY_CURRENT_USER, regSubKey.c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, &position);
+		if (position == REG_OPENED_EXISTING_KEY) {
+			DEBUG_PRINT("Key already exists & has been opened.")
+		}
+		else if (position == REG_CREATED_NEW_KEY) {
+			DEBUG_PRINT("Created new key.")
+		}
+		else {
+			DEBUG_PRINT("ERROR: Key does not exist, and a new key was not created.")
+		}
+
+		if (rc == ERROR_SUCCESS) {
+			auto rc = RegSetValueEx(hKey, regValueName.c_str(), 0, REG_SZ, (BYTE*)regValue.data(), cbData);
+			if (rc == ERROR_SUCCESS)
+			{
+			}
+			else
+			{
+				throw std::runtime_error("Windows system error code: " + to_string(rc));
+			}
+		}
+		else {
+			DEBUG_PRINT("Error opening key.\n")
+		}
+	}
+	catch (std::exception& e)
+	{
+		DEBUG_PRINT(e.what())
+	}
+}
+
+//I never used this function, but it seemed like it could be really nice in the future...
+//inline std::wstring convert(const std::string& as)
+//{
+//	wchar_t* buf = new wchar_t[as.size() * 2 + 2];
+//	swprintf(buf, L"%S", as.c_str());
+//	std::wstring rval = buf;
+//	delete[] buf;
+//	return rval;
+//}

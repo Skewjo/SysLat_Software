@@ -72,6 +72,7 @@ protected:
 	void							OnComPortChanged(UINT nID);
 	void							OnTargetWindowChanged(UINT nID);
 	void							CheckUpdate();
+	void							SetSURegValue(string regValue);
 
 	//Members
 	HardwareID					m_hardwareID;
