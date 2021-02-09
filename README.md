@@ -8,11 +8,13 @@ Thank you for taking a look at SysLat. By the time you read this, this README wi
 
 ...but who knows. I may throw a bunch of things onto the website or into a wiki. If you're just looking for the latest version of SysLat and don't want to build and/or modify the program yourself, you can find it at https://SysLat.com/downloads.
 
+SysLat's paired "firmware" can be found here: https://github.com/Skewjo/SysLat_Firmware
+
 # Long-term Goals for this Project, Open Source, and a Message to the Community
 
 I hope the measurements we take this with tool can lead to new advancements in the way both hardware and software are built, and I believe that with enough data this is possible through the use of machine learning and AI.
-The only to get that data though, is by building a large community around a single standard tool for making those measurements. 
-While the SysLat software may currently only run on Windows and is very poorly optimized, I'm hoping the open-source community can help me in porting it to additional operating systems and optimize it so that the impact on users is as minimal as possible.
+The only to get that data though, is by building a large community around a single standard tool for making these measurements. 
+While the SysLat software may currently only run on Windows and may be poorly optimized, I'm hoping the open-source community can help me in porting it to additional operating systems and optimize it so that the impact on users is as minimal as possible.
 
 
 #(REPO)TODO:
