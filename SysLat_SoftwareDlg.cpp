@@ -254,12 +254,16 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 		OpenPreferences();
 		PrivacyOpt.m_bFirstRun = false;
 	}
+
+	
 	if (PrivacyOpt.m_bRunOnStartup) {
 		SetSURegValue(pathToSysLat);
 	}
-	else{
+	else {
 		SetSURegValue("");
 	}
+	
+	//m_bTestUploadMode = true;
 	if(PrivacyOpt.m_bAutoCheckUpdates){
 		CheckUpdate();
 	}
@@ -1249,44 +1253,43 @@ void CSysLat_SoftwareDlg::CheckUpdate() {
 	}	
 }
 
+// if option is no, check to see if it exists and delete it if it does(probably can't use "RegOpenKeyEx" for this)
+// if option is yes open and/or create the key
+	//if it already exists, delete its value? or delete the entire thing itself?
+	//then (re)create it
+
 void CSysLat_SoftwareDlg::SetSURegValue(string regValue) {
 
 	string regSubKey("SOFTWARE\\Microsoft\\Windows\\CurrentVersion\\Run\\");//SysLat
 	string regValueName = "SysLat";
 	DEBUG_PRINT(regValue)
 		
-	//RegDeleteKeyEx(HKEY  hKey, regValueName.c_str());
-
 	try
 	{
 		size_t bufferSize = 0xFFF; // If too small, will be resized down below.
-		auto cbData = static_cast<DWORD>(regValue.size() * sizeof(char));//leaving off "bufferSize * sizeof(char)" caused Windows defender to think SysLat was a trojan... Maybe? IDK, the problem just went away all of a sudden.
+		auto cbData = static_cast<DWORD>(regValue.size() * sizeof(char) + sizeof(char));//leaving off "bufferSize * sizeof(char)" caused Windows defender to think SysLat was a trojan... Maybe? IDK, the problem just went away all of a sudden.
 		HKEY hKey;
-		//auto lResult = RegOpenKeyEx(HKEY_CURRENT_USER, regSubKey.c_str(), 0, KEY_READ,  &hKey); //KEY_READ
 		DWORD position;
+		
 		auto rc = RegCreateKeyEx(HKEY_CURRENT_USER, regSubKey.c_str(), 0, NULL, REG_OPTION_NON_VOLATILE, KEY_ALL_ACCESS, NULL, &hKey, &position);
-		if (position == REG_OPENED_EXISTING_KEY) {
-			DEBUG_PRINT("Key already exists & has been opened.")
-		}
-		else if (position == REG_CREATED_NEW_KEY) {
-			DEBUG_PRINT("Created new key.")
-		}
-		else {
-			DEBUG_PRINT("ERROR: Key does not exist, and a new key was not created.")
-		}
-
-		if (rc == ERROR_SUCCESS) {
-			auto rc = RegSetValueEx(hKey, regValueName.c_str(), 0, REG_SZ, (BYTE*)regValue.data(), cbData);
-			if (rc == ERROR_SUCCESS)
-			{
+		if ((position == REG_OPENED_EXISTING_KEY || position == REG_CREATED_NEW_KEY) && rc == ERROR_SUCCESS) {
+			if (position == REG_OPENED_EXISTING_KEY) {
+				DEBUG_PRINT("Key already exists & has been opened.")
 			}
-			else
-			{
+			else if (position == REG_CREATED_NEW_KEY) {
+				DEBUG_PRINT("Created new key.")
+			}
+
+			auto rc = RegSetValueEx(hKey, regValueName.c_str(), 0, REG_SZ, (BYTE*)regValue.data(), cbData);
+			if (rc != ERROR_SUCCESS){
 				throw std::runtime_error("Windows system error code: " + to_string(rc));
 			}
 		}
+		else if(rc != ERROR_SUCCESS){
+			DEBUG_PRINT("Error setting key.\n")
+		}
 		else {
-			DEBUG_PRINT("Error opening key.\n")
+			DEBUG_PRINT("UNKNOWN ERROR: Key does not exist, and a new key was not created.")
 		}
 	}
 	catch (std::exception& e)
@@ -1294,6 +1297,13 @@ void CSysLat_SoftwareDlg::SetSURegValue(string regValue) {
 		DEBUG_PRINT(e.what())
 	}
 }
+
+
+//DEBUG_PRINT("BYTE*: " + to_string(sizeof(BYTE*)));
+//DEBUG_PRINT("BYTE: " + to_string(sizeof(BYTE)));
+//DEBUG_PRINT("char*: " + to_string(sizeof(char*)));
+//DEBUG_PRINT("char: " + to_string(sizeof(char)));
+//ASSERT(sizeof(BYTE*) == sizeof(char));
 
 //I never used this function, but it seemed like it could be really nice in the future...
 //inline std::wstring convert(const std::string& as)

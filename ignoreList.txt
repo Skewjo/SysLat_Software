@@ -1,0 +1,8 @@
+Zoom
+iCUE
+MousewithoutBordersHelper
+Cortana
+Code
+GameBarFTServer
+ScriptedSandbox64
+SysLat
