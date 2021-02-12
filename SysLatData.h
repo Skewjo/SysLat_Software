@@ -2,6 +2,8 @@
 #ifndef SYSLATDATA_H
 #define SYSLATDATA_H
 
+#include "StdAfx.h"
+
 //#define MAX_TESTS										500
 #define MOVING_AVERAGE									100
 #define EVR_MIN											3
