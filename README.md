@@ -44,6 +44,8 @@ To convert back to dynamic linkage:
 
 When integrating the Boost/Beast library, I had to add a macro ```#undef max``` to file ```"file_stdio.ipp"```(I believe this is an external dependency, which means that every person that tries to build this thing from their workstation will have to make this change?? That can't be right...) because of some ancient problem or something. A quick Google/SO search will tell you all about it if you need to know more.
 
+2/15/2021: This also happened (having to #undef min and #undef max) when I attempted to add [Howard Hinnant's Date library](https://howardhinnant.github.io/date/date.html).
+
 I've defined 2 functions in the HTTP_Client_Async header file that are not associated with the class ("session") defined there. 
 - What are these functions called? 
 - Should I define them somewhere else?
