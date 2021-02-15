@@ -11,10 +11,10 @@ class TestCtrl : public CDialogEx
 {
 	DECLARE_DYNAMIC(TestCtrl)
 
-	vector<CSysLatData*>*	m_pPreviousSLD;
+	vector<std::shared_ptr<CSysLatData>>*	m_pPreviousSLD;
 
 public:
-	TestCtrl(vector<CSysLatData*>* p_previousSLD, CWnd* pParent = nullptr);   // standard constructor
+	TestCtrl(vector<std::shared_ptr<CSysLatData>>* p_previousSLD, CWnd* pParent = nullptr);   // standard constructor
 	virtual ~TestCtrl();
 
 // Dialog Data

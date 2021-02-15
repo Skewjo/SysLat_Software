@@ -35,14 +35,14 @@ void CSysLatData::UpdateSLD(unsigned int loopCounter, const string& sysLatResult
 
 double CSysLatData::CalculateMovingAverage(double currentAvg, int input) {
 	double newMovingAvg = currentAvg - (currentAvg/ MOVING_AVERAGE);
-	newMovingAvg += input/MOVING_AVERAGE;
+	newMovingAvg += static_cast<double>(input)/MOVING_AVERAGE;
 
 	return newMovingAvg;
 }
 
 void CSysLatData::AppendError(const string& error)
 {
-	if (m_strError.size() == 0)
+	if (m_strError.size() != 0)
 		m_strError += "\n";
 	m_strError += error;
 	m_strError + "\n";

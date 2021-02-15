@@ -7,7 +7,7 @@
 
 IMPLEMENT_DYNAMIC(TestCtrl, CDialogEx)
 
-TestCtrl::TestCtrl(vector<CSysLatData*>* p_previousSLD, CWnd* pParent /*=nullptr*/)
+TestCtrl::TestCtrl(vector<std::shared_ptr<CSysLatData>>* p_previousSLD, CWnd* pParent /*=nullptr*/)
 	: CDialogEx(IDD_TESTCTRL_DIALOG, pParent), m_pPreviousSLD(p_previousSLD)
 {
 }

@@ -16,6 +16,8 @@
 #include "TestCtrl.h" //this one should probably have a suffix of "dlg"...
 #include "version.h"
 
+//probably need to move the following 2 includes to stdafx.h
+#include <memory> 
 #include <shellapi.h>
 
 //TODO:
@@ -142,8 +144,7 @@ unsigned int CSysLat_SoftwareDlg::m_LoopCounterRefresh = 0;
 unsigned int CSysLat_SoftwareDlg::m_loopSize = 0xFFFFFFFF;
 CString	CSysLat_SoftwareDlg::m_updateString = "";
 CString CSysLat_SoftwareDlg::m_strError = "";
-//need to turn the following into a unique_ptr(maybe?) or at least delete it in the dtor...
-CSysLatData* CSysLat_SoftwareDlg::m_pOperatingSLD = new CSysLatData;
+std::shared_ptr<CSysLatData> CSysLat_SoftwareDlg::m_pOperatingSLD = std::make_shared<CSysLatData>(); //does this need to be a unique_ptr?
 CString CSysLat_SoftwareDlg::m_strBlack = "<C=000000><B=10,10><C>";
 CString CSysLat_SoftwareDlg::m_strWhite = "<C=FFFFFF><B=10,10><C>";
 DWORD CSysLat_SoftwareDlg::m_sysLatOwnedSlot = 0;
@@ -815,7 +816,7 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 
 	//Save the data from the test that just completed in a vector of "SysLatData"s
 	m_vpPreviousSLD.push_back(m_pOperatingSLD);
-	m_pOperatingSLD = new CSysLatData;
+	m_pOperatingSLD = std::make_shared<CSysLatData>();
 
 	//Restart the thread
 	m_drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, 0);

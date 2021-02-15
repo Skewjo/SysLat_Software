@@ -82,8 +82,10 @@ protected:
 
 	HANDLE						m_drawingThreadHandle;
 	int							m_COMPortCount;
-	static CSysLatData*			m_pOperatingSLD;
-	vector<CSysLatData*>		m_vpPreviousSLD;
+	static std::shared_ptr<CSysLatData> m_pOperatingSLD;
+	//static CSysLatData*			m_pOperatingSLD;
+	//vector<CSysLatData*>		m_vpPreviousSLD;
+	vector<std::shared_ptr<CSysLatData>> m_vpPreviousSLD;
 	static constexpr const char* m_caSysLat = "SysLat";
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
 	static DWORD				m_sysLatOwnedSlot;//UGH - I'm specifcally making the sysLatClient object thread local... but then to get a value from it I need to make a static var in this class to track it.  Seems dumb.
