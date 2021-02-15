@@ -33,6 +33,7 @@
 #include <io.h>
 #include <json/json.h>
 #include <map>
+#include <mutex>
 #include <process.h>
 #include <regex>
 #include <sstream>

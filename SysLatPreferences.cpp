@@ -12,7 +12,7 @@ void SysLatPreferences::WritePreferences() {
 
 	if (exportPreferences.is_open()) {
 		exportPreferences << m_JSONPreferences;
-		//dataExported = true;
+		//m_bDataExported = true;
 	}
 	//else {
 		//m_strError += "Unable to open file";
@@ -62,7 +62,7 @@ void SysLatPreferences::ReadPreferences() {
 
 	if (importPreferences.is_open()) {
 		importPreferences >> m_JSONPreferences;
-		//dataExported = true;
+		//m_bDataExported = true;
 	}
 	//else {
 		//m_strError += "Unable to open file";

@@ -192,7 +192,7 @@ void MachineInfo::ExportData(string path) {
 
     if (exportData.is_open()) {
         exportData << MachineInfoJSON;
-        dataExported = true;
+        m_bDataExported = true;
     }
     else {
         DEBUG_PRINT("Error exporting machineInfo file.")

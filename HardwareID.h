@@ -6,7 +6,7 @@
 
 class HardwareID
 {
-    bool dataExported = false;
+    bool m_bDataExported = false;
     //Need to pull this out and put it in it's own hardware retrieval class
     //LPHW_PROFILE_INFOA lpHwProfileInfo = { 0 }; // why did this work??
 
