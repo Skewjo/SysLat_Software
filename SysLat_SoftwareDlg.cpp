@@ -605,8 +605,8 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 	double measurementsPerSecond = data.m_statistics.counter / dif;
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
 
-	if (std::stol(m_pOperatingSLD->GetStringResult()) < 500) { //using "c_str()" here because "stoi(m_pOperatingSLD->GetStringResult())" was getting immediate exceptions for some reason...
-		m_strStatus.AppendFormat("\nSystem Latency: %i", std::stol(m_pOperatingSLD->GetStringResult()));
+	if (m_pOperatingSLD->GetSystemLatency() < 500) { //using "c_str()" here because "stoi(m_pOperatingSLD->GetStringResult())" was getting immediate exceptions for some reason...
+		m_strStatus.AppendFormat("\nSystem Latency: %i", m_pOperatingSLD->GetSystemLatency());
 	}
 	else {
 		m_strStatus.AppendFormat("\nSystem Latency: Waiting");
@@ -678,7 +678,7 @@ void CSysLat_SoftwareDlg::R_ProcessNames() {
 void CSysLat_SoftwareDlg::R_StrOSD() {
 	//BOOL bTruncated = FALSE;
 	string strOSD;// = strOSDBuilder.Get(bTruncated);
-	strOSD += m_pOperatingSLD->GetStringResult();
+	strOSD += m_pOperatingSLD->GetSystemLatency();
 	if (!(strOSD.size() == 0))
 	{
 		bool bResult = m_SysLatStatsClient.UpdateOSD(strOSD.c_str());

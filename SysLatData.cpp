@@ -1,10 +1,6 @@
 #include "StdAfx.h"
 #include "SysLatData.h"
 
-string CSysLatData::GetStringResult() {
-	return m_strSysLatResultsComplete;
-}
-
 void CSysLatData::SetEndTime() {
 	m_endTime = system_clock::now();
 	m_testDuration = duration_cast<duration<int>>(m_endTime - m_startTime);
@@ -13,28 +9,35 @@ void CSysLatData::SetEndTime() {
 void CSysLatData::UpdateSLD(unsigned int loopCounter, const string& sysLatResults, string RTSSWindow, string activeWindow, DWORD fgPID, DWORD rtssPID)
 {
 	m_Mutex.lock();
-
 	m_sld.m_statistics.counter = loopCounter+1;
 
-	m_strSysLatResultsComplete = sysLatResults;
-
-	int systemLatency = 0;
-	if (!(m_strSysLatResultsComplete.size() == 0)) {
-		systemLatency = stoi(m_strSysLatResultsComplete);
+	if (sysLatResults.size() != 0) {
+		systemLatency = stoi(sysLatResults);
 		m_sld.m_allResults.push_back(systemLatency);
 		m_sld.m_v_strRTSSWindow.push_back(RTSSWindow);
 		m_sld.m_v_strActiveWindow.push_back(activeWindow);
 		m_sld.m_statistics.total += systemLatency;
 		m_sld.m_statistics.average = static_cast<double>(m_sld.m_statistics.total) / m_sld.m_statistics.counter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit... - working now?
-
+		//m_sld.m_statistics.movingAverage
+		m_sld.m_statistics.approxMovingAvg = CalculateMovingAverage(m_sld.m_statistics.average, systemLatency);
+			
+		
 		if (systemLatency > 3 && systemLatency < 100 && fgPID == rtssPID) {
 			m_sld.m_statisticsEVR.counter++;
 			m_sld.m_statisticsEVR.total += systemLatency;
 			m_sld.m_statisticsEVR.average = static_cast<double>(m_sld.m_statisticsEVR.total) / m_sld.m_statisticsEVR.counter;
+			m_sld.m_statisticsEVR.approxMovingAvg = CalculateMovingAverage(m_sld.m_statisticsEVR.average, systemLatency);
 		}
 	}
 
 	m_Mutex.unlock();
+}
+
+double CSysLatData::CalculateMovingAverage(double currentAvg, int input) {
+	double newMovingAvg = currentAvg - (currentAvg/ MOVING_AVERAGE);
+	newMovingAvg += input/MOVING_AVERAGE;
+
+	return newMovingAvg;
 }
 
 void CSysLatData::AppendError(const string& error)
