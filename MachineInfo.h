@@ -2,7 +2,7 @@
 
 class MachineInfo
 {
-    bool dataExported = false;
+    bool m_bDataExported = false;
 
     SYSTEM_INFO siSysInfo;
     

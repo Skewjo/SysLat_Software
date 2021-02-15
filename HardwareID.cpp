@@ -85,7 +85,7 @@ void HardwareID::ExportData(string path) {
 
     if (exportData.is_open()) {
         exportData << HardwareIDJSON;
-        dataExported = true;
+        m_bDataExported = true;
     }
     else {
         DEBUG_PRINT("\nError exporting hardwareID file.\n")

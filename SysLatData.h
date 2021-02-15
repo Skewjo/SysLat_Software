@@ -1,91 +1,67 @@
 #pragma once
-#ifndef SYSLATDATA_H
-#define SYSLATDATA_H
 
-#include "StdAfx.h"
+//Without the following 2 macros the date library spits out 50+ errors about min and max being undefined.
+#undef max 
+#undef min
+#include <date/date.h> //Should likely move this to StdAfx.h, but I'm not sure if I can because of the macro issue.
+using namespace date;
+using namespace std::chrono;
 
-//#define MAX_TESTS										500
-#define MOVING_AVERAGE									100
-#define EVR_MIN											3
-#define EVR_MAX											100
+constexpr size_t MOVING_AVERAGE = 100;
+constexpr size_t EVR_MIN = 3;
+constexpr size_t EVR_MAX = 100;
 
-//putting all of this in a struct is probably unbelievably stupid
-typedef struct SYSLAT_DATA {
+struct SYSLAT_DATA {
+	struct Statistics {
+		std::size_t counter = 0;
+		int total = 0;
+		double average = 0;
+		double median = 0;
+		int max = 0;
+		int min = 0;
+		int	m_a_MovingAverage[MOVING_AVERAGE] = { 0 };//if I end up using a "total tests" var, then this should probably just be split into 2 pointers pointing at the "head" of the totalTests var and head-100 or something...
+	};
+
 	vector<int>			m_allResults;
 	vector<string>		m_v_strRTSSWindow;
 	vector<string>		m_v_strActiveWindow;
-	int					m_counter = 0;
-	int					m_systemLatencyTotal = 0;
-	double				m_systemLatencyAverage = 0;
-	int					m_counterEVR = 0;
-	int					m_systemLatencyTotalEVR = 0; //EVR stands for expected value range
-	double				m_systemLatencyAverageEVR = 0;
-	int					m_a_MovingAverage[MOVING_AVERAGE] = { 0 };//if I end up using a "total tests" var, then this should probably just be split into 2 pointers pointing at the "head" of the totalTests var and head-100 or something...
-	int					m_systemLatencyMedian = 0;
-	int					m_systemLatencyMedianEVR = 0;
-	int					m_systemLatencyMax = 0;
-	int					m_systemLatencyMin = 0;
-	int					m_systemLatencyMaxEVR = 0;
-	int					m_systemLatencyMinEVR = 0;
-}SYSLAT_DATA;
+	
+	Statistics			m_statistics;
+	Statistics			m_statisticsEVR;
+};
 
 class CSysLatData
 {
 protected: 
-	SYSLAT_DATA			sld;
-	CString				m_strSysLatResultsComplete;
-	HANDLE				m_Mutex = NULL;
-	CString				m_strError;
-	time_t				m_startTime, m_endTime;
-	char				m_startDate[26], m_endDate[26];
+	SYSLAT_DATA			m_sld;
+	Json::Value			m_JSONsld; //this is basically a second copy of the data... will probably eat up a BOATLOAD of memory for no reason. There's got to be a better way...
+
+	std::mutex			m_Mutex;
+	string				m_strSysLatResultsComplete = "0";
+	string				m_strError = "";
+
+	const system_clock::time_point	m_startTime = system_clock::now();
+	system_clock::time_point		m_endTime;
+	duration<int>			m_testDuration; 
 
 public:
-	CSysLatData(); //this constructor only opens a mutex... does the destructor need to close the mutex? Also, do I need to init the struct in the constructor? It should init to all 0's off the bat...
-	
-	Json::Value			jsonSLD; //this is basically a second copy of the data... will probably eat up a BOATLOAD of memory for no reason. There's got to be a better way...
-	
-	//using getters and setters for all of these seems stupid...
-	int					GetCounter();
-	int					GetTotal();
-	double				GetAverage();
-	int					GetCounterEVR();
-	int					GetTotalEVR();
-	double				GetAverageEVR();
-	CString				GetStringResult();
+	const SYSLAT_DATA& GetData() {return m_sld;}
+	const Json::Value& GetJSONData() { return m_JSONsld; }
 
-	int					GetMedian();
-	int					GetMedianEVR();
-	int					GetMax();
-	int					GetMin();
-	int					GetMaxEVR();
-	int					GetMinEVR();
-	//int*				GetMovingAverage(); //????
+	string				GetStringResult(); //need to get rid of this one at some point too I think...
+	//double			CalculateMovingAverage(); //this function would be for calculating it from scratch...
+	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
+	void				SetEndTime();
+	void				UpdateSLD(unsigned int loopCounter, const string& sysLatResults, string RTSSWindow, string activeWindow, DWORD fgPID, DWORD rtssPID);
+	void				AppendError(const string& error);
+	
+	void				CreateJSONSLD(); // I think I may need to make this and the following functions return bools or ints based on whether or not they failed.
+	void				ExportData(int testNumber, string path = ".\\SysLat_Logs", int totalLogs = 10000);
 
 	string				m_targetApp = "Unknown";
 	string				m_RTSSVersion = "0.0.0";
 	string				m_boxAnchor = "Unknown";
-	struct tm*			startTimeUTC;
-	double				m_testDuration;
 
-	//double			CalculateMovingAverage(); //this function would be for calculating it from scratch...
-	//double			UpdateMovingAverage(); //this function would be used if I'm updating the moving average every time I get a new value
-	void				SetEndTime();
-	
-	void				UpdateSLD(unsigned int loopCounter, const CString& sysLatResults, string RTSSWindow, string activeWindow, DWORD fgPID, DWORD rtssPID);
-	
-	//mutex functions
-	void				CheckSLDMutex();
-	BOOL				AcquireSLDMutex();
-	void				ReleaseSLDMutex();
-	void				CloseSLDMutex();
-
-	void				AppendError(const CString& error);
-
-	// I think I need to make the following 2 functions return BOOLs or INTs based on whether or not they failed.
-	void				CreateJSONSLD();
-	void				ExportData(int testNumber, string path = ".\\SysLat_Logs", int totalLogs = 10000);
-
-	bool				dataExported = false;
-	bool				dataUploaded = false;
+	bool				m_bDataExported = false;
+	bool				m_bDataUploaded = false;
 };
-#endif

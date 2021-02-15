@@ -27,16 +27,20 @@ BOOL TestCtrl::OnInitDialog() {
 
 	for (unsigned int i = 0; i < m_pPreviousSLD->size(); i++) {
 		string targetApp = (*m_pPreviousSLD)[i]->m_targetApp;
-		double dif = (*m_pPreviousSLD)[i]->m_testDuration;
+		//double dif = (*m_pPreviousSLD)[i]->m_testDuration; temporarily removed
+		double dif = 0.0;
+
 		int minutes = static_cast<int>(dif) / 60;
 		int seconds = static_cast<int>(dif) % 60;
 		CString duration = "";
 		duration.AppendFormat("%02d:%02d", minutes, seconds);
 
-		int sysLatAverage = (*m_pPreviousSLD)[i]->GetAverageEVR();
-		int testCount = (*m_pPreviousSLD)[i]->GetCounterEVR();
-		bool exported = (*m_pPreviousSLD)[i]->dataExported;
-		bool uploaded = (*m_pPreviousSLD)[i]->dataUploaded;
+		auto& data = (*m_pPreviousSLD)[i]->GetData();
+
+		int sysLatAverage = (data.m_statisticsEVR.average); //*m_pPreviousSLD)[i]->GetAverageEVR();
+		int testCount = (data.m_statisticsEVR.counter);
+		bool exported = (*m_pPreviousSLD)[i]->m_bDataExported;
+		bool uploaded = (*m_pPreviousSLD)[i]->m_bDataUploaded;
 		//int stuff = *m_pPreviousSLD[i]->GetCounterEVR();
 		char buffer[256];
 

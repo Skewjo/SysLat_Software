@@ -372,7 +372,7 @@ void CSysLat_SoftwareDlg::OnDestroy()
 
 	TerminateThread(m_drawingThreadHandle, 0); //Does exit code need to be 0 for this?
 	m_SysLatStatsClient.ReleaseOSD();
-	m_pOperatingSLD->CloseSLDMutex();
+	//m_pOperatingSLD->CloseSLDMutex();
 
 	CDialogEx::OnDestroy();
 }
@@ -596,20 +596,17 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 	int minutes = static_cast<int>(dif) / 60;
 	int seconds = static_cast<int>(dif) % 60;
 
+	auto& data = m_pOperatingSLD->GetData();
+
 	if (minutes >= SysLatOpt.m_maxTestDuration) {
 		ReInitThread();
 	}
 
-	double measurementsPerSecond = m_pOperatingSLD->GetCounter() / dif;
-
-	BOOL success = m_pOperatingSLD->AcquireSLDMutex();		// begin the sync access to fields
-	if (!success)
-		return success;
-
+	double measurementsPerSecond = data.m_statistics.counter / dif;
 	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
 
-	if (atoi(m_pOperatingSLD->GetStringResult()) < 500) {
-		m_strStatus.AppendFormat("\nSystem Latency: %s", m_pOperatingSLD->GetStringResult());
+	if (std::stol(m_pOperatingSLD->GetStringResult()) < 500) { //using "c_str()" here because "stoi(m_pOperatingSLD->GetStringResult())" was getting immediate exceptions for some reason...
+		m_strStatus.AppendFormat("\nSystem Latency: %i", std::stol(m_pOperatingSLD->GetStringResult()));
 	}
 	else {
 		m_strStatus.AppendFormat("\nSystem Latency: Waiting");
@@ -624,7 +621,7 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 		}
 	}
 
-	m_strStatus.AppendFormat("\nLoop Counter : %d", m_pOperatingSLD->GetCounter());
+	m_strStatus.AppendFormat("\nLoop Counter : %d", data.m_statistics.counter);
 
 	if (isnan(measurementsPerSecond)) {
 		m_strStatus.AppendFormat("\nMeasurements Per Second: 0.00");
@@ -633,8 +630,8 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 		m_strStatus.AppendFormat("\nMeasurements Per Second: %.2f", measurementsPerSecond); //This value should probably be in the SLD...
 	}
 
-	if (m_pOperatingSLD->GetAverage() < 500) {
-		m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", m_pOperatingSLD->GetAverage());
+	if (data.m_statistics.average < 500) {
+		m_strStatus.AppendFormat("\nSystem Latency Average: %.2f", data.m_statistics.average);
 	}
 	else {
 		m_strStatus.AppendFormat("\nSystem Latency Average: Waiting");
@@ -653,12 +650,10 @@ BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
 		dotCounter = 0;
 	}
 
-	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", m_pOperatingSLD->GetCounterEVR());
-	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", m_pOperatingSLD->GetAverageEVR());
+	m_strStatus.AppendFormat("\nLoop Counter EVR(expected value range, 3-100): %d ", data.m_statisticsEVR.counter);
+	m_strStatus.AppendFormat("\nSystem Latency Average(EVR): %.2f", data.m_statisticsEVR.average);
 
-	m_pOperatingSLD->ReleaseSLDMutex();		// end the sync access to fields
-
-	return success;
+	return true; //this return value needs to change or be removed
 }
 void CSysLat_SoftwareDlg::R_Position() {
 	m_strStatus.AppendFormat("\n\nClients num: %d", CRTSSClient::clientsNum);
@@ -682,11 +677,11 @@ void CSysLat_SoftwareDlg::R_ProcessNames() {
 }
 void CSysLat_SoftwareDlg::R_StrOSD() {
 	//BOOL bTruncated = FALSE;
-	CString strOSD;// = strOSDBuilder.Get(bTruncated);
+	string strOSD;// = strOSDBuilder.Get(bTruncated);
 	strOSD += m_pOperatingSLD->GetStringResult();
-	if (!strOSD.IsEmpty())
+	if (!(strOSD.size() == 0))
 	{
-		BOOL bResult = m_SysLatStatsClient.UpdateOSD(strOSD);
+		bool bResult = m_SysLatStatsClient.UpdateOSD(strOSD.c_str());
 
 		m_bConnected = bResult;
 
@@ -841,7 +836,7 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 {
 	int TIMEOUT = 5; //this should probably be a defined constant
 	int serialReadData = 0;
-	CString	sysLatResults;
+	string	sysLatResults;
 	CRTSSClient sysLatClient("SysLat", 0);
 	m_sysLatOwnedSlot = sysLatClient.ownedSlot;
 	//the following should not be here because if RTSS isn't running when this is hit, the version is "0"
@@ -939,20 +934,26 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	for (auto i = 0; i < timeVectorDraw.size(); i++) {
 		totalMicroseconds += timeVectorDraw[i];
 	}
-	averageMicroseconds = totalMicroseconds / timeVectorDraw.size();
-	double averageMilliseconds = averageMicroseconds / 1000;
-	//DEBUG_PRINT("Draw Total microseconds: " + to_string(totalMicroseconds))
-	//DEBUG_PRINT("Draw Average microseconds: " + to_string(averageMicroseconds))
-	//DEBUG_PRINT("Draw Average milliseconds: " + to_string(averageMilliseconds))
-
+	double averageMilliseconds;
+	if (timeVectorDraw.size() != 0) {
+		averageMicroseconds = totalMicroseconds / timeVectorDraw.size();
+		averageMilliseconds = averageMicroseconds / 1000;
+		//DEBUG_PRINT("Draw Total microseconds: " + to_string(totalMicroseconds))
+		//DEBUG_PRINT("Draw Average microseconds: " + to_string(averageMicroseconds))
+		//DEBUG_PRINT("Draw Average milliseconds: " + to_string(averageMilliseconds))
+	}
 
 	totalMicroseconds = 0;
 	averageMicroseconds = 0;
-	for (auto i = 0; i < timeVectorExtra.size(); i++) {
-		totalMicroseconds += timeVectorExtra[i];
+
+	if (timeVectorExtra.size() != 0) {
+		for (auto i = 0; i < timeVectorExtra.size(); i++) {
+			totalMicroseconds += timeVectorExtra[i];
+		}
+
+		averageMicroseconds = totalMicroseconds / timeVectorExtra.size();
+		averageMilliseconds = averageMicroseconds / 1000;
 	}
-	averageMicroseconds = totalMicroseconds / timeVectorExtra.size();
-	averageMilliseconds = averageMicroseconds / 1000;
 	//DEBUG_PRINT("Extra Total microseconds: " + to_string(totalMicroseconds))
 	//DEBUG_PRINT("Extra Average microseconds: " + to_string(averageMicroseconds))
 	//DEBUG_PRINT("Extra Average milliseconds: " + to_string(averageMilliseconds))
@@ -1000,7 +1001,7 @@ void CSysLat_SoftwareDlg::ExportData()
 			//The following code is for testing file export changes - maybe I should make it run only in debugMode?
 			//Json::Value newJSON;
 			//const Json::Value* const sources[] = {
-			//	&m_previousSLD[i]->jsonSLD,
+			//	&m_previousSLD[i]->m_JSONsld,
 			//	&m_hardwareID.HardwareIDJSON,
 			//	&m_machineInfo.MachineInfoJSON
 			//};
@@ -1009,7 +1010,7 @@ void CSysLat_SoftwareDlg::ExportData()
 			//		newJSON[srcIt.name()] = *srcIt;
 			//ExportData(newJSON);
 
-			if (!m_vpPreviousSLD[i]->dataExported) {
+			if (!m_vpPreviousSLD[i]->m_bDataExported) {
 				m_vpPreviousSLD[i]->ExportData(i, SysLatOpt.m_LogDir, SysLatOpt.m_maxLogs);
 			}
 
@@ -1047,11 +1048,11 @@ void CSysLat_SoftwareDlg::UploadData()
 	if (m_vpPreviousSLD.size() > 0) {
 		for (unsigned int i = 0; i < m_vpPreviousSLD.size(); i++) {
 			http::response<http::string_body> uploadStatus;
-			if (!m_vpPreviousSLD[i]->dataUploaded) {
+			if (!m_vpPreviousSLD[i]->m_bDataUploaded) {
 
 				Json::Value newJSON;
 				const Json::Value* const sources[] = {
-					&m_vpPreviousSLD[i]->jsonSLD,
+					&m_vpPreviousSLD[i]->GetJSONData(),
 					&m_hardwareID.HardwareIDJSON,
 					&m_machineInfo.MachineInfoJSON
 				};
@@ -1065,7 +1066,7 @@ void CSysLat_SoftwareDlg::UploadData()
 				else {
 					uploadStatus = upload_data_secure(newJSON, APItarget);
 				}
-				m_vpPreviousSLD[i]->dataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
+				m_vpPreviousSLD[i]->m_bDataUploaded = true; //need to make uploadStatus return a bool or something and use it to set this var
 			}
 
 			/*else {

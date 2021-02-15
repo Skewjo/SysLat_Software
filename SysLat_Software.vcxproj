@@ -22,6 +22,7 @@
     <PlatformToolset>v142</PlatformToolset>
     <UseOfMfc>Static</UseOfMfc>
     <CharacterSet>MultiByte</CharacterSet>
+    <UseDebugLibraries>true</UseDebugLibraries>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
@@ -51,7 +52,7 @@
     <IntDir>.\Release\</IntDir>
     <LinkIncremental>false</LinkIncremental>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);</IncludePath>
+    <IncludePath>$(VCInstallDir)Auxiliary\VS\UnitTest\lib;$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <TargetName>SysLat</TargetName>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
@@ -59,7 +60,7 @@
     <IntDir>.\Debug\</IntDir>
     <LinkIncremental>true</LinkIncremental>
     <CodeAnalysisRuleSet>MinimumRecommendedRules.ruleset</CodeAnalysisRuleSet>
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath);</IncludePath>
+    <IncludePath>$(VCInstallDir)Auxiliary\VS\UnitTest\lib;$(VCInstallDir)Auxiliary\VS\UnitTest\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);$(IncludePath)</IncludePath>
     <TargetName>SysLat</TargetName>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
