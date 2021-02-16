@@ -10,6 +10,8 @@ Thank you for taking a look at SysLat. By the time you read this, this README wi
 
 SysLat's paired "firmware" can be found here: https://github.com/Skewjo/SysLat_Firmware
 
+This project uses [Deleaker](https://www.deleaker.com/) to reliably diagnose bad allocations and deliver a high quality application free of memory leaks.
+
 # Long-term Goals for this Project, Open Source, and a Message to the Community
 
 I hope the measurements we take this with tool can lead to new advancements in the way both hardware and software are built, and I believe that with enough data this is possible through the use of machine learning and AI.
