@@ -42,7 +42,7 @@ void CSysLatData::AppendError(const string& error)
 	if (m_strError.size() != 0)
 		m_strError += "\n";
 	m_strError += error;
-	m_strError + "\n";
+	m_strError += "\n";
 }
 
 void CSysLatData::CreateJSONSLD() {
@@ -56,15 +56,15 @@ void CSysLatData::CreateJSONSLD() {
 
 	//This block of code would keep the 3 arrays of data found in the SYSLAT_DATA struct seperate in the JSON. They are currently formatted to be an array of arrays to make the data easier to read.
 	//MAJOR ERROR HERE - NOT SURE WHY, BUT IT'S OCCURRED IN BOTH THE FIRST AND SECOND LOOPS SO FAR FOR ME
-	for (int i = 0; i < m_sld.m_allResults.size(); i++) {
+	for (size_t i = 0; i < m_sld.m_allResults.size(); i++) {
 		resultsArray.append(Json::Value(m_sld.m_allResults[i]));
 	}
 	Json::Value RTSSArray(Json::arrayValue);
-	for (int i = 0; i < m_sld.m_v_strRTSSWindow.size(); i++) {
+	for (size_t i = 0; i < m_sld.m_v_strRTSSWindow.size(); i++) {
 		RTSSArray.append(Json::Value(m_sld.m_v_strRTSSWindow[i]));
 	}
 	Json::Value activeArray(Json::arrayValue);
-	for (int i = 0; i < m_sld.m_v_strActiveWindow.size(); i++) {
+	for (size_t i = 0; i < m_sld.m_v_strActiveWindow.size(); i++) {
 		activeArray.append(Json::Value(m_sld.m_v_strActiveWindow[i]));
 	}
 

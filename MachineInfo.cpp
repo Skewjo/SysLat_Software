@@ -33,7 +33,7 @@ namespace DX
 }
 
 void MachineInfo::SetOSInfo() {
-    int osver = 0.0;
+    double osver = 0.0;
 
     NTSTATUS(WINAPI * RtlGetVersion)(LPOSVERSIONINFOEXW);
 
@@ -115,10 +115,11 @@ void MachineInfo::SetVideoCardInfo() {
             continue;
         }
         
-        const int bufferSize = 256;
-        char temp[bufferSize];
-        wcstombs(temp, desc.Description, bufferSize);
-        Videocard = temp;
+        size_t i;
+        const size_t BUFFER_SIZE = 256;
+        char tempStdChar[BUFFER_SIZE];
+        wcstombs_s(&i, tempStdChar, (size_t)BUFFER_SIZE, desc.Description, (size_t)BUFFER_SIZE);
+        Videocard = tempStdChar;
         // desc.VendorId: VID
         // desc.DeviceId: PID
         // desc.Description: name string seen above
@@ -140,7 +141,8 @@ void MachineInfo::SetMOBOInfo() {
     }
     catch (std::exception& e)
     {
-        DEBUG_PRINT(e.what())
+        string errorString = e.what();
+        DEBUG_PRINT(errorString)
     }
     #ifdef _DEBUG
     DEBUG_PRINT("Motherboard info: ")
@@ -148,9 +150,14 @@ void MachineInfo::SetMOBOInfo() {
     OutputDebugString("\n");
     #endif
     
+    size_t i;
     const int bufferSize = 256;
     char temp[bufferSize];
-    wcstombs(temp, valueFromRegistry.c_str(), bufferSize);
+
+    //wcstombs(temp, desc.Description, bufferSize);
+    //wcstombs_s(&i, tempStdChar, (size_t)BUFFER_SIZE, desc.Description, (size_t)BUFFER_SIZE);
+
+    wcstombs_s(&i, temp, bufferSize, valueFromRegistry.c_str(), bufferSize);
 
     Motherboard = temp;
 }

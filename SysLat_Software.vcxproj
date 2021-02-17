@@ -123,7 +123,7 @@
       <Optimization>Disabled</Optimization>
       <AdditionalIncludeDirectories>..\..\..\Include;%(AdditionalIncludeDirectories);.\Include</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>WIN32;_DEBUG;_WINDOWS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <MinimalRebuild>true</MinimalRebuild>
+      <MinimalRebuild>false</MinimalRebuild>
       <BasicRuntimeChecks>EnableFastChecks</BasicRuntimeChecks>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>

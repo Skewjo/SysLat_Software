@@ -8,7 +8,7 @@ void SysLatPreferences::WritePreferences() {
 	WriteRTSSOptions();
 
 	std::ofstream exportPreferences;
-	exportPreferences.open(pathOnly + "\SysLatPreferences.json");
+	exportPreferences.open(pathOnly + "\\SysLatPreferences.json");
 
 	if (exportPreferences.is_open()) {
 		exportPreferences << m_JSONPreferences;
@@ -82,7 +82,7 @@ void SysLatPreferences::ReadSysLatOptions() {
 	m_SysLatOptions.m_PortSpecifier = m_JSONPreferences["SysLatOptions"].get("PortSpecifier", "COM3").asString();
 	m_SysLatOptions.m_maxTestDuration = m_JSONPreferences["SysLatOptions"].get("MaxTestDuration", 15).asInt();
 	m_SysLatOptions.m_maxLogs = m_JSONPreferences["SysLatOptions"].get("MaxLogs", 15).asInt();
-	m_SysLatOptions.m_LogDir = m_JSONPreferences["SysLatOptions"].get("LogDir", pathOnly + "\SysLat_Logs").asString();
+	m_SysLatOptions.m_LogDir = m_JSONPreferences["SysLatOptions"].get("LogDir", pathOnly + "\\SysLat_Logs").asString();
 	m_SysLatOptions.m_bDarkMode = m_JSONPreferences["SysLatOptions"].get("DarkMode", false).asBool();
 }
 void SysLatPreferences::ReadPrivacyOptions() {

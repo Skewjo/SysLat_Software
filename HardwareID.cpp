@@ -40,7 +40,8 @@ char* HardwareID::GetMAC() {
         do {
             // technically should look at pAdapterInfo->AddressLength
             //   and not assume it is 6.
-            sprintf(mac_addr, "%02X:%02X:%02X:%02X:%02X:%02X",
+            //replaced sprintf() here with just printf... not sure if correct and I haven't tested it.
+            printf(mac_addr, "%02X:%02X:%02X:%02X:%02X:%02X",
                 pAdapterInfo->Address[0], pAdapterInfo->Address[1],
                 pAdapterInfo->Address[2], pAdapterInfo->Address[3],
                 pAdapterInfo->Address[4], pAdapterInfo->Address[5]);

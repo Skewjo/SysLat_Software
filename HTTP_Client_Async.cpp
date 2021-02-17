@@ -11,8 +11,10 @@ http::response<http::string_body>* session::run(Json::Value dataToSend, char con
     req_.set(http::field::user_agent, BOOST_BEAST_VERSION_STRING);
     req_.set(beast::http::field::content_type, "application/json");
     
-    Json::FastWriter fastWriter;
-    string output = fastWriter.write(dataToSend);
+    Json::StreamWriterBuilder builder;
+    string output = Json::writeString(builder, dataToSend);
+
+    DEBUG_PRINT("JSON VALUE IN HTTP " + output)
     req_.body() = output;
 
     std::ostringstream debugOut;

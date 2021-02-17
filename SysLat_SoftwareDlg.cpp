@@ -925,13 +925,13 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 
 	long long totalMicroseconds = 0;
 	long long averageMicroseconds = 0;
-	for (auto i = 0; i < timeVectorDraw.size(); i++) {
+	for (size_t i = 0; i < timeVectorDraw.size(); i++) {
 		totalMicroseconds += timeVectorDraw[i];
 	}
 	double averageMilliseconds;
 	if (timeVectorDraw.size() != 0) {
 		averageMicroseconds = totalMicroseconds / timeVectorDraw.size();
-		averageMilliseconds = averageMicroseconds / 1000;
+		averageMilliseconds = static_cast<double>(averageMicroseconds) / 1000;
 		//DEBUG_PRINT("Draw Total microseconds: " + to_string(totalMicroseconds))
 		//DEBUG_PRINT("Draw Average microseconds: " + to_string(averageMicroseconds))
 		//DEBUG_PRINT("Draw Average milliseconds: " + to_string(averageMilliseconds))
@@ -941,12 +941,12 @@ unsigned int __stdcall CSysLat_SoftwareDlg::CreateDrawingThread(void* data) //th
 	averageMicroseconds = 0;
 
 	if (timeVectorExtra.size() != 0) {
-		for (auto i = 0; i < timeVectorExtra.size(); i++) {
+		for (size_t i = 0; i < timeVectorExtra.size(); i++) {
 			totalMicroseconds += timeVectorExtra[i];
 		}
 
 		averageMicroseconds = totalMicroseconds / timeVectorExtra.size();
-		averageMilliseconds = averageMicroseconds / 1000;
+		averageMilliseconds = static_cast<double>(averageMicroseconds) / 1000;
 	}
 	//DEBUG_PRINT("Extra Total microseconds: " + to_string(totalMicroseconds))
 	//DEBUG_PRINT("Extra Average microseconds: " + to_string(averageMicroseconds))
@@ -1238,7 +1238,7 @@ void CSysLat_SoftwareDlg::CheckUpdate() {
 	if (userUpdateChoice == 1) {
 		string newFilePath = pathToSysLat;
 		SL::RemoveFileNameFromPath(newFilePath);
-		newFilePath += "\SysLat.exe";
+		newFilePath += "\\SysLat.exe";
 		URLDownloadToFile(NULL, uploadStatus.body().c_str(), newFilePath.c_str(), 0, NULL);
 		//if download completed properly...
 		::MessageBox(NULL, ("Download complete. Please close this window and start the new version of SysLat at: " + newFilePath).c_str(), "Update Complete", MB_OK);
@@ -1289,7 +1289,8 @@ void CSysLat_SoftwareDlg::SetSURegValue(string regValue) {
 	}
 	catch (std::exception& e)
 	{
-		DEBUG_PRINT(e.what())
+		string errorString = e.what();
+		DEBUG_PRINT(errorString)
 	}
 }
 

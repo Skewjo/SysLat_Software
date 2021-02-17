@@ -30,24 +30,22 @@ BOOL TestCtrl::OnInitDialog() {
 
 		auto& testDuration = (*m_pPreviousSLD)[i]->GetTestDuration();
 		string duration = format(" %R:%OS", testDuration);
-		
+
 		auto& data = (*m_pPreviousSLD)[i]->GetData();
-		int sysLatAverage = (data.m_statisticsEVR.average); 
-		int testCount = (data.m_statisticsEVR.counter);
+		string sysLatAverage = to_string(data.m_statisticsEVR.average);
+		string testCount = to_string(data.m_statisticsEVR.counter);
 
 		bool exported = (*m_pPreviousSLD)[i]->m_bDataExported;
 		bool uploaded = (*m_pPreviousSLD)[i]->m_bDataUploaded;
 
-		char buffer[256];
-
 		nItem = m_TestListCtrl.InsertItem(i, "1");
 		m_TestListCtrl.SetItemText(nItem, 1, targetApp.c_str());
 		m_TestListCtrl.SetItemText(nItem, 2, duration.c_str());
-		m_TestListCtrl.SetItemText(nItem, 3, _itoa(sysLatAverage, buffer, 10));
-		m_TestListCtrl.SetItemText(nItem, 4, _itoa(testCount, buffer, 10));
+		m_TestListCtrl.SetItemText(nItem, 3, sysLatAverage.c_str());
+		m_TestListCtrl.SetItemText(nItem, 4, testCount.c_str());
 
 		//NEED TO TURN THESE INTO BUTTONS - AND MAKE THEM MORE ACCURATE (BY ACCOUNTING FOR FAILURE TO UPLOAD SPECIFICALLY)
-		if (testCount == 0) {
+		if (data.m_statisticsEVR.counter == 0) {
 			m_TestListCtrl.SetItemText(nItem, 5, "N/A");
 		}
 		else if (exported) {
@@ -57,7 +55,7 @@ BOOL TestCtrl::OnInitDialog() {
 			m_TestListCtrl.SetItemText(nItem, 5, "No");
 		}
 
-		if (testCount == 0) {
+		if (data.m_statisticsEVR.counter == 0) {
 			m_TestListCtrl.SetItemText(nItem, 6, "N/A");
 		}
 		else if (uploaded) {

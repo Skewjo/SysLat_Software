@@ -29,7 +29,7 @@ void PreferencesDlg::DoDataExchange(CDataExchange* pDX)
 BOOL PreferencesDlg::OnInitDialog() {
 	CDialogEx::OnInitDialog();
 
-	CMFCEditBrowseCtrl* pEdit;
+	//CMFCEditBrowseCtrl* pEdit;
 	CSliderCtrl* pSCtrl;
 	CButton* pBtn;
 
