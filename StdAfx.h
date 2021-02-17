@@ -45,6 +45,14 @@
 #include <winternl.h>
 #include <wrl/client.h> //graphics card info for MachineInfo.cpp
 
+//Without the following 2 macros the date library spits out 50+ errors about min and max being undefined.
+#undef max 
+#undef min
+#include <date/date.h> //Should likely move this to StdAfx.h, but I'm not sure if I can because of the macro issue.
+using namespace date;
+using namespace std::chrono;
+
+
 #pragma comment(lib, "DXGI.lib") //graphics card info
 #pragma comment (lib, "OneCore.lib") //Used to enumerate COM ports
 

@@ -1,7 +1,7 @@
 #include "StdAfx.h"
 #include "SysLatData.h"
 
-void CSysLatData::SetEndTime() {
+void CSysLatData::SetEnd() {
 	m_endTime = system_clock::now();
 	m_testDuration = duration_cast<duration<int>>(m_endTime - m_startTime);
 }
@@ -18,10 +18,7 @@ void CSysLatData::UpdateSLD(unsigned int loopCounter, const string& sysLatResult
 		m_sld.m_v_strActiveWindow.push_back(activeWindow);
 		m_sld.m_statistics.total += systemLatency;
 		m_sld.m_statistics.average = static_cast<double>(m_sld.m_statistics.total) / m_sld.m_statistics.counter; //when I try to cast one of these to a double, it appears to get the program out of sync and shoots the displayed syslat up quite a bit... - working now?
-		//m_sld.m_statistics.movingAverage
 		m_sld.m_statistics.approxMovingAvg = CalculateMovingAverage(m_sld.m_statistics.average, systemLatency);
-			
-		
 		if (systemLatency > 3 && systemLatency < 100 && fgPID == rtssPID) {
 			m_sld.m_statisticsEVR.counter++;
 			m_sld.m_statisticsEVR.total += systemLatency;
@@ -103,7 +100,7 @@ void CSysLatData::CreateJSONSLD() {
 
 void CSysLatData::ExportData(int testNumber, string path, int totalLogs) {
 	std::ofstream exportData;
-	string startDateUTC = format("%F", m_startTime);
+	//string startDateUTC = format("%F", m_startTime);
 
 	//COUNT NUMBER OF LOGS HERE
 	//string path = "/path/to/directory";
@@ -131,7 +128,7 @@ void CSysLatData::ExportData(int testNumber, string path, int totalLogs) {
 	if (count > totalLogs && oldest_file.exists()) {
 		std::filesystem::remove(oldest_file);
 	}
-	exportData.open( path + "\\SL_Log_" + to_string(testNumber) + "_" + startDateUTC + ".json");
+	exportData.open( path + "\\SL_Log_" + to_string(testNumber) + ".json");//+ "_" + startDateUTC - on second thought... I don't think I need the date in the file name
 
 	if (exportData.is_open()) {
 		exportData << m_JSONsld;

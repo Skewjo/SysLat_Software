@@ -118,7 +118,7 @@ inline http::response<http::string_body> upload_data_secure(Json::Value dataToSe
     net::io_context ioc;
 
     // The SSL context is required, and holds certificates
-    ssl::context ctx{ ssl::context::tlsv13_client };
+    ssl::context ctx{ ssl::context::tlsv13_client }; 
 
     //beast::error_code ec2;
     // This holds the root certificate used for verification

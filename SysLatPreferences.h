@@ -5,7 +5,7 @@ struct SysLatOptions {
 	string						m_targetApp = "dota2";
 	//vector<string>			m_favoriteTargets;
 	string						m_PortSpecifier = "COM3";
-	time_t						m_maxTestDuration = 15;
+	int							m_maxTestDuration = 15; //does this need to be of type "duration<int>" ???
 	int							m_maxLogs = 10;
 	string						m_LogDir;// = ".\\SysLat_Logs\\";
 	bool						m_bDarkMode = false;

@@ -1,12 +1,5 @@
 #pragma once
 
-//Without the following 2 macros the date library spits out 50+ errors about min and max being undefined.
-#undef max 
-#undef min
-#include <date/date.h> //Should likely move this to StdAfx.h, but I'm not sure if I can because of the macro issue.
-using namespace date;
-using namespace std::chrono;
-
 constexpr size_t MOVING_AVERAGE = 100;
 constexpr size_t EVR_MIN = 3;
 constexpr size_t EVR_MAX = 100;
@@ -44,13 +37,17 @@ protected:
 	system_clock::time_point		m_endTime;
 	duration<int>					m_testDuration; 
 
+	double				CalculateMovingAverage(double currentAvg, int input);
+
 public:
 	const SYSLAT_DATA&	GetData() {return m_sld;}
 	const Json::Value&	GetJSONData() { return m_JSONsld; }
 	const int&			GetSystemLatency() { return systemLatency; }
+	const duration<int>	GetCurrentDuration() { return duration_cast<duration<int>>(system_clock::now() - m_startTime); } //if this is called for an old test, it could give an incorrect value...
+	const duration<int>& GetTestDuration() { return m_testDuration; }
 
-	double				CalculateMovingAverage(double currentAvg, int input);
-	void				SetEndTime();
+	
+	void				SetEnd();
 	void				UpdateSLD(unsigned int loopCounter, const string& sysLatResults, string RTSSWindow, string activeWindow, DWORD fgPID, DWORD rtssPID);
 	void				AppendError(const string& error);
 	

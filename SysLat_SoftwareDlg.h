@@ -18,6 +18,7 @@
 #include "MachineInfo.h"
 #include "USBController.h"
 
+//Does putting C in front of the class name indicate that this file is written in old "C", not C++?
 class CSysLat_SoftwareDlg : public CDialogEx
 {
 // Construction
@@ -83,8 +84,6 @@ protected:
 	HANDLE						m_drawingThreadHandle;
 	int							m_COMPortCount;
 	static std::shared_ptr<CSysLatData> m_pOperatingSLD;
-	//static CSysLatData*			m_pOperatingSLD;
-	//vector<CSysLatData*>		m_vpPreviousSLD;
 	vector<std::shared_ptr<CSysLatData>> m_vpPreviousSLD;
 	static constexpr const char* m_caSysLat = "SysLat";
 	static constexpr const char* m_caSysLatStats = "SysLatStats";
@@ -95,7 +94,8 @@ protected:
 	static CString				m_strWhite;
 	static DWORD				m_AppArraySize;
 
-	time_t						m_elapsedTimeStart, m_elapsedTimeEnd;
+	const system_clock::time_point	m_startTime, m_endTime;
+	duration<int>					m_duration;
 
 	//the names and uses of the following 3 vars is stupid... Need to fix it
 	unsigned int				myCounter = 0;

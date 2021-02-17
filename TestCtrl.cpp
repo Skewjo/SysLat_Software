@@ -27,26 +27,22 @@ BOOL TestCtrl::OnInitDialog() {
 
 	for (unsigned int i = 0; i < m_pPreviousSLD->size(); i++) {
 		string targetApp = (*m_pPreviousSLD)[i]->m_targetApp;
-		//double dif = (*m_pPreviousSLD)[i]->m_testDuration; temporarily removed
-		double dif = 0.0;
 
-		int minutes = static_cast<int>(dif) / 60;
-		int seconds = static_cast<int>(dif) % 60;
-		CString duration = "";
-		duration.AppendFormat("%02d:%02d", minutes, seconds);
-
+		auto& testDuration = (*m_pPreviousSLD)[i]->GetTestDuration();
+		string duration = format(" %R:%OS", testDuration);
+		
 		auto& data = (*m_pPreviousSLD)[i]->GetData();
-
-		int sysLatAverage = (data.m_statisticsEVR.average); //*m_pPreviousSLD)[i]->GetAverageEVR();
+		int sysLatAverage = (data.m_statisticsEVR.average); 
 		int testCount = (data.m_statisticsEVR.counter);
+
 		bool exported = (*m_pPreviousSLD)[i]->m_bDataExported;
 		bool uploaded = (*m_pPreviousSLD)[i]->m_bDataUploaded;
-		//int stuff = *m_pPreviousSLD[i]->GetCounterEVR();
+
 		char buffer[256];
 
 		nItem = m_TestListCtrl.InsertItem(i, "1");
 		m_TestListCtrl.SetItemText(nItem, 1, targetApp.c_str());
-		m_TestListCtrl.SetItemText(nItem, 2, duration);
+		m_TestListCtrl.SetItemText(nItem, 2, duration.c_str());
 		m_TestListCtrl.SetItemText(nItem, 3, _itoa(sysLatAverage, buffer, 10));
 		m_TestListCtrl.SetItemText(nItem, 4, _itoa(testCount, buffer, 10));
 

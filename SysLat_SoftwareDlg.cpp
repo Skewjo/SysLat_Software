@@ -271,7 +271,7 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	
 
 	m_nTimerID = SetTimer(0x1234, 1000, NULL);	//Used by OnTimer function to refresh dialog box & OSD
-	time(&m_elapsedTimeStart);					//Used to keep track of test length
+	//time(&m_elapsedTimeStart);					//Used to keep track of test length
 
 	m_hardwareID.ExportData(SysLatOpt.m_LogDir);
 	m_machineInfo.ExportData(SysLatOpt.m_LogDir);
@@ -281,7 +281,7 @@ BOOL CSysLat_SoftwareDlg::OnInitDialog()
 	unsigned threadID;
 	m_drawingThreadHandle = (HANDLE)_beginthreadex(0, 0, CreateDrawingThread, &myCounter, 0, &threadID);
 	SetThreadPriority(m_drawingThreadHandle, THREAD_PRIORITY_ABOVE_NORMAL);//31 is(apparently?) the highest possible thread priority - may be bad because it could cause deadlock using a loop? Need to read more here: https://docs.microsoft.com/en-us/windows/win32/procthread/scheduling-priorities
-
+	
 	return TRUE;  // return TRUE  unless you set the focus to a control
 }
 void CSysLat_SoftwareDlg::OnSysCommand(UINT nID, LPARAM lParam)
@@ -590,22 +590,17 @@ void CSysLat_SoftwareDlg::R_GetRTSSConfigs() {
 }
 
 BOOL CSysLat_SoftwareDlg::R_SysLatStats() {
-
-	//this timer stuff definitely needs to be in the SLD
-	time(&m_elapsedTimeEnd);
-	double dif = difftime(m_elapsedTimeEnd, m_elapsedTimeStart);
-	int minutes = static_cast<int>(dif) / 60;
-	int seconds = static_cast<int>(dif) % 60;
-
-	auto& data = m_pOperatingSLD->GetData();
-
-	if (minutes >= SysLatOpt.m_maxTestDuration) {
+	//Introduced a new bug here (but only in debug mode) where it looks like I'm getting some kind of under/overflow value.
+	//Instead of duration starting at 00:00::00, it will start a value that looks something like "238609:17:-40"
+	auto& CurrentTestDuration = m_pOperatingSLD->GetCurrentDuration();
+	if (duration_cast<std::chrono::minutes>(CurrentTestDuration).count() >= SysLatOpt.m_maxTestDuration) {
 		ReInitThread();
 	}
-
-	double measurementsPerSecond = data.m_statistics.counter / dif;
-	m_strStatus.AppendFormat("Elapsed Time: %02d:%02d", minutes, seconds);
-
+	auto& data = m_pOperatingSLD->GetData();
+	double measurementsPerSecond = static_cast<double>(data.m_statistics.counter) / static_cast<double>(duration_cast<std::chrono::seconds>(CurrentTestDuration).count());
+	string CurrentTestDurationString = format("%R:%OS", CurrentTestDuration);
+	m_strStatus.Append(("Elapsed Time: " + CurrentTestDurationString).c_str());
+	
 	if (m_pOperatingSLD->GetSystemLatency() < 500) { //using "c_str()" here because "stoi(m_pOperatingSLD->GetStringResult())" was getting immediate exceptions for some reason...
 		m_strStatus.AppendFormat("\nSystem Latency: %i", m_pOperatingSLD->GetSystemLatency());
 	}
@@ -807,11 +802,9 @@ void CSysLat_SoftwareDlg::ReInitThread() {
 	m_loopSize = 0;
 	WaitForSingleObjectEx(m_drawingThreadHandle, INFINITE, false);
 	m_pOperatingSLD->m_targetApp = SysLatOpt.m_targetApp;
-	m_pOperatingSLD->SetEndTime();
+	m_pOperatingSLD->SetEnd();
 	m_loopSize = 0xFFFFFFFF;
 
-	//Reset the timer 
-	time(&m_elapsedTimeStart); 
 	myCounter = 0;
 
 	//Save the data from the test that just completed in a vector of "SysLatData"s
