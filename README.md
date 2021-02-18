@@ -14,23 +14,23 @@ This project uses [Deleaker](https://www.deleaker.com/) to reliably diagnose bad
 
 # Basic Layout of the Classes/Program
 SysLat_Software (Effectively "Main" for a Windows app.)
-└── SysLat_SoftwareDlg (Start here if you want to understand the basic layout of the program - this is the "hub")
-    (data classes)
-    ├── SysLatData (the main data class)
-    ├── SysLatPreferences (should be a POD, but has some additional functionality that needs to be relocated/templatized)
-    ├── HardwareID
-    ├── MachineInfo
-    ("connection" classes)
-    ├── RTSSClient
-    │    └── RTSSSharedMemory(external)
-    ├── RTSSProfileInterface ( I believe this could possibly be encapsulated inside of the RTSSClient class)
-    ├── USBController
-    ├── HTTP_Client_Async (creates a connection without using SSL - currently used to test changes when running the website through localhost)
-    ├── HTTP_Client_Async_SSL 
-    (UI classes)
-    ├── AboutDlg
-    ├── PreferencesDlg
-    └── TestCtrl (also a dialog, but I chose not to put "Dlg" in the name - probably need to fix that)
+└── SysLat_SoftwareDlg (Start here if you want to understand the basic layout of the program - this is the "hub")  
+    (data classes)  
+    ├── SysLatData (the main data class)  
+    ├── SysLatPreferences (should be a POD, but has some additional functionality that needs to be relocated/templatized)  
+    ├── HardwareID  
+    ├── MachineInfo  
+    ("connection" classes)  
+    ├── RTSSClient  
+    │    └── RTSSSharedMemory(external)  
+    ├── RTSSProfileInterface ( I believe this could possibly be encapsulated inside of the RTSSClient class)  
+    ├── USBController  
+    ├── HTTP_Client_Async (creates a connection without using SSL - currently used to test changes when running the website through localhost)  
+    ├── HTTP_Client_Async_SSL  
+    (UI classes)  
+    ├── AboutDlg  
+    ├── PreferencesDlg  
+    └── TestCtrl (also a dialog, but I chose not to put "Dlg" in the name - probably need to fix that)  
     
     
 
