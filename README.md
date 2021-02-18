@@ -12,6 +12,28 @@ SysLat's paired "firmware" can be found here: https://github.com/Skewjo/SysLat_F
 
 This project uses [Deleaker](https://www.deleaker.com/) to reliably diagnose bad allocations and deliver a high quality application free of memory leaks.
 
+# Basic Layout of the Classes/Program
+SysLat_Software (Effectively "Main" for a Windows app.)
+└── SysLat_SoftwareDlg (Start here if you want to understand the basic layout of the program - this is the "hub")
+    (data classes)
+    ├── SysLatData (the main data class)
+    ├── SysLatPreferences (should be a POD, but has some additional functionality that needs to be relocated/templatized)
+    ├── HardwareID
+    ├── MachineInfo
+    ("connection" classes)
+    ├── RTSSClient
+    │    └── RTSSSharedMemory(external)
+    ├── RTSSProfileInterface ( I believe this could possibly be encapsulated inside of the RTSSClient class)
+    ├── USBController
+    ├── HTTP_Client_Async (creates a connection without using SSL - currently used to test changes when running the website through localhost)
+    ├── HTTP_Client_Async_SSL 
+    (UI classes)
+    ├── AboutDlg
+    ├── PreferencesDlg
+    └── TestCtrl (also a dialog, but I chose not to put "Dlg" in the name - probably need to fix that)
+    
+    
+
 # Long-term Goals for this Project, Open Source, and a Message to the Community
 
 I hope the measurements we take this with tool can lead to new advancements in the way both hardware and software are built, and I believe that with enough data this is possible through the use of machine learning and AI.
