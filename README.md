@@ -13,6 +13,7 @@ SysLat's paired "firmware" can be found here: https://github.com/Skewjo/SysLat_F
 This project uses [Deleaker](https://www.deleaker.com/) to reliably diagnose bad allocations and deliver a high quality application free of memory leaks.
 
 # Basic Layout of the Classes/Program
+```
 SysLat_Software (Effectively "Main" for a Windows app.)
 └── SysLat_SoftwareDlg (Start here if you want to understand the basic layout of the program - this is the "hub")  
     (data classes)  
@@ -31,9 +32,8 @@ SysLat_Software (Effectively "Main" for a Windows app.)
     ├── AboutDlg  
     ├── PreferencesDlg  
     └── TestCtrl (also a dialog, but I chose not to put "Dlg" in the name - probably need to fix that)  
+```
     
-    
-
 # Long-term Goals for this Project, Open Source, and a Message to the Community
 
 I hope the measurements we take this with tool can lead to new advancements in the way both hardware and software are built, and I believe that with enough data this is possible through the use of machine learning and AI.
